@@ -97,7 +97,7 @@ csrf = CSRFProtect(app)  # Защита от CSRF атак
 def limiter_enabled():
     """Проверка, включен ли rate limiting для текущего запроса"""
     # Не применяем rate limiting к статическим файлам и proxy-image endpoint
-    if request.path.startswith('/page/') or request.path.startswith('/static/') or request.path.startswith('/projects/') or request.path.startswith('/css/') or request.path.startswith('/js/') or request.path == '/navigate/api/proxy-image':
+    if request.path.startswith('/page/') or request.path.startswith('/static/') or request.path.startswith('/projects/') or request.path.startswith('/css/') or request.path.startswith('/js/') or request.path == '/api/proxy-image':
         return False
     return RATELIMIT_ENABLED
 
@@ -714,7 +714,7 @@ def video_player():
     return response
 
 
-@app.route('/navigate/api/catalog')
+@app.route('/api/catalog')
 def get_catalog():
     """
     API endpoint для получения каталога
@@ -835,7 +835,7 @@ def get_catalog():
     return response
 
 
-@app.route('/navigate/api/parser/status')
+@app.route('/api/parser/status')
 @login_required
 @admin_required_decorator
 def get_parser_status():
@@ -848,7 +848,7 @@ def get_parser_status():
     return jsonify(parser_status)
 
 
-@app.route('/navigate/api/parser/start', methods=['POST'])
+@app.route('/api/parser/start', methods=['POST'])
 @login_required
 @admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
@@ -869,7 +869,7 @@ def start_parser():
     return jsonify({'status': 'already_running'})
 
 
-@app.route('/navigate/api/import/json', methods=['POST'])
+@app.route('/api/import/json', methods=['POST'])
 @login_required
 @admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
@@ -932,7 +932,7 @@ def import_json():
         return jsonify({'error': f'Ошибка импорта: {str(e)}'}), 500
 
 
-@app.route('/navigate/api/permanent', methods=['GET', 'POST', 'DELETE'])
+@app.route('/api/permanent', methods=['GET', 'POST', 'DELETE'])
 @login_required
 @admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
@@ -967,7 +967,7 @@ def permanent_api():
     return jsonify(permanent_data)
 
 
-@app.route('/navigate/api/items', methods=['POST', 'PUT', 'DELETE'])
+@app.route('/api/items', methods=['POST', 'PUT', 'DELETE'])
 @login_required
 @admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
@@ -1084,7 +1084,7 @@ def items_api():
     return jsonify({'error': 'Invalid method'}), 400
 
 
-@app.route('/navigate/api/images')
+@app.route('/api/images')
 def get_images():
     """
     API endpoint для получения списка всех доступных изображений
@@ -1359,7 +1359,7 @@ def serve_project_file(filename=None, project_name=None):
     return jsonify({'error': f'Файл не найден: {project_name}/{remaining_path if remaining_path else ""}'}), 404
 
 
-@app.route('/navigate/api/proxy-image')
+@app.route('/api/proxy-image')
 def proxy_image():
     """
     API endpoint для проксирования изображений с внешних URL
@@ -1407,7 +1407,7 @@ def proxy_image():
         return jsonify({'error': f'Ошибка загрузки: {str(e)}'}), 500
 
 
-@app.route('/navigate/api/video-proxy')
+@app.route('/api/video-proxy')
 def proxy_video():
     """
     API endpoint для проксирования видеофайлов с внешних URL

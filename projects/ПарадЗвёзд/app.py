@@ -80,7 +80,7 @@ def serve_static(filename):
 
 # ==================== API Авторизация ====================
 
-@parad_zvezd_bp.route('/navigate/api/login', methods=['POST'])
+@parad_zvezd_bp.route('/api/login', methods=['POST'])
 def login():
     """Вход для администратора"""
     data = request.get_json()
@@ -95,14 +95,14 @@ def login():
 
 # ==================== API Номинации ====================
 
-@parad_zvezd_bp.route('/navigate/api/nominations', methods=['GET'])
+@parad_zvezd_bp.route('/api/nominations', methods=['GET'])
 def get_all_nominations():
     """Получить все номинации"""
     data = load_nominations()
     return jsonify(data)
 
 
-@parad_zvezd_bp.route('/navigate/api/nominations/<nomination_id>', methods=['GET'])
+@parad_zvezd_bp.route('/api/nominations/<nomination_id>', methods=['GET'])
 def get_nomination(nomination_id):
     """Получить записи конкретной номинации"""
     data = load_nominations()
@@ -110,7 +110,7 @@ def get_nomination(nomination_id):
     return jsonify(entries)
 
 
-@parad_zvezd_bp.route('/navigate/api/nominations/<nomination_id>', methods=['POST'])
+@parad_zvezd_bp.route('/api/nominations/<nomination_id>', methods=['POST'])
 def add_nomination_entry(nomination_id):
     """Добавить запись в номинацию"""
     data = load_nominations()
@@ -127,7 +127,7 @@ def add_nomination_entry(nomination_id):
     return jsonify({'success': True, 'entry': entry})
 
 
-@parad_zvezd_bp.route('/navigate/api/nominations/<nomination_id>/<entry_id>', methods=['PUT'])
+@parad_zvezd_bp.route('/api/nominations/<nomination_id>/<entry_id>', methods=['PUT'])
 def update_nomination_entry(nomination_id, entry_id):
     """Обновить запись в номинации"""
     data = load_nominations()
@@ -150,7 +150,7 @@ def update_nomination_entry(nomination_id, entry_id):
     return jsonify({'success': False, 'message': 'Запись не найдена'}), 404
 
 
-@parad_zvezd_bp.route('/navigate/api/nominations/<nomination_id>/<entry_id>', methods=['DELETE'])
+@parad_zvezd_bp.route('/api/nominations/<nomination_id>/<entry_id>', methods=['DELETE'])
 def delete_nomination_entry(nomination_id, entry_id):
     """Удалить запись из номинации"""
     data = load_nominations()
@@ -167,14 +167,14 @@ def delete_nomination_entry(nomination_id, entry_id):
 
 # ==================== API Сценарии ====================
 
-@parad_zvezd_bp.route('/navigate/api/scenarios', methods=['GET'])
+@parad_zvezd_bp.route('/api/scenarios', methods=['GET'])
 def get_scenarios():
     """Получить все сценарии"""
     data = load_scenarios()
     return jsonify(data)
 
 
-@parad_zvezd_bp.route('/navigate/api/scenarios', methods=['POST'])
+@parad_zvezd_bp.route('/api/scenarios', methods=['POST'])
 def add_scenario():
     """Добавить сценарий"""
     data = load_scenarios()
@@ -188,7 +188,7 @@ def add_scenario():
     return jsonify({'success': True, 'scenario': scenario})
 
 
-@parad_zvezd_bp.route('/navigate/api/scenarios/<scenario_id>', methods=['DELETE'])
+@parad_zvezd_bp.route('/api/scenarios/<scenario_id>', methods=['DELETE'])
 def delete_scenario(scenario_id):
     """Удалить сценарий"""
     data = load_scenarios()
