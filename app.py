@@ -1272,14 +1272,13 @@ def serve_project_file(filename=None, project_name=None):
                     
                     # Проверяем, является ли проект Blueprint
                     if flask_info.get('is_blueprint') and hasattr(project_module, 'parad_zvezd_bp'):
-                        # Это Blueprint - регистрируем его в главном приложении
+                        # Это Blueprint - сохраняем его для последующей регистрации
                         blueprint = project_module.parad_zvezd_bp
-                        # Регистрируем Blueprint С url_prefix для проекта
-                        # static_url_path уже настроен внутри Blueprint и будет работать корректно
-                        app.register_blueprint(blueprint, url_prefix=f'/projects/{project_name}')
                         project_flask_info[project_name]['blueprint'] = blueprint
                         project_flask_info[project_name]['loaded'] = True
-                        print(f"Blueprint '{project_name}' зарегистрирован с префиксом /projects/{project_name} (статика: {blueprint.static_url_path})")
+                        print(f"Blueprint '{project_name}' загружен (статика: {blueprint.static_url_path})")
+                        # НЕ регистрируем Blueprint здесь - это вызовет ошибку после первого запроса
+                        # Вместо этого используем прямую маршрутизацию через send_from_directory
                     elif hasattr(project_module, 'app'):
                         # Это обычное Flask приложение
                         flask_app = project_module.app
@@ -1296,7 +1295,7 @@ def serve_project_file(filename=None, project_name=None):
                 # и отдавать статические файлы напрямую
                 pass
         
-        # Если Blueprint загружен, он уже зарегистрирован и будет обрабатывать запросы автоматически
+        # Если Blueprint загружен, обслуживаем файлы напрямую через send_from_directory
         # Если Flask приложение загружено, пробуем обработать запрос через него
         if flask_info.get('loaded') and 'app' in flask_info and not flask_info.get('is_blueprint'):
             flask_app = flask_info['app']
