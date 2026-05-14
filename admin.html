@@ -457,7 +457,7 @@
     <div class="header">
         <h1>Управление контентом</h1>
         <div class="header-actions">
-            <button class="btn btn-primary" onclick="window.location.href='/'">На сайт</button>
+            <button class="btn btn-primary" onclick="window.location.href='./'">На сайт</button>
             <button class="btn btn-success" onclick="startParser()">Парсер</button>
             <button class="btn btn-primary" onclick="exportJson()">Выгрузить JSON</button>
             <button class="btn btn-primary" onclick="changePassword()">Сменить пароль</button>
@@ -1519,12 +1519,12 @@
 
         // Logout
         function logout() {
-            window.location.href = '/logout';
+            window.location.href = './logout';
         }
 
         // Change password
         function changePassword() {
-            window.location.href = '/change-password';
+            window.location.href = './change-password';
         }
 
         // Export JSON

@@ -58,13 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Если iconName пустой - возвращаем логотип по умолчанию
         if (!iconName || iconName.trim() === '') {
-            return 'page/logo.png';
+            return './page/logo.png';
         }
         
         // Проверяем, является ли iconName URL-заглушкой
         for (const placeholderUrl of placeholderUrls) {
             if (iconName.includes(placeholderUrl)) {
-                return 'page/logo.png';
+                return './page/logo.png';
             }
         }
         
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Иначе используем локальный путь из папки page/
-        return `page/${iconName}`;
+        return `./page/${iconName}`;
     }
 
     // Функция поиска по всем элементам каталога (рекурсивно)
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             img.src = getIconPath(item.icon);
             img.alt = item.name;
             img.loading = 'lazy';
-            img.onerror = () => { img.src = 'page/logo.png'; };
+            img.onerror = () => { img.src = './page/logo.png'; };
 
             const span = document.createElement('span');
             span.className = 'item-name';
