@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Проверка авторизации
     if (sessionStorage.getItem('isAdmin') !== 'true') {
         alert('Доступ запрещён! Требуется авторизация.');
-        window.location.href = '/login.html';
+        window.location.href = 'login.html';
         return;
     }
     loadScenarios();
