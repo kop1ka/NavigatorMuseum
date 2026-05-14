@@ -167,7 +167,7 @@
                 decodedVideoUrl = decodeURIComponent(videoUrl);
             } catch (e) {}
             
-            const proxyUrl = '/api/video-proxy?url=' + encodeURIComponent(decodedVideoUrl);
+            const proxyUrl = './api/video-proxy?url=' + encodeURIComponent(decodedVideoUrl);
 
             console.log('Proxy URL:', proxyUrl);
 
