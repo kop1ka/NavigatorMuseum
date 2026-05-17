@@ -64,6 +64,28 @@ app.secret_key = SECRET_KEY  # Использование секретного �
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
 
+# Middleware для обработки префикса пути (например, /navigate/)
+class PathPrefixMiddleware:
+    """
+    Middleware для удаления префикса пути перед обработкой запроса Flask.
+    Позволяет приложению работать в поддиректории без изменения маршрутов.
+    """
+    def __init__(self, app, prefix):
+        self.app = app
+        self.prefix = prefix.rstrip('/')
+    
+    def __call__(self, environ, start_response):
+        path = environ.get('PATH_INFO', '')
+        if path.startswith(self.prefix):
+            # Удаляем префикс из PATH_INFO
+            environ['PATH_INFO'] = path[len(self.prefix):] or '/'
+            # Сохраняем оригинальный путь в SCRIPT_NAME для url_for
+            environ['SCRIPT_NAME'] = environ.get('SCRIPT_NAME', '') + self.prefix
+        return self.app(environ, start_response)
+
+# Применяем middleware для префикса /navigate
+app.wsgi_app = PathPrefixMiddleware(app.wsgi_app, '/navigate')
+
 # Настройка CORS заголовков для всех ответов (необходимо для работы на render.com и других хостингах)
 @app.after_request
 def add_cors_headers(response):
