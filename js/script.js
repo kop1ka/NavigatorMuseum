@@ -58,13 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Если iconName пустой - возвращаем логотип по умолчанию
         if (!iconName || iconName.trim() === '') {
-            return './page/logo.png';
+            return 'page/logo.png';
         }
         
         // Проверяем, является ли iconName URL-заглушкой
         for (const placeholderUrl of placeholderUrls) {
             if (iconName.includes(placeholderUrl)) {
-                return './page/logo.png';
+                return 'page/logo.png';
             }
         }
         
@@ -72,13 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (iconName.startsWith('http://') || iconName.startsWith('https://')) {
             // Для внешних URL с vm-ftp.anosov.ru используем прокси для обхода rate limiting
             if (iconName.includes('vm-ftp.anosov.ru')) {
-                return './api/proxy-image?url=' + encodeURIComponent(iconName);
+                return 'api/proxy-image?url=' + encodeURIComponent(iconName);
             }
             return iconName;
         }
         
         // Иначе используем локальный путь из папки page/
-        return `../page/${iconName}`;
+        return `page/${iconName}`;
     }
 
     // Функция поиска по всем элементам каталога (рекурсивно)
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             img.src = getIconPath(item.icon);
             img.alt = item.name;
             img.loading = 'lazy';
-            img.onerror = () => { img.src = '../page/logo.png'; };
+            img.onerror = () => { img.src = 'page/logo.png'; };
 
             const span = document.createElement('span');
             span.className = 'item-name';
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cleanUrl = decodeURIComponent(url.trim());
         // Проверяем, является ли URL внешним (с vm-ftp.anosov.ru)
         if (cleanUrl.includes('vm-ftp.anosov.ru')) {
-            return './api/video-proxy?url=' + encodeURIComponent(cleanUrl);
+            return 'api/video-proxy?url=' + encodeURIComponent(cleanUrl);
         }
         // Для локальных или других URL возвращаем как есть
         return cleanUrl;
@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----- Загрузка каталога с сервера -----
     async function loadCatalog() {
         try {
-            const response = await fetch('./api/catalog');
+            const response = await fetch('api/catalog');
             if (!response.ok) throw new Error('Ошибка загрузки');
             catalogData = await response.json();
             if (sidebar.classList.contains('active')) {

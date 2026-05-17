@@ -59,6 +59,11 @@ from utils.catalog_utils import (
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = SECRET_KEY  # Использование секретного ключа из конфига для сессий
 
+# Настройка для работы за обратным прокси (nginx, Apache и т.д.)
+# Позволяет приложению работать в поддиректории (например, /navigate/)
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
+
 # Настройка CORS заголовков для всех ответов (необходимо для работы на render.com и других хостингах)
 @app.after_request
 def add_cors_headers(response):
