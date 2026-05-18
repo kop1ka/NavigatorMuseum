@@ -48,9 +48,23 @@ def admin_required_decorator(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
             flash('Требуется права администратора', 'error')
-            # Получаем префикс пути из SCRIPT_NAME (например, /navigator)
+            
+            # Получаем префикс пути (например, /navigator) из переменных окружения запроса
             script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
-            # Перенаправляем на login с next параметром
-            # Flask-Login сам использует переопределённый get_login_url() для редиректа
-            return redirect(url_for('login', next=request.path))
+            
+            # Строим URL страницы входа с учётом префикса
+            if script_name:
+                login_url = script_name + '/login'
+            else:
+                login_url = '/login'
+            
+            # Добавляем параметр next, чтобы после входа вернуться на запрошенную страницу
+            # request.path содержит путь БЕЗ префикса (так как middleware удалил префикс)
+            # но нам нужен полный путь от корня сайта для параметра next
+            full_next = request.url  # Полный URL с учётом префикса
+            # Альтернативно можно собрать вручную:
+            # full_next = script_name + request.path if script_name else request.path
+            
+            return redirect(login_url + '?next=' + full_next)
+        return f(*args, **kwargs)
     return decorated_function
