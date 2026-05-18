@@ -69,25 +69,26 @@ class PathPrefixMiddleware:
     """
     Middleware для удаления префикса пути перед обработкой запроса Flask.
     Позволяет приложению работать в поддиректории без изменения маршрутов.
+    Работает только если префикс ещё не был установлен nginx (SCRIPT_NAME пустой).
     """
     def __init__(self, app, prefix):
         self.app = app
-        self.prefix = prefix.rstrip('/')
-    
+        self.prefix = prefix.rstrip("/")
+
     def __call__(self, environ, start_response):
-        path = environ.get('PATH_INFO', '')
-        script_name = environ.get('SCRIPT_NAME', '')
-        
-        # Проверяем, начинается ли путь с префикса
-        if path.startswith(self.prefix):
+        path = environ.get("PATH_INFO", "")
+        script_name = environ.get("SCRIPT_NAME", "")
+
+        # Применяем префикс только если SCRIPT_NAME ещё не установлен nginx
+        # и путь начинается с нашего префикса
+        if not script_name and path.startswith(self.prefix):
             # Удаляем префикс из PATH_INFO
-            environ['PATH_INFO'] = path[len(self.prefix):] or '/'
+            environ["PATH_INFO"] = path[len(self.prefix):] or "/"
             # Добавляем префикс к SCRIPT_NAME для правильной работы url_for
-            environ['SCRIPT_NAME'] = script_name + self.prefix
-        
+            environ["SCRIPT_NAME"] = self.prefix
+
         return self.app(environ, start_response)
 
-# Применяем middleware для префикса /navigator
 app.wsgi_app = PathPrefixMiddleware(app.wsgi_app, '/navigator')
 
 # Настройка CORS заголовков для всех ответов (необходимо для работы на render.com и других хостингах)
@@ -141,7 +142,20 @@ limiter = Limiter(
 )
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = LOGIN_VIEW  # Маршрут для перенаправления неавторизованных
+
+# Настройка login_manager для работы с префиксом пути
+# Переопределяем метод get_login_url для динамической генерации URL с префиксом
+def get_login_url():
+    """Генерирует URL страницы входа с учётом префикса пути"""
+    script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+    if script_name:
+        return script_name + '/login'
+    return '/login'
+
+login_manager.login_view = LOGIN_VIEW
+# Переопределяем метод get_login_url для поддержки префикса
+login_manager.get_login_url = lambda: get_login_url()
+
 login_manager.login_message = LOGIN_MESSAGE  # Сообщение при перенаправлении
 login_manager.session_protection = SESSION_PROTECTION  # Уровень защиты сессии
 
@@ -283,9 +297,28 @@ def login():
                 login_user(user_obj, remember=remember)
                 next_page = request.args.get('next')
                 flash('Вы успешно вошли в систему', 'success')
-                return redirect(next_page if next_page else url_for('admin'))
+                
+                # Получаем префикс пути из SCRIPT_NAME (например, /navigator)
+                script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+                
+                # Если next_page не указан, перенаправляем на admin с учётом префикса
+                if not next_page:
+                    return redirect(url_for('admin'))
+                
+                # Если next_page начинается с '/', добавляем префикс если он есть
+                if next_page.startswith('/'):
+                    # Проверяем, содержит ли уже next_page префикс
+                    if script_name and not next_page.startswith(script_name + '/'):
+                        # Добавляем префикс к next_page
+                        next_page = script_name + next_page
+                    return redirect(next_page)
+                
+                return redirect(next_page)
             else:
                 error = 'Неверное имя пользователя или пароль'
+    
+    # Получаем параметр next из query string для формы
+    next_page = request.args.get('next')
     
     return render_template_string('''
 <!DOCTYPE html>

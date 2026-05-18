@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Получаем базовый путь из текущего URL (например, /navigator)
+    const basePath = window.location.pathname.split("/projects")[0];
     // ----- Элементы DOM -----
     const sidebar = document.getElementById('sidebarLeft');
     const overlay = document.querySelector('.overlay');
@@ -256,7 +258,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     console.log('Это не видео, открываем напрямую');
                     // Остальные файлы – переход в текущей вкладке
-                    window.location.href = cleanUrl;
+                    // Добавляем basePath только если URL ещё не содержит префикс
+                    let finalUrl = cleanUrl;
+                    if (!cleanUrl.startsWith(basePath + '/projects/') && !cleanUrl.startsWith('/projects/')) {
+                        finalUrl = basePath + cleanUrl;
+                    } else if (!cleanUrl.startsWith(basePath)) {
+                        finalUrl = basePath + cleanUrl;
+                    }
+                    window.location.href = finalUrl;
                 }
             } else {
                 alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);

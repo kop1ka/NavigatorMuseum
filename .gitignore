@@ -1,59 +1,34 @@
-# Compiled and build artifacts
-*.pyc
+```
+# Python
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
 
 # Dependencies
-.venv/
 venv/
-
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Environment
+.venv/
 .env
 .env.local
-.env.*
+*.env.*
 
-# Editors
-.vscode/
-.idea/
+# Logs
+*.log
 
 # Coverage
 .coverage
 coverage/
 htmlcov/
 
-# Python specific
-*.pyo
-*.pyd
-.Python
-*.so
-
-# Distribution / packaging
-.dist-info/
-.wheel/
-.eggs/
-pip-wheel-metadata/
-
-# Testing
-.pytest_cache/
-.mypy_cache/
-.hypothesis/
-
-# OS generated files
-.DS_Store
-Thumbs.db
-ehthumbs.db
-Icon?
-.directory
-.Spotlight-V100
-.Trashes
-.AppleDouble
-.LSOverride
-
 # IDE
-.vs/
-.build/
-temp_*/
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# Build/dist
+dist/
+build/
+target/
+```
