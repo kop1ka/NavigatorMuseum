@@ -152,8 +152,16 @@ def get_login_url():
         return script_name + '/login'
     return '/login'
 
+# Переопределяем метод get_logout_url для поддержки префикса
+def get_logout_url():
+    """Генерирует URL выхода с учётом префикса пути"""
+    script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+    if script_name:
+        return script_name + '/logout'
+    return '/logout'
+
 login_manager.login_view = LOGIN_VIEW
-# Переопределяем метод get_login_url для поддержки префикса
+# Переопределяем методы для поддержки префикса
 login_manager.get_login_url = lambda: get_login_url()
 
 login_manager.login_message = LOGIN_MESSAGE  # Сообщение при перенаправлении
