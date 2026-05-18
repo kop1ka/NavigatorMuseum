@@ -76,11 +76,15 @@ class PathPrefixMiddleware:
     
     def __call__(self, environ, start_response):
         path = environ.get('PATH_INFO', '')
+        script_name = environ.get('SCRIPT_NAME', '')
+        
+        # Проверяем, начинается ли путь с префикса
         if path.startswith(self.prefix):
             # Удаляем префикс из PATH_INFO
             environ['PATH_INFO'] = path[len(self.prefix):] or '/'
-            # Сохраняем оригинальный путь в SCRIPT_NAME для url_for
-            environ['SCRIPT_NAME'] = environ.get('SCRIPT_NAME', '') + self.prefix
+            # Добавляем префикс к SCRIPT_NAME для правильной работы url_for
+            environ['SCRIPT_NAME'] = script_name + self.prefix
+        
         return self.app(environ, start_response)
 
 # Применяем middleware для префикса /navigator
