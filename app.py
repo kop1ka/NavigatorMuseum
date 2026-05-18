@@ -310,12 +310,14 @@ def login():
                 next_page = request.args.get('next')
                 flash('Вы успешно вошли в систему', 'success')
                 
-                # Если next_page не указан, перенаправляем на /navigator/admin
+                # Если next_page не указан, перенаправляем на панель администратора
                 if not next_page:
-                    return redirect('https://vm.anosov.ru/navigator/admin')
+                    return redirect(url_for('admin'))
                 
                 # Если next_page начинается с '/', добавляем префикс если он есть
                 if next_page.startswith('/'):
+                    # Получаем SCRIPT_NAME из environ
+                    script_name = request.environ.get("SCRIPT_NAME", "")
                     # Проверяем, содержит ли уже next_page префикс
                     if script_name and not next_page.startswith(script_name + '/'):
                         # Добавляем префикс к next_page
@@ -567,7 +569,7 @@ def change_password():
         save_users(USERS_FILE, users_data)
         
         flash('Пароль успешно изменён', 'success')
-        return redirect('https://vm.anosov.ru/navigator/admin')
+        return redirect(url_for('admin'))
     
     return render_template_string('''
 <!DOCTYPE html>
@@ -732,7 +734,7 @@ def change_password():
             </div>
             
             <button type="submit" class="btn-submit">Изменить пароль</button>
-            <a href="https://vm.anosov.ru/navigator/admin" class="btn-secondary">Отмена</a>
+            <a href="{{ url_for('admin') }}" class="btn-secondary">Отмена</a>
         </form>
     </div>
 </body>
