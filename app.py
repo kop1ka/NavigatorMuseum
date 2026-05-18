@@ -155,20 +155,22 @@ login_manager.session_protection = SESSION_PROTECTION  # Уровень защи
 # Переопределяем метод login_url для корректной работы с префиксом пути
 def custom_login_url(next=None):
     """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-    base_url = 'https://vm.anosov.ru/navigator/login'
-    
-    if next:
-        return base_url + '?next=' + next
-    return base_url
+    from flask import url_for
+    return url_for('login', next=next) if next else url_for('login')
 
 login_manager.login_url = custom_login_url
 
 @login_manager.unauthorized_handler
 def unauthorized():
     """Обработчик для неавторизованных пользователей с учётом префикса"""
-    from flask import request, redirect
-    # Используем кастомный login_url для получения правильного URL
-    login_url = login_manager.login_url(request.url)
+    from flask import request, redirect, url_for
+    # Получаем текущий URL
+    next_page = request.path
+    if request.query_string:
+        next_page += f"?{request.query_string.decode()}"
+    
+    # Используем url_for для получения правильного URL с префиксом
+    login_url = url_for('login', next=next_page)
     return redirect(login_url)
 
 # Глобальная переменная для хранения статуса парсера
@@ -310,16 +312,12 @@ def login():
                 next_page = request.args.get('next')
                 flash('Вы успешно вошли в систему', 'success')
                 
-                # Если next_page не указан, перенаправляем на /navigator/admin
+                # Если next_page не указан, перенаправляем на admin (с учётом префикса)
                 if not next_page:
-                    return redirect('https://vm.anosov.ru/navigator/admin')
+                    return redirect(url_for('admin'))
                 
-                # Если next_page начинается с '/', добавляем префикс если он есть
+                # Проверяем, является ли next_page относительным путём
                 if next_page.startswith('/'):
-                    # Проверяем, содержит ли уже next_page префикс
-                    if script_name and not next_page.startswith(script_name + '/'):
-                        # Добавляем префикс к next_page
-                        next_page = script_name + next_page
                     return redirect(next_page)
                 
                 return redirect(next_page)
@@ -335,7 +333,8 @@ def login():
     # -------------------------------------------------------------------
     def get_prefixed_login_url():
         """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-        return 'https://vm.anosov.ru/navigator/login'
+        from flask import url_for
+        return url_for('login')
     
     return render_template_string('''
 <!DOCTYPE html>
@@ -567,7 +566,7 @@ def change_password():
         save_users(USERS_FILE, users_data)
         
         flash('Пароль успешно изменён', 'success')
-        return redirect('https://vm.anosov.ru/navigator/admin')
+        return redirect(url_for('admin'))
     
     return render_template_string('''
 <!DOCTYPE html>
@@ -732,7 +731,7 @@ def change_password():
             </div>
             
             <button type="submit" class="btn-submit">Изменить пароль</button>
-            <a href="https://vm.anosov.ru/navigator/admin" class="btn-secondary">Отмена</a>
+            <a href="/navigator/admin" class="btn-secondary">Отмена</a>
         </form>
     </div>
 </body>
