@@ -654,7 +654,7 @@
         // Загрузка каталога
         async function loadCatalog() {
             try {
-                const response = await fetch('api/catalog');
+                const response = await fetch('api/catalog', { credentials: 'include' });
                 catalogData = await response.json();
                 renderCatalogTree();
                 renderParentList();
@@ -667,7 +667,7 @@
         // Загрузка постоянных элементов
         async function loadPermanentItems() {
             try {
-                const response = await fetch('api/permanent');
+                const response = await fetch('api/permanent', { credentials: 'include' });
                 const data = await response.json();
                 permanentItems = data.permanent_items || [];
             } catch (error) {
@@ -678,7 +678,7 @@
         // Загрузка доступных изображений
         async function loadImages() {
             try {
-                const response = await fetch('api/images');
+                const response = await fetch('api/images', { credentials: 'include' });
                 availableImages = await response.json();
                 filteredImages = [...availableImages];
                 populateImageSelects();
@@ -1101,7 +1101,8 @@
                 const response = await fetch('api/items', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path, updates })
+                    body: JSON.stringify({ path, updates }),
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -1162,7 +1163,8 @@
                 const response = await fetch('api/items', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
+                    body: JSON.stringify(requestBody),
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -1202,7 +1204,8 @@
                 const response = await fetch('api/items', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path: selectedElement.path })
+                    body: JSON.stringify({ path: selectedElement.path }),
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -1230,7 +1233,8 @@
                 await fetch('api/permanent', {
                     method: makePermanent ? 'POST' : 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path })
+                    body: JSON.stringify({ path }),
+                    credentials: 'include'
                 });
             } catch (error) {
                 console.error('Ошибка обновления постоянного статуса:', error);
