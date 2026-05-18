@@ -155,9 +155,7 @@ login_manager.session_protection = SESSION_PROTECTION  # Уровень защи
 # Переопределяем метод login_url для корректной работы с префиксом пути
 def custom_login_url(next=None):
     """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-    from flask import request
-    script_name = request.environ.get('SCRIPT_NAME', '')
-    base_url = url_for('login')
+    base_url = 'https://vm.anosov.ru/navigator/login'
     
     if next:
         return base_url + '?next=' + next
@@ -312,15 +310,18 @@ def login():
                 next_page = request.args.get('next')
                 flash('Вы успешно вошли в систему', 'success')
                 
-                # Если next_page не указан, перенаправляем на admin
+                # Если next_page не указан, перенаправляем на /navigator/admin
                 if not next_page:
-                    return redirect(url_for('admin'))
+                    return redirect('https://vm.anosov.ru/navigator/admin')
                 
                 # Если next_page начинается с '/', добавляем префикс если он есть
-                script_name = request.environ.get('SCRIPT_NAME', '')
-                if next_page.startswith('/') and script_name and not next_page.startswith(script_name + '/'):
-                    # Добавляем префикс к next_page
-                    next_page = script_name + next_page
+                if next_page.startswith('/'):
+                    # Проверяем, содержит ли уже next_page префикс
+                    if script_name and not next_page.startswith(script_name + '/'):
+                        # Добавляем префикс к next_page
+                        next_page = script_name + next_page
+                    return redirect(next_page)
+                
                 return redirect(next_page)
             else:
                 error = 'Неверное имя пользователя или пароль'
@@ -329,10 +330,12 @@ def login():
     next_page = request.args.get('next')
     
     # -------------------------------------------------------------------
-    # ИСПРАВЛЕНИЕ 2: Используем url_for для получения URL входа с префиксом
-    # и передаём его в шаблон для использования в action формы.
+    # ИСПРАВЛЕНИЕ 2: Создаём функцию для получения URL входа с префиксом
+    # и передаём её в шаблон для использования в action формы.
     # -------------------------------------------------------------------
-    login_action_url = url_for('login')
+    def get_prefixed_login_url():
+        """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
+        return 'https://vm.anosov.ru/navigator/login'
     
     return render_template_string('''
 <!DOCTYPE html>
@@ -474,8 +477,8 @@ def login():
             <div class="error-message">{{ error }}</div>
         {% endif %}
         
-        <!-- ИСПРАВЛЕНИЕ 3: action формы теперь использует url_for с префиксом -->
-        <form method="POST" action="{{ login_action_url }}">
+        <!-- ИСПРАВЛЕНИЕ 3: action формы теперь использует функцию с префиксом -->
+        <form method="POST" action="{{ get_prefixed_login_url() }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="form-group">
@@ -564,7 +567,7 @@ def change_password():
         save_users(USERS_FILE, users_data)
         
         flash('Пароль успешно изменён', 'success')
-        return redirect(url_for('admin'))
+        return redirect('https://vm.anosov.ru/navigator/admin')
     
     return render_template_string('''
 <!DOCTYPE html>
@@ -729,7 +732,7 @@ def change_password():
             </div>
             
             <button type="submit" class="btn-submit">Изменить пароль</button>
-            <a href="{{ url_for('admin') }}" class="btn-secondary">Отмена</a>
+            <a href="https://vm.anosov.ru/navigator/admin" class="btn-secondary">Отмена</a>
         </form>
     </div>
 </body>
