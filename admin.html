@@ -89,8 +89,8 @@
             color: #555;
             font-weight: bold;
         }
-        .form-group input`)
-        .form-group select`)
+        .form-group input,
+        .form-group select,
         .form-group textarea {
             width: 100%;
             padding: 10px;
@@ -98,8 +98,8 @@
             border-radius: 5px;
             font-size: 14px;
         }
-        .form-group input:focus`)
-        .form-group select:focus`)
+        .form-group input:focus,
+        .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
             border-color: #667eea;
@@ -398,13 +398,13 @@
                 padding: 10px;
             }
             
-            .sidebar`)
+            .sidebar,
             .main-content {
                 padding: 12px;
             }
             
-            .form-group input`)
-            .form-group select`)
+            .form-group input,
+            .form-group select,
             .form-group textarea {
                 font-size: 13px;
                 padding: 8px;
@@ -651,15 +651,10 @@
             });
         });
 
-        // Определяем базовый путь для работы с префиксом /navigator
-        const basePath = window.location.pathname.endsWith('/') ? 
-            window.location.pathname.slice(0, -1) : 
-            window.location.pathname;
-
         // Загрузка каталога
         async function loadCatalog() {
             try {
-                const response = await fetch(`${basePath}/api/catalog`);
+                const response = await fetch('api/catalog');
                 catalogData = await response.json();
                 renderCatalogTree();
                 renderParentList();
@@ -672,7 +667,7 @@
         // Загрузка постоянных элементов
         async function loadPermanentItems() {
             try {
-                const response = await fetch(`${basePath}/api/permanent`);
+                const response = await fetch('api/permanent');
                 const data = await response.json();
                 permanentItems = data.permanent_items || [];
             } catch (error) {
@@ -683,7 +678,7 @@
         // Загрузка доступных изображений
         async function loadImages() {
             try {
-                const response = await fetch(`${basePath}/api/images`);
+                const response = await fetch('api/images');
                 availableImages = await response.json();
                 filteredImages = [...availableImages];
                 populateImageSelects();
@@ -717,8 +712,8 @@
                     if (item.icon) {
                         // Проверяем, является ли иконка URL-заглушкой
                         const placeholderUrls = [
-                            'https://vm-ftp.anosov.ru/icons/folder.gif'`)
-                            'http://vm-ftp.anosov.ru/icons/folder.gif'`)
+                            'https://vm-ftp.anosov.ru/icons/folder.gif',
+                            'http://vm-ftp.anosov.ru/icons/folder.gif',
                             'vm-ftp.anosov.ru/icons/folder.gif'
                         ];
                         
@@ -832,8 +827,8 @@
                 if (iconSpan) {
                     // Проверяем, является ли иконка URL-заглушкой
                     const placeholderUrls = [
-                        'https://vm-ftp.anosov.ru/icons/folder.gif'`)
-                        'http://vm-ftp.anosov.ru/icons/folder.gif'`)
+                        'https://vm-ftp.anosov.ru/icons/folder.gif',
+                        'http://vm-ftp.anosov.ru/icons/folder.gif',
                         'vm-ftp.anosov.ru/icons/folder.gif'
                     ];
                     
@@ -920,8 +915,8 @@
                             if (iconSpan) {
                                 // Проверяем, является ли выбранная иконка URL-заглушкой
                                 const placeholderUrls = [
-                                    'https://vm-ftp.anosov.ru/icons/folder.gif'`)
-                                    'http://vm-ftp.anosov.ru/icons/folder.gif'`)
+                                    'https://vm-ftp.anosov.ru/icons/folder.gif',
+                                    'http://vm-ftp.anosov.ru/icons/folder.gif',
                                     'vm-ftp.anosov.ru/icons/folder.gif'
                                 ];
                                 
@@ -1077,8 +1072,8 @@
             
             // Проверяем, является ли иконка URL-заглушкой, и если да - заменяем на пустую строку
             const placeholderUrls = [
-                'https://vm-ftp.anosov.ru/icons/folder.gif'`)
-                'http://vm-ftp.anosov.ru/icons/folder.gif'`)
+                'https://vm-ftp.anosov.ru/icons/folder.gif',
+                'http://vm-ftp.anosov.ru/icons/folder.gif',
                 'vm-ftp.anosov.ru/icons/folder.gif'
             ];
             
@@ -1095,7 +1090,7 @@
             }
             
             const updates = {
-                name: document.getElementById('editName').value.toUpperCase()`)
+                name: document.getElementById('editName').value.toUpperCase(),
                 icon: iconValue
             };
 
@@ -1103,9 +1098,9 @@
             if (url) updates.url = url;
 
             try {
-                const response = await fetch(`${basePath}/api/items`, {
-                    method: 'PUT'`)
-                    headers: { 'Content-Type': 'application/json' }`)
+                const response = await fetch('api/items', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path, updates })
                 });
 
@@ -1140,8 +1135,8 @@
             
             // Проверяем, является ли иконка URL-заглушкой, и если да - заменяем на пустую строку
             const placeholderUrls = [
-                'https://vm-ftp.anosov.ru/icons/folder.gif'`)
-                'http://vm-ftp.anosov.ru/icons/folder.gif'`)
+                'https://vm-ftp.anosov.ru/icons/folder.gif',
+                'http://vm-ftp.anosov.ru/icons/folder.gif',
                 'vm-ftp.anosov.ru/icons/folder.gif'
             ];
             
@@ -1164,9 +1159,9 @@
                 const requestBody = { parent_path: parentPath, name, icon: iconValue };
                 if (url) requestBody.url = url;
 
-                const response = await fetch(`${basePath}/api/items`, {
-                    method: 'POST'`)
-                    headers: { 'Content-Type': 'application/json' }`)
+                const response = await fetch('api/items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestBody)
                 });
 
@@ -1204,9 +1199,9 @@
             }
 
             try {
-                const response = await fetch(`${basePath}/api/items`, {
-                    method: 'DELETE'`)
-                    headers: { 'Content-Type': 'application/json' }`)
+                const response = await fetch('api/items', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path: selectedElement.path })
                 });
 
@@ -1232,27 +1227,7 @@
         // Toggle permanent status
         async function togglePermanent(path, makePermanent) {
             try {
-                await fetch(`${basePath}/api/permanent`, {
-                    method: makePermanent ? 'POST' : 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path })
-                });
-                await fetch(`${basePath}/api/permanent`, {
-                    method: makePermanent ? 'POST' : 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path })
-                });
-                await fetch(`${basePath}/api/permanent`, {
-                    method: makePermanent ? 'POST' : 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path })
-                });
-                await fetch(`${basePath}/api/permanent`, {
-                    method: makePermanent ? 'POST' : 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ path })
-                });
-                await fetch(`${basePath}/api/permanent`, {
+                await fetch('api/permanent', {
                     method: makePermanent ? 'POST' : 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path })
@@ -1287,7 +1262,7 @@
         async function makeAllItemsPermanent() {
             try {
                 // Сначала загружаем актуальный каталог для получения всех путей
-                const catalogResponse = await fetch(`${basePath}/api/catalog`);
+                const catalogResponse = await fetch('api/catalog');
                 const catalog = await catalogResponse.json();
                 
                 const allPaths = getAllPaths(catalog.children);
@@ -1314,7 +1289,7 @@
             });
             
             try {
-                const response = await fetch(`${basePath}/api/parser/start`, { method: 'POST' });
+                const response = await fetch('api/parser/start', { method: 'POST' });
                 const data = await response.json();
 
                 if (data.status === 'started') {
@@ -1347,9 +1322,9 @@
             }
 
             try {
-                const response = await fetch(`${basePath}/api/import/json`, {
-                    method: 'POST'`)
-                    headers: { 'Content-Type': 'application/json' }`)
+                const response = await fetch('api/import/json', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ json_data: jsonData, parent_path: parentPath })
                 });
 
@@ -1426,7 +1401,7 @@
         // Check parser status
         async function checkParserStatus() {
             try {
-                const response = await fetch(`${basePath}/api/parser/status`);
+                const response = await fetch('api/parser/status');
                 const status = await response.json();
 
                 const statusDiv = document.getElementById('parserStatus');
@@ -1479,7 +1454,7 @@
         // Load initial parser status on page load
         async function loadParserStatus() {
             try {
-                const response = await fetch(`${basePath}/api/parser/status`);
+                const response = await fetch('api/parser/status');
                 const status = await response.json();
                 
                 const statusDiv = document.getElementById('parserStatus');
@@ -1523,18 +1498,18 @@
             
             if (Notification.permission === 'granted') {
                 new Notification(title, {
-                    body: body`)
-                    icon: './page/logo.png'`)
-                    tag: 'parser-completed'`)
+                    body: body,
+                    icon: './page/logo.png',
+                    tag: 'parser-completed',
                     requireInteraction: false
                 });
             } else if (Notification.permission !== 'denied') {
                 Notification.requestPermission().then(permission => {
                     if (permission === 'granted') {
                         new Notification(title, {
-                            body: body`)
-                            icon: './page/logo.png'`)
-                            tag: 'parser-completed'`)
+                            body: body,
+                            icon: './page/logo.png',
+                            tag: 'parser-completed',
                             requireInteraction: false
                         });
                     }
@@ -1554,7 +1529,7 @@
 
         // Export JSON
         function exportJson() {
-            fetch(`${basePath}/api/catalog')
+            fetch('api/catalog')
                 .then(response => response.json())
                 .then(data => {
                     // Функция для сбора всех элементов с указанием родительского каталога
@@ -1567,10 +1542,10 @@
                             if (!item) continue;
                             
                             const cleaned = {
-                                name: item.name`)
-                                icon: item.icon`)
-                                url: item.url || null`)
-                                modified: item.modified`)
+                                name: item.name,
+                                icon: item.icon,
+                                url: item.url || null,
+                                modified: item.modified,
                                 catalog: parentCatalogName
                             };
                             
