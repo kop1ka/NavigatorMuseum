@@ -143,27 +143,20 @@ limiter = Limiter(
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-# Настройка login_manager для работы с префиксом пути
-# Переопределяем метод get_login_url для динамической генерации URL с префиксом
-def get_login_url():
-    """Генерирует URL страницы входа с учётом префикса пути"""
+# -------------------------------------------------------------------
+# ИСПРАВЛЕНИЕ 1: Функция для динамического URL входа с учётом префикса
+# -------------------------------------------------------------------
+def get_prefixed_login_url():
+    """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
+    from flask import request
     script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
     if script_name:
         return script_name + '/login'
     return '/login'
 
-# Переопределяем метод get_logout_url для поддержки префикса
-def get_logout_url():
-    """Генерирует URL выхода с учётом префикса пути"""
-    script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
-    if script_name:
-        return script_name + '/logout'
-    return '/logout'
-
-login_manager.login_view = LOGIN_VIEW
-# Переопределяем методы для поддержки префикса
-login_manager.get_login_url = lambda: get_login_url()
-
+# Используем функцию в качестве login_view, чтобы Flask-Login всегда
+# генерировал правильный URL (например, /navigator/login).
+login_manager.login_view = get_prefixed_login_url
 login_manager.login_message = LOGIN_MESSAGE  # Сообщение при перенаправлении
 login_manager.session_protection = SESSION_PROTECTION  # Уровень защиты сессии
 
@@ -328,6 +321,10 @@ def login():
     # Получаем параметр next из query string для формы
     next_page = request.args.get('next')
     
+    # -------------------------------------------------------------------
+    # ИСПРАВЛЕНИЕ 2: Передаём функцию get_prefixed_login_url в шаблон
+    # и используем её в action формы, чтобы POST всегда шёл на правильный URL.
+    # -------------------------------------------------------------------
     return render_template_string('''
 <!DOCTYPE html>
 <html lang="ru">
@@ -468,7 +465,8 @@ def login():
             <div class="error-message">{{ error }}</div>
         {% endif %}
         
-        <form method="POST" action="{{ url_for('login') }}">
+        <!-- ИСПРАВЛЕНИЕ 3: action формы теперь использует функцию с префиксом -->
+        <form method="POST" action="{{ get_prefixed_login_url() }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="form-group">
@@ -491,7 +489,7 @@ def login():
     </div>
 </body>
 </html>
-''', error=error)
+''', error=error, get_prefixed_login_url=get_prefixed_login_url)  # Передаём функцию в контекст
 
 
 @app.route('/logout')
