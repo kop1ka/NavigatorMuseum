@@ -155,7 +155,9 @@ login_manager.session_protection = SESSION_PROTECTION  # Уровень защи
 # Переопределяем метод login_url для корректной работы с префиксом пути
 def custom_login_url(next=None):
     """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-    base_url = 'https://vm.anosov.ru/navigator/login'
+    # Используем url_for для генерации правильного URL относительно текущего хоста
+    from flask import url_for
+    base_url = url_for('login', _external=False)
     
     if next:
         return base_url + '?next=' + next
@@ -310,9 +312,9 @@ def login():
                 next_page = request.args.get('next')
                 flash('Вы успешно вошли в систему', 'success')
                 
-                # Если next_page не указан, перенаправляем на /navigator/admin
+                # Если next_page не указан, перенаправляем на /admin
                 if not next_page:
-                    return redirect('https://vm.anosov.ru/navigator/admin')
+                    return redirect(url_for('admin'))
                 
                 # Если next_page начинается с '/', добавляем префикс если он есть
                 if next_page.startswith('/'):
@@ -335,7 +337,7 @@ def login():
     # -------------------------------------------------------------------
     def get_prefixed_login_url():
         """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-        return 'https://vm.anosov.ru/navigator/login'
+        return url_for('login', _external=False)
     
     return render_template_string('''
 <!DOCTYPE html>
@@ -567,7 +569,7 @@ def change_password():
         save_users(USERS_FILE, users_data)
         
         flash('Пароль успешно изменён', 'success')
-        return redirect('https://vm.anosov.ru/navigator/admin')
+        return redirect(url_for('admin'))
     
     return render_template_string('''
 <!DOCTYPE html>
@@ -732,7 +734,7 @@ def change_password():
             </div>
             
             <button type="submit" class="btn-submit">Изменить пароль</button>
-            <a href="https://vm.anosov.ru/navigator/admin" class="btn-secondary">Отмена</a>
+            <a href="{{ url_for('admin') }}" class="btn-secondary">Отмена</a>
         </form>
     </div>
 </body>
