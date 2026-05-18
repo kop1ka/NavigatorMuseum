@@ -843,6 +843,8 @@ def get_catalog():
             children.pop(idx)
         
         # Добавляем все проекты в начало каталога в алфавитном порядке
+        # Получаем префикс пути из SCRIPT_NAME для корректной работы в подкаталоге (например, /navigator)
+        path_prefix = request.environ.get('SCRIPT_NAME', '').rstrip('/')
         for proj_info in sorted(project_items, key=lambda x: x['name']):
             project_name = proj_info['name']
             settings = saved_project_settings.get(project_name.lower(), {})
@@ -851,7 +853,7 @@ def get_catalog():
                 "name": settings.get('name', project_name),
                 "icon": settings.get('icon', "page/logo.png"),
                 "children": None,
-                "url": f"/projects/{project_name}/index.html",
+                "url": f"{path_prefix}/projects/{project_name}/index.html" if path_prefix else f"/projects/{project_name}/index.html",
                 "modified": datetime.fromtimestamp(os.path.getmtime(proj_info['index_html_path'])).strftime('%Y-%m-%d %H:%M'),
                 "permanent": True,
                 "has_flask": proj_info['has_flask']
