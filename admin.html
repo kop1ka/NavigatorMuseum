@@ -1532,33 +1532,48 @@
             fetch('api/catalog')
                 .then(response => response.json())
                 .then(data => {
-                    // Выгружаем только children без главного каталога
-                    const exportData = data.children || [];
-                    
-                    // Функция для очистки элемента от лишних полей
-                    function cleanItem(item) {
-                        if (!item) return null;
+                    // Функция для сбора всех элементов с указанием родительского каталога
+                    function collectItems(items, parentCatalogName) {
+                        let result = [];
                         
-                        const cleaned = {
-                            name: item.name,
-                            icon: item.icon,
-                            children: item.children,
-                            url: item.url || null,
-                            modified: item.modified
-                        };
+                        if (!items || !Array.isArray(items)) return result;
                         
-                        // Рекурсивно очищаем дочерние элементы
-                        if (item.children && Array.isArray(item.children)) {
-                            cleaned.children = item.children.map(child => cleanItem(child));
+                        for (const item of items) {
+                            if (!item) continue;
+                            
+                            const cleaned = {
+                                name: item.name,
+                                icon: item.icon,
+                                url: item.url || null,
+                                modified: item.modified,
+                                catalog: parentCatalogName
+                            };
+                            
+                            result.push(cleaned);
+                            
+                            // Рекурсивно обрабатываем дочерние элементы
+                            if (item.children && Array.isArray(item.children)) {
+                                const childItems = collectItems(item.children, item.name);
+                                result = result.concat(childItems);
+                            }
                         }
                         
-                        return cleaned;
+                        return result;
                     }
                     
-                    // Очищаем все элементы
-                    const cleanedData = exportData.map(item => cleanItem(item));
+                    // Собираем все элементы из всех каталогов
+                    // Пропускаем главный каталог, обходим его дочерние категории
+                    let allItems = [];
+                    if (data.children && Array.isArray(data.children)) {
+                        for (const catalog of data.children) {
+                            const catalogName = catalog.name || 'Без названия';
+                            // Собираем элементы внутри категории (catalog.children)
+                            const items = collectItems(catalog.children, catalogName);
+                            allItems = allItems.concat(items);
+                        }
+                    }
                     
-                    const jsonStr = JSON.stringify(cleanedData, null, 2);
+                    const jsonStr = JSON.stringify(allItems, null, 2);
                     const blob = new Blob([jsonStr], { type: 'application/json' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
