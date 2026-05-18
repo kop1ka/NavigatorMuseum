@@ -144,21 +144,30 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 
 # -------------------------------------------------------------------
-# ИСПРАВЛЕНИЕ 1: Функция для динамического URL входа с учётом префикса
+# ИСПРАВЛЕНИЕ 1: Настройка login_manager для работы с префиксом
 # -------------------------------------------------------------------
-def get_prefixed_login_url():
-    """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-    from flask import request
-    script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
-    if script_name:
-        return script_name + '/login'
-    return '/login'
-
-# Используем функцию в качестве login_view, чтобы Flask-Login всегда
-# генерировал правильный URL (например, /navigator/login).
-login_manager.login_view = get_prefixed_login_url
+# Устанавливаем login_view как строку, а не функцию
+# Flask-Login требует строковое значение для login_view
+login_manager.login_view = 'login'
 login_manager.login_message = LOGIN_MESSAGE  # Сообщение при перенаправлении
 login_manager.session_protection = SESSION_PROTECTION  # Уровень защиты сессии
+
+# Переопределяем unauthorized_callback для корректной работы с префиксом пути
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Обработчик для неавторизованных пользователей с учётом префикса"""
+    from flask import request, redirect
+    # Получаем префикс пути (например, /navigator) из SCRIPT_NAME
+    script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+    
+    # Строим URL страницы входа с учётом префикса
+    if script_name:
+        login_url = script_name + '/login'
+    else:
+        login_url = '/login'
+    
+    # Добавляем параметр next для возврата после входа
+    return redirect(login_url + '?next=' + request.url)
 
 # Глобальная переменная для хранения статуса парсера
 parser_status = {'running': False, 'last_run': None, 'message': 'Парсер не запущен', 'images': []}
@@ -322,9 +331,16 @@ def login():
     next_page = request.args.get('next')
     
     # -------------------------------------------------------------------
-    # ИСПРАВЛЕНИЕ 2: Передаём функцию get_prefixed_login_url в шаблон
-    # и используем её в action формы, чтобы POST всегда шёл на правильный URL.
+    # ИСПРАВЛЕНИЕ 2: Создаём функцию для получения URL входа с префиксом
+    # и передаём её в шаблон для использования в action формы.
     # -------------------------------------------------------------------
+    def get_prefixed_login_url():
+        """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
+        script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+        if script_name:
+            return script_name + '/login'
+        return '/login'
+    
     return render_template_string('''
 <!DOCTYPE html>
 <html lang="ru">
