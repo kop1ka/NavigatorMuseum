@@ -3,7 +3,7 @@ import bcrypt
 from datetime import datetime
 from flask_login import UserMixin
 from functools import wraps
-from flask import flash, redirect, url_for
+from flask import flash, redirect, url_for, request
 from flask_login import current_user
 
 
@@ -48,6 +48,9 @@ def admin_required_decorator(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
             flash('Требуется права администратора', 'error')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
+            # Получаем префикс пути из SCRIPT_NAME (например, /navigator)
+            script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+            # Перенаправляем на login с next параметром
+            # Flask-Login сам использует переопределённый get_login_url() для редиректа
+            return redirect(url_for('login', next=request.path))
     return decorated_function

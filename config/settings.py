@@ -34,6 +34,7 @@ RATELIMIT_LOGIN = "10 per minute"
 RATELIMIT_ENABLED = True
 
 # Flask-Login
-LOGIN_VIEW = 'login'
+LOGIN_VIEW = 'login'  # Имя маршрута для перенаправления неавторизованных пользователей
+# При использовании ProxyFix и PathPrefixMiddleware Flask автоматически добавит префикс /navigator
 LOGIN_MESSAGE = 'Пожалуйста, войдите для доступа к этой странице'
 SESSION_PROTECTION = 'strong'
