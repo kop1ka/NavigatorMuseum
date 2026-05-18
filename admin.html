@@ -662,7 +662,7 @@
         // Загрузка каталога
         async function loadCatalog() {
             try {
-                const response = await fetch(getApiUrl('api/catalog'));
+                const response = await fetch(getApiUrl('navigator/api/catalog'));
                 catalogData = await response.json();
                 renderCatalogTree();
                 renderParentList();
@@ -675,7 +675,7 @@
         // Загрузка постоянных элементов
         async function loadPermanentItems() {
             try {
-                const response = await fetch(getApiUrl('api/permanent'));
+                const response = await fetch(getApiUrl('navigator/api/permanent'));
                 const data = await response.json();
                 permanentItems = data.permanent_items || [];
             } catch (error) {
@@ -686,7 +686,7 @@
         // Загрузка доступных изображений
         async function loadImages() {
             try {
-                const response = await fetch(getApiUrl('api/images'));
+                const response = await fetch(getApiUrl('navigator/api/images'));
                 availableImages = await response.json();
                 filteredImages = [...availableImages];
                 populateImageSelects();
@@ -896,7 +896,7 @@
                 // Если это внешний URL с vm-ftp.anosov.ru, используем прокси
                 if (img.path.startsWith('http://') || img.path.startsWith('https://')) {
                     if (img.path.includes('vm-ftp.anosov.ru')) {
-                        imgSrc = getApiUrl('api/proxy-image') + '?url=' + encodeURIComponent(img.path);
+                        imgSrc = getApiUrl('navigator/api/proxy-image') + '?url=' + encodeURIComponent(img.path);
                     }
                 }
                 
@@ -1106,7 +1106,7 @@
             if (url) updates.url = url;
 
             try {
-                const response = await fetch(getApiUrl('api/items', {
+                const response = await fetch(getApiUrl('navigator/api/items', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path, updates })
@@ -1167,7 +1167,7 @@
                 const requestBody = { parent_path: parentPath, name, icon: iconValue };
                 if (url) requestBody.url = url;
 
-                const response = await fetch(getApiUrl('api/items', {
+                const response = await fetch(getApiUrl('navigator/api/items', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestBody)
@@ -1207,7 +1207,7 @@
             }
 
             try {
-                const response = await fetch(getApiUrl('api/items', {
+                const response = await fetch(getApiUrl('navigator/api/items', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path: selectedElement.path })
@@ -1235,7 +1235,7 @@
         // Toggle permanent status
         async function togglePermanent(path, makePermanent) {
             try {
-                await fetch(getApiUrl('api/permanent'), {
+                await fetch(getApiUrl('navigator/api/permanent'), {
                     method: makePermanent ? 'POST' : 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path })
@@ -1270,7 +1270,7 @@
         async function makeAllItemsPermanent() {
             try {
                 // Сначала загружаем актуальный каталог для получения всех путей
-                const catalogResponse = await fetch(getApiUrl('api/catalog'));
+                const catalogResponse = await fetch(getApiUrl('navigator/api/catalog'));
                 const catalog = await catalogResponse.json();
                 
                 const allPaths = getAllPaths(catalog.children);
@@ -1297,7 +1297,7 @@
             });
             
             try {
-                const response = await fetch(getApiUrl('api/parser/start', { method: 'POST' });
+                const response = await fetch(getApiUrl('navigator/api/parser/start', { method: 'POST' });
                 const data = await response.json();
 
                 if (data.status === 'started') {
@@ -1330,7 +1330,7 @@
             }
 
             try {
-                const response = await fetch(getApiUrl('api/import/json', {
+                const response = await fetch(getApiUrl('navigator/api/import/json', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ json_data: jsonData, parent_path: parentPath })
@@ -1409,7 +1409,7 @@
         // Check parser status
         async function checkParserStatus() {
             try {
-                const response = await fetch(getApiUrl('api/parser/status'));
+                const response = await fetch(getApiUrl('navigator/api/parser/status'));
                 const status = await response.json();
 
                 const statusDiv = document.getElementById('parserStatus');
@@ -1462,7 +1462,7 @@
         // Load initial parser status on page load
         async function loadParserStatus() {
             try {
-                const response = await fetch(getApiUrl('api/parser/status'));
+                const response = await fetch(getApiUrl('navigator/api/parser/status'));
                 const status = await response.json();
                 
                 const statusDiv = document.getElementById('parserStatus');
@@ -1537,7 +1537,7 @@
 
         // Export JSON
         function exportJson() {
-            fetch(getApiUrl('api/catalog'))
+            fetch(getApiUrl('navigator/api/catalog'))
                 .then(response => response.json())
                 .then(data => {
                     // Функция для сбора всех элементов с указанием родительского каталога
