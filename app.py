@@ -91,6 +91,9 @@ class PathPrefixMiddleware:
 
 app.wsgi_app = PathPrefixMiddleware(app.wsgi_app, '/navigator')
 
+# Глобальная переменная для хранения префикса пути
+URL_PREFIX = '/navigator'
+
 # Настройка CORS заголовков для всех ответов (необходимо для работы на render.com и других хостингах)
 @app.after_request
 def add_cors_headers(response):
@@ -288,7 +291,7 @@ def login():
         Response: HTML страница входа или редирект на главную
     """
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(URL_PREFIX + '/')
     
     error = None
     if request.method == 'POST':
@@ -312,18 +315,14 @@ def login():
                 next_page = request.args.get('next')
                 flash('Вы успешно вошли в систему', 'success')
                 
-                # Если next_page не указан, перенаправляем на /admin
+                # Если next_page не указан, перенаправляем на /navigator/admin
                 if not next_page:
-                    return redirect(url_for('admin'))
+                    return redirect(URL_PREFIX + '/admin')
                 
                 # Если next_page начинается с '/', добавляем префикс если он есть
-                if next_page.startswith('/'):
-                    # Проверяем, содержит ли уже next_page префикс
-                    if script_name and not next_page.startswith(script_name + '/'):
-                        # Добавляем префикс к next_page
-                        next_page = script_name + next_page
-                    return redirect(next_page)
-                
+                if next_page.startswith('/') and not next_page.startswith(URL_PREFIX + '/'):
+                    # Добавляем префикс к next_page
+                    next_page = URL_PREFIX + next_page
                 return redirect(next_page)
             else:
                 error = 'Неверное имя пользователя или пароль'
@@ -512,14 +511,14 @@ def logout():
     """
     Выход из системы
     
-    Завершает сессию пользователя и перенаправляет на главную страницу.
+    Завершает сессию пользователя и перенаправляет на главную страницу /navigator/.
     
     Returns:
         Response: Редирект на главную страницу
     """
     logout_user()
     flash('Вы вышли из системы', 'info')
-    return redirect(url_for('index'))
+    return redirect(URL_PREFIX + '/')
 
 
 @app.route('/change-password', methods=['GET', 'POST'])
@@ -540,15 +539,15 @@ def change_password():
         
         if not current_password or not new_password or not confirm_password:
             flash('Заполните все поля', 'error')
-            return redirect(url_for('change_password'))
+            return redirect(URL_PREFIX + '/change-password')
         
         if new_password != confirm_password:
             flash('Новые пароли не совпадают', 'error')
-            return redirect(url_for('change_password'))
+            return redirect(URL_PREFIX + '/change-password')
         
         if len(new_password) < 6:
             flash('Пароль должен быть не менее 6 символов', 'error')
-            return redirect(url_for('change_password'))
+            return redirect(URL_PREFIX + '/change-password')
         
         # Проверяем текущий пароль
         users_data = load_users(USERS_FILE, hash_password)
@@ -562,14 +561,14 @@ def change_password():
         
         if not user_found or not verify_password(current_password, user_found['password_hash']):
             flash('Текущий пароль неверен', 'error')
-            return redirect(url_for('change_password'))
+            return redirect(URL_PREFIX + '/change-password')
         
         # Обновляем пароль
         users_data['users'][user_index]['password_hash'] = hash_password(new_password)
         save_users(USERS_FILE, users_data)
         
         flash('Пароль успешно изменён', 'success')
-        return redirect(url_for('admin'))
+        return redirect(URL_PREFIX + '/admin')
     
     return render_template_string('''
 <!DOCTYPE html>
@@ -715,7 +714,7 @@ def change_password():
             </ul>
         </div>
         
-        <form method="POST" action="{{ url_for('change_password') }}">
+        <form method="POST" action="{{ url_for('change_password', _external=False) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="form-group">
@@ -734,7 +733,7 @@ def change_password():
             </div>
             
             <button type="submit" class="btn-submit">Изменить пароль</button>
-            <a href="{{ url_for('admin') }}" class="btn-secondary">Отмена</a>
+            <a href="/navigator/admin" class="btn-secondary">Отмена</a>
         </form>
     </div>
 </body>
