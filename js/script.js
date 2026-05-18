@@ -265,8 +265,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         // Внутренний URL - добавляем basePath только если его там ещё нет
                         let finalUrl = cleanUrl;
-                        // Если URL уже начинается с basePath, не добавляем его повторно
-                        if (!cleanUrl.startsWith(basePath)) {
+                        
+                        // Проверяем, начинается ли URL уже с basePath (например, /navigator/)
+                        // Если да - не добавляем basePath повторно
+                        const basePathPattern = basePath.endsWith('/') ? basePath : basePath + '/';
+                        const urlHasBasePath = cleanUrl.startsWith(basePathPattern) || 
+                                               cleanUrl.startsWith('/' + basePathPattern);
+                        
+                        if (!urlHasBasePath) {
                             // Убираем возможный leading slash у cleanUrl, чтобы избежать дублирования слешей
                             const urlWithoutLeadingSlash = cleanUrl.startsWith('/') ? cleanUrl.substring(1) : cleanUrl;
                             finalUrl = basePath + '/' + urlWithoutLeadingSlash;
