@@ -263,12 +263,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Внешний URL - переходим напрямую без добавления basePath
                         window.location.href = cleanUrl;
                     } else {
-                        // Внутренний URL - добавляем basePath если нужно
+                        // Внутренний URL - добавляем basePath только если его там ещё нет
                         let finalUrl = cleanUrl;
-                        if (!cleanUrl.startsWith(basePath + '/projects/') && !cleanUrl.startsWith('/projects/')) {
-                            finalUrl = basePath + cleanUrl;
-                        } else if (!cleanUrl.startsWith(basePath)) {
-                            finalUrl = basePath + cleanUrl;
+                        // Если URL уже начинается с basePath, не добавляем его повторно
+                        if (!cleanUrl.startsWith(basePath)) {
+                            // Убираем возможный leading slash у cleanUrl, чтобы избежать дублирования слешей
+                            const urlWithoutLeadingSlash = cleanUrl.startsWith('/') ? cleanUrl.substring(1) : cleanUrl;
+                            finalUrl = basePath + '/' + urlWithoutLeadingSlash;
                         }
                         window.location.href = finalUrl;
                     }
