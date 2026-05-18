@@ -157,6 +157,14 @@ def custom_login_url(next=None):
     """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
     from flask import request
     script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+    
+    # Если SCRIPT_NAME пустой, пытаемся определить префикс из PATH_INFO или request.path
+    if not script_name:
+        # Проверяем, содержит ли request.path префикс /navigator
+        path = request.path
+        if path.startswith('/navigator'):
+            script_name = '/navigator'
+    
     if script_name:
         base_url = script_name + '/login'
     else:
