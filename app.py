@@ -152,22 +152,29 @@ login_manager.login_view = 'login'
 login_manager.login_message = LOGIN_MESSAGE  # Сообщение при перенаправлении
 login_manager.session_protection = SESSION_PROTECTION  # Уровень защиты сессии
 
-# Переопределяем unauthorized_callback для корректной работы с префиксом пути
+# Переопределяем метод login_url для корректной работы с префиксом пути
+def custom_login_url(next=None):
+    """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
+    from flask import request
+    script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+    if script_name:
+        base_url = script_name + '/login'
+    else:
+        base_url = '/login'
+    
+    if next:
+        return base_url + '?next=' + next
+    return base_url
+
+login_manager.login_url = custom_login_url
+
 @login_manager.unauthorized_handler
 def unauthorized():
     """Обработчик для неавторизованных пользователей с учётом префикса"""
     from flask import request, redirect
-    # Получаем префикс пути (например, /navigator) из SCRIPT_NAME
-    script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
-    
-    # Строим URL страницы входа с учётом префикса
-    if script_name:
-        login_url = script_name + '/login'
-    else:
-        login_url = '/login'
-    
-    # Добавляем параметр next для возврата после входа
-    return redirect(login_url + '?next=' + request.url)
+    # Используем кастомный login_url для получения правильного URL
+    login_url = login_manager.login_url(request.url)
+    return redirect(login_url)
 
 # Глобальная переменная для хранения статуса парсера
 parser_status = {'running': False, 'last_run': None, 'message': 'Парсер не запущен', 'images': []}
