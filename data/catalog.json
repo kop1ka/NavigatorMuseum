@@ -5505,16 +5505,6 @@
       "children": [],
       "url": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/",
       "modified": "2026-04-02 04:03"
-    },
-    {
-      "name": "Тестовая папка",
-      "icon": "folder.png",
-      "children": []
-    },
-    {
-      "name": "ТестоваяПапка2",
-      "icon": "folder.png",
-      "children": []
     }
   ],
   "url": null,
