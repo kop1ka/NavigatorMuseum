@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (iconName.startsWith('http://') || iconName.startsWith('https://')) {
             // Для внешних URL с vm-ftp.anosov.ru используем прокси для обхода rate limiting
             if (iconName.includes('vm-ftp.anosov.ru')) {
-                return basePath + '/api/proxy-image?url=' + encodeURIComponent(iconName);
+                return 'api/proxy-image?url=' + encodeURIComponent(iconName);
             }
             return iconName;
         }
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cleanUrl = decodeURIComponent(url.trim());
         // Проверяем, является ли URL внешним (с vm-ftp.anosov.ru)
         if (cleanUrl.includes('vm-ftp.anosov.ru')) {
-            return basePath + '/api/video-proxy?url=' + encodeURIComponent(cleanUrl);
+            return 'api/video-proxy?url=' + encodeURIComponent(cleanUrl);
         }
         // Для локальных или других URL возвращаем как есть
         return cleanUrl;
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isVideoFile(cleanUrl)) {
                     console.log('Это видео, открываем через video-player');
                     // Видео – открываем в новой вкладке через видеоплеер
-                    const videoPlayerUrl = basePath + '/video-player?url=' + encodeURIComponent(cleanUrl) + '&name=' + encodeURIComponent(itemData.name);
+                    const videoPlayerUrl = `/video-player?url=${encodeURIComponent(cleanUrl)}&name=${encodeURIComponent(itemData.name)}`;
                     console.log('Video player URL:', videoPlayerUrl);
                     window.open(videoPlayerUrl, '_blank');
                 } else {
