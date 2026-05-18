@@ -276,35 +276,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     console.log('Это не видео, открываем напрямую');
                     // Остальные файлы – переход в текущей вкладке
+                    let finalUrl = cleanUrl;
+                    
                     // Проверяем, является ли URL внешним (начинается с http:// или https://)
                     if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
                         // Внешний URL - переходим напрямую без добавления basePath
-                        window.location.href = cleanUrl;
+                        finalUrl = cleanUrl;
                     } else {
-                        // Внутренний URL - проверяем, находится ли он в папке projects
-                        let finalUrl = cleanUrl;
-                        
                         // Проверяем, находится ли путь в папке projects
                         if (isInProjectsFolder(cleanUrl)) {
                             // Если путь в projects, формируем полную ссылку на navigatormuseum.onrender.com
                             finalUrl = buildProjectsUrl(cleanUrl);
                         } else {
-                            // Для остальных путей добавляем basePath только если его там ещё нет
+                            // Проверяем, содержит ли URL домен (например, vm-ftp.anosov.ru)
+                            // Если да - формируем правильный внешний URL
+                            const domainPattern = /^(?:https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/i;
+                            const domainMatch = cleanUrl.match(domainPattern);
                             
-                            // Проверяем, начинается ли URL уже с basePath (например, /navigator/)
-                            // Если да - не добавляем basePath повторно
-                            const basePathPattern = basePath.endsWith('/') ? basePath : basePath + '/';
-                            const urlHasBasePath = cleanUrl.startsWith(basePathPattern) || 
-                                                   cleanUrl.startsWith('/' + basePathPattern);
-                            
-                            if (!urlHasBasePath) {
-                                // Убираем возможный leading slash у cleanUrl, чтобы избежать дублирования слешей
-                                const urlWithoutLeadingSlash = cleanUrl.startsWith('/') ? cleanUrl.substring(1) : cleanUrl;
-                                finalUrl = basePath + '/' + urlWithoutLeadingSlash;
+                            if (domainMatch && !cleanUrl.startsWith('/')) {
+                                // Это URL с доменом, но без протокола - добавляем https://
+                                finalUrl = 'https://' + cleanUrl.replace(/^https?:\/\//, '');
+                            } else {
+                                // Внутренний URL - добавляем basePath только если его там ещё нет
+                                
+                                // Проверяем, начинается ли URL уже с basePath (например, /navigator/)
+                                // Если да - не добавляем basePath повторно
+                                const basePathPattern = basePath.endsWith('/') ? basePath : basePath + '/';
+                                const urlHasBasePath = cleanUrl.startsWith(basePathPattern) || 
+                                                       cleanUrl.startsWith('/' + basePathPattern);
+                                
+                                if (!urlHasBasePath) {
+                                    // Убираем возможный leading slash у cleanUrl, чтобы избежать дублирования слешей
+                                    const urlWithoutLeadingSlash = cleanUrl.startsWith('/') ? cleanUrl.substring(1) : cleanUrl;
+                                    finalUrl = basePath + '/' + urlWithoutLeadingSlash;
+                                }
                             }
                         }
-                        window.location.href = finalUrl;
                     }
+                    window.location.href = finalUrl;
                 }
             } else {
                 alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
