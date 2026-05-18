@@ -278,41 +278,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Остальные файлы – переход в текущей вкладке
                     let finalUrl = cleanUrl;
                     
+                    // Удаляем любые пробелы внутри URL (особенно в протоколе)
+                    const normalizedUrl = cleanUrl.replace(/\s+/g, '');
+                    
+                    console.log('Нормализованный URL:', normalizedUrl);
+                    
                     // Проверяем, является ли URL внешним (начинается с http:// или https://)
-                    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-                        // Внешний URL - переходим напрямую без добавления basePath
-                        finalUrl = cleanUrl;
+                    if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
+                        // Внешний URL с протоколом - переходим напрямую без добавления basePath
+                        finalUrl = normalizedUrl;
+                        console.log('Внешний URL с протоколом:', finalUrl);
+                    } else if (isInProjectsFolder(normalizedUrl)) {
+                        // Если путь в projects, формируем полную ссылку на navigatormuseum.onrender.com
+                        finalUrl = buildProjectsUrl(normalizedUrl);
+                        console.log('URL из projects:', finalUrl);
                     } else {
-                        // Проверяем, находится ли путь в папке projects
-                        if (isInProjectsFolder(cleanUrl)) {
-                            // Если путь в projects, формируем полную ссылку на navigatormuseum.onrender.com
-                            finalUrl = buildProjectsUrl(cleanUrl);
+                        // Проверяем, содержит ли URL домен (например, vm-ftp.anosov.ru), но без протокола
+                        const domainPattern = /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/i;
+                        const domainMatch = normalizedUrl.match(domainPattern);
+                        
+                        if (domainMatch && !normalizedUrl.startsWith('/')) {
+                            // Это URL с доменом, но без протокола - добавляем https://
+                            finalUrl = 'https://' + normalizedUrl;
+                            console.log('Внешний URL с доменом (без протокола):', finalUrl);
                         } else {
-                            // Проверяем, содержит ли URL домен (например, vm-ftp.anosov.ru)
-                            // Если да - формируем правильный внешний URL
-                            const domainPattern = /^(?:https?:\/\/)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/i;
-                            const domainMatch = cleanUrl.match(domainPattern);
+                            // Внутренний URL - добавляем basePath только если его там ещё нет
                             
-                            if (domainMatch && !cleanUrl.startsWith('/')) {
-                                // Это URL с доменом, но без протокола - добавляем https://
-                                finalUrl = 'https://' + cleanUrl.replace(/^https?:\/\//, '');
-                            } else {
-                                // Внутренний URL - добавляем basePath только если его там ещё нет
-                                
-                                // Проверяем, начинается ли URL уже с basePath (например, /navigator/)
-                                // Если да - не добавляем basePath повторно
-                                const basePathPattern = basePath.endsWith('/') ? basePath : basePath + '/';
-                                const urlHasBasePath = cleanUrl.startsWith(basePathPattern) || 
-                                                       cleanUrl.startsWith('/' + basePathPattern);
-                                
-                                if (!urlHasBasePath) {
-                                    // Убираем возможный leading slash у cleanUrl, чтобы избежать дублирования слешей
-                                    const urlWithoutLeadingSlash = cleanUrl.startsWith('/') ? cleanUrl.substring(1) : cleanUrl;
-                                    finalUrl = basePath + '/' + urlWithoutLeadingSlash;
-                                }
+                            // Проверяем, начинается ли URL уже с basePath (например, /navigator/)
+                            // Если да - не добавляем basePath повторно
+                            const basePathPattern = basePath.endsWith('/') ? basePath : basePath + '/';
+                            const urlHasBasePath = normalizedUrl.startsWith(basePathPattern) || 
+                                                   normalizedUrl.startsWith('/' + basePathPattern);
+                            
+                            if (!urlHasBasePath) {
+                                // Убираем возможный leading slash у normalizedUrl, чтобы избежать дублирования слешей
+                                const urlWithoutLeadingSlash = normalizedUrl.startsWith('/') ? normalizedUrl.substring(1) : normalizedUrl;
+                                finalUrl = basePath + '/' + urlWithoutLeadingSlash;
                             }
+                            console.log('Внутренний URL:', finalUrl);
                         }
                     }
+                    console.log('Итоговый URL:', finalUrl);
                     window.location.href = finalUrl;
                 }
             } else {
