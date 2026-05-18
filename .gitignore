@@ -1,1 +1,52 @@
-(empty)
+```
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.eggs/
+*.egg-info/
+.venv/
+venv/
+.env
+.env.local
+.env.*
+.envrc
+.coverage
+htmlcov/
+.coverage.*
+.nox/
+.tox/
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+
+# Build artifacts
+build/
+dist/
+*.egg
+*.wheel
+pip-wheel-metadata/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Coverage
+coverage/
+htmlcov/
+```
