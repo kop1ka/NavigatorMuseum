@@ -64,12 +64,21 @@ app.secret_key = SECRET_KEY  # Использование секретного �
 from werkzeug.middleware.proxy_fix import ProxyFix
 app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
 
-# Middleware для обработки префикса пути (например, /navigator/)
+# -------------------------------------------------------------------
+# ВАРИАНТ А: Чтение переменной окружения SCRIPT_NAME
+# -------------------------------------------------------------------
+# Получаем префикс пути из переменной окружения SCRIPT_NAME
+# Если переменная не установлена, по умолчанию используется '/navigator'
+SCRIPT_NAME_ENV = os.environ.get('SCRIPT_NAME', '').rstrip('/')
+if not SCRIPT_NAME_ENV:
+    SCRIPT_NAME_ENV = '/navigator'
+
+# Middleware для обработки префикса пути на основе переменной окружения
 class PathPrefixMiddleware:
     """
     Middleware для удаления префикса пути перед обработкой запроса Flask.
     Позволяет приложению работать в поддиректории без изменения маршрутов.
-    Работает только если префикс ещё не был установлен nginx (SCRIPT_NAME пустой).
+    Префикс берётся из переменной окружения SCRIPT_NAME.
     """
     def __init__(self, app, prefix):
         self.app = app
@@ -89,7 +98,7 @@ class PathPrefixMiddleware:
 
         return self.app(environ, start_response)
 
-app.wsgi_app = PathPrefixMiddleware(app.wsgi_app, '/navigator')
+app.wsgi_app = PathPrefixMiddleware(app.wsgi_app, SCRIPT_NAME_ENV)
 
 # Настройка CORS заголовков для всех ответов (необходимо для работы на render.com и других хостингах)
 @app.after_request
@@ -155,7 +164,13 @@ login_manager.session_protection = SESSION_PROTECTION  # Уровень защи
 # Переопределяем метод login_url для корректной работы с префиксом пути
 def custom_login_url(next=None):
     """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-    base_url = 'https://vm.anosov.ru/navigator/login'
+    from flask import request
+    # Получаем префикс из SCRIPT_NAME (переменная окружения)
+    script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+    if not script_name:
+        script_name = SCRIPT_NAME_ENV  # Используем значение из переменной окружения
+    
+    base_url = script_name + '/login'
     
     if next:
         return base_url + '?next=' + next
@@ -312,14 +327,14 @@ def login():
                 
                 # Если next_page не указан, перенаправляем на /navigator/admin
                 if not next_page:
-                    return redirect('https://vm.anosov.ru/navigator/admin')
+                    return redirect(f"{SCRIPT_NAME_ENV}/admin")
                 
                 # Если next_page начинается с '/', добавляем префикс если он есть
                 if next_page.startswith('/'):
                     # Проверяем, содержит ли уже next_page префикс
-                    if script_name and not next_page.startswith(script_name + '/'):
+                    if SCRIPT_NAME_ENV and not next_page.startswith(SCRIPT_NAME_ENV + '/'):
                         # Добавляем префикс к next_page
-                        next_page = script_name + next_page
+                        next_page = SCRIPT_NAME_ENV + next_page
                     return redirect(next_page)
                 
                 return redirect(next_page)
@@ -335,7 +350,7 @@ def login():
     # -------------------------------------------------------------------
     def get_prefixed_login_url():
         """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-        return 'https://vm.anosov.ru/navigator/login'
+        return f"{SCRIPT_NAME_ENV}/login"
     
     return render_template_string('''
 <!DOCTYPE html>
@@ -567,7 +582,7 @@ def change_password():
         save_users(USERS_FILE, users_data)
         
         flash('Пароль успешно изменён', 'success')
-        return redirect('https://vm.anosov.ru/navigator/admin')
+        return redirect(f"{SCRIPT_NAME_ENV}/admin")
     
     return render_template_string('''
 <!DOCTYPE html>
@@ -732,7 +747,7 @@ def change_password():
             </div>
             
             <button type="submit" class="btn-submit">Изменить пароль</button>
-            <a href="https://vm.anosov.ru/navigator/admin" class="btn-secondary">Отмена</a>
+            <a href="{{ script_name_env }}/admin" class="btn-secondary">Отмена</a>
         </form>
     </div>
 </body>
