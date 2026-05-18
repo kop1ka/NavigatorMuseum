@@ -49,27 +49,17 @@ def admin_required_decorator(f):
         if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
             flash('Требуется права администратора', 'error')
             
-            # Получаем префикс пути (например, /navigator) из переменных окружения запроса
-            script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
-            
-            # Если SCRIPT_NAME пустой, пытаемся определить префикс из request.path
-            if not script_name and request.path.startswith('/navigator'):
-                script_name = '/navigator'
+            # Префикс пути (например, /navigator) - используем константу из app.py
+            script_name = '/navigator'
             
             # Строим URL страницы входа с учётом префикса
-            if script_name:
-                login_url = script_name + '/login'
-            else:
-                login_url = '/login'
+            login_url = script_name + '/login'
             
             # Добавляем параметр next, чтобы после входа вернуться на запрошенную страницу
             # request.path содержит путь БЕЗ префикса (так как middleware удалил префикс)
             # но нам нужен полный путь от корня сайта для параметра next
             # Используем script_name + request.path для получения правильного пути
-            if script_name:
-                full_next = script_name + request.path
-            else:
-                full_next = request.path
+            full_next = script_name + request.path
             
             return redirect(login_url + '?next=' + full_next)
         return f(*args, **kwargs)
