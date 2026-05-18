@@ -224,6 +224,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return cleanUrl;
     }
 
+    // Функция для проверки, находится ли путь внутри папки projects
+    function isInProjectsFolder(path) {
+        if (!path) return false;
+        const normalizedPath = path.toLowerCase().replace(/\\/g, '/');
+        return normalizedPath.startsWith('projects/') || normalizedPath.startsWith('/projects/');
+    }
+
+    // Функция для формирования URL из пути в projects
+    function buildProjectsUrl(path) {
+        if (!path) return '';
+        const baseUrl = 'https://navigatormuseum.onrender.com';
+        // Очищаем путь от ведущих слешей
+        let cleanPath = path.replace(/^\/+/, '');
+        // Нормализуем разделители
+        cleanPath = cleanPath.replace(/\\/g, '/');
+        return `${baseUrl}/${cleanPath}`;
+    }
+
     function handleItemClick(event) {
         const itemDiv = event.target.closest('.item');
         if (!itemDiv) return;
@@ -263,19 +281,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Внешний URL - переходим напрямую без добавления basePath
                         window.location.href = cleanUrl;
                     } else {
-                        // Внутренний URL - добавляем basePath только если его там ещё нет
+                        // Внутренний URL - проверяем, находится ли он в папке projects
                         let finalUrl = cleanUrl;
                         
-                        // Проверяем, начинается ли URL уже с basePath (например, /navigator/)
-                        // Если да - не добавляем basePath повторно
-                        const basePathPattern = basePath.endsWith('/') ? basePath : basePath + '/';
-                        const urlHasBasePath = cleanUrl.startsWith(basePathPattern) || 
-                                               cleanUrl.startsWith('/' + basePathPattern);
-                        
-                        if (!urlHasBasePath) {
-                            // Убираем возможный leading slash у cleanUrl, чтобы избежать дублирования слешей
-                            const urlWithoutLeadingSlash = cleanUrl.startsWith('/') ? cleanUrl.substring(1) : cleanUrl;
-                            finalUrl = basePath + '/' + urlWithoutLeadingSlash;
+                        // Проверяем, находится ли путь в папке projects
+                        if (isInProjectsFolder(cleanUrl)) {
+                            // Если путь в projects, формируем полную ссылку на navigatormuseum.onrender.com
+                            finalUrl = buildProjectsUrl(cleanUrl);
+                        } else {
+                            // Для остальных путей добавляем basePath только если его там ещё нет
+                            
+                            // Проверяем, начинается ли URL уже с basePath (например, /navigator/)
+                            // Если да - не добавляем basePath повторно
+                            const basePathPattern = basePath.endsWith('/') ? basePath : basePath + '/';
+                            const urlHasBasePath = cleanUrl.startsWith(basePathPattern) || 
+                                                   cleanUrl.startsWith('/' + basePathPattern);
+                            
+                            if (!urlHasBasePath) {
+                                // Убираем возможный leading slash у cleanUrl, чтобы избежать дублирования слешей
+                                const urlWithoutLeadingSlash = cleanUrl.startsWith('/') ? cleanUrl.substring(1) : cleanUrl;
+                                finalUrl = basePath + '/' + urlWithoutLeadingSlash;
+                            }
                         }
                         window.location.href = finalUrl;
                     }
