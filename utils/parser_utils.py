@@ -82,7 +82,7 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
     visited.add(url)
     
     try:
-        response = requests.get(url, timeout=timeout)
+        response = requests.get(url, timeout=timeout, verify=False)
         response.raise_for_status()
         
         items = extract_items_from_html(response.text, url)

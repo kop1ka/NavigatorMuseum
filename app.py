@@ -1469,7 +1469,8 @@ def proxy_image():
     
     try:
         # Загружаем изображение с внешнего сервера
-        response = requests.get(image_url, timeout=10, stream=True)
+        # Используем verify=False для самоподписанных сертификатов
+        response = requests.get(image_url, timeout=10, stream=True, verify=False)
         response.raise_for_status()
         
         # Определяем Content-Type
@@ -1545,7 +1546,7 @@ def proxy_video():
             'Connection': 'keep-alive'
         }
         
-        head_response = requests.head(video_url, headers=headers, timeout=30, allow_redirects=True)
+        head_response = requests.head(video_url, headers=headers, timeout=30, allow_redirects=True, verify=False)
         head_response.raise_for_status()
         file_size = int(head_response.headers.get('Content-Length', 0))
         
@@ -1565,7 +1566,7 @@ def proxy_video():
                 
                 # Запрашиваем диапазон с удалённого сервера
                 headers['Range'] = f'bytes={start}-{end}'
-                response = requests.get(video_url, headers=headers, timeout=60, stream=True)
+                response = requests.get(video_url, headers=headers, timeout=60, stream=True, verify=False)
                 response.raise_for_status()
                 
                 # Возвращаем частичный контент
@@ -1584,7 +1585,7 @@ def proxy_video():
                 return proxy_response
         
         # Если нет Range запроса или сервер не поддерживает ranges - отдаём всё видео
-        response = requests.get(video_url, headers=headers, timeout=60, stream=True)
+        response = requests.get(video_url, headers=headers, timeout=60, stream=True, verify=False)
         response.raise_for_status()
         
         # Создаём ответ для клиента
