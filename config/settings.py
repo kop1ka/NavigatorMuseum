@@ -20,7 +20,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'None')
-PERMANENT_SESSION_LIFETIME = 3600
+PERMANENT_SESSION_LIFETIME = 31536000  # 1 год в секундах
 
 # CSRF
 WTF_CSRF_ENABLED = True
@@ -37,4 +37,4 @@ RATELIMIT_ENABLED = True
 LOGIN_VIEW = 'login'  # Имя маршрута для перенаправления неавторизованных пользователей
 # При использовании ProxyFix и PathPrefixMiddleware Flask автоматически добавит префикс /navigator
 LOGIN_MESSAGE = 'Пожалуйста, войдите для доступа к этой странице'
-SESSION_PROTECTION = 'strong'
+SESSION_PROTECTION = None  # Отключаем защиту сессии для постоянного доступа после авторизации
