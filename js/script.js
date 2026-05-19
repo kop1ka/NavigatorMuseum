@@ -277,9 +277,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     console.log('Это не видео, открываем напрямую');
                     // Остальные файлы – переход в текущей вкладке
-                    let finalUrl = cleanUrl;
+                    // Сначала нормализуем URL - удаляем ВСЕ пробелы (особенно в протоколе "https ://")
                     
-                    // Удаляем любые пробелы внутри URL (особенно в протоколе)
+                    let finalUrl;
                     const normalizedUrl = cleanUrl.replace(/\s+/g, '');
                     
                     console.log('Нормализованный URL:', normalizedUrl);
