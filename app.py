@@ -335,6 +335,16 @@ def run_parser_task():
         error_traceback = traceback.format_exc()
         parser_status['message'] = f'Ошибка парсинга: {str(e)}'
         log(f"ОШИБКА в run_parser_task(): {str(e)}")
+        log(f"Тип ошибки: {type(e).__name__}")
+        # Детализация ошибок подключения
+        if hasattr(e, 'request') and e.request is not None:
+            log(f"URL запроса: {e.request.url}")
+            log(f"Метод запроса: {e.request.method}")
+        if hasattr(e, 'response') and e.response is not None:
+            log(f"Статус ответа: {e.response.status_code}")
+            log(f"Тело ответа (первые 500 символов): {str(e.response.text[:500])}")
+        if hasattr(e, 'reason'):
+            log(f"Причина ошибки: {e.reason}")
         log(f"Трассировка: {error_traceback}")
     finally:
         parser_status['running'] = False
