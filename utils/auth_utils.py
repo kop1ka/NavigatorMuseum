@@ -47,9 +47,9 @@ def admin_required_decorator(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
-            # Проверяем, является ли запрос API запросом или AJAX запросом
-            if request.path.startswith('/api/') or request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', ''):
-                # Для API и AJAX запросов возвращаем JSON 401 вместо редиректа
+            # Проверяем, является ли запрос API запросом
+            if request.path.startswith('/api/'):
+                # Для API возвращаем JSON 401 вместо редиректа
                 from flask import jsonify
                 return jsonify({'error': 'Требуется авторизация администратора', 'status': 'unauthorized'}), 401
             
