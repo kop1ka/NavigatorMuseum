@@ -49,9 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ----- Вспомогательные функции -----
     function getIconPath(iconName) {
-        // URLs-заглушки, которые следует заменять на logo.png
+        // URLs-заглушки, которые следует заменять на logo.png (с пробелом в конце для первого URL)
         const placeholderUrls = [
-            'https://vm-ftp.anosov.ru/icons/folder.gif',
+            'https://vm-ftp.anosov.ru/icons/folder.gif ',
             'http://vm-ftp.anosov.ru/icons/folder.gif',
             'vm-ftp.anosov.ru/icons/folder.gif'
         ];
@@ -191,20 +191,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function isVideoFile(url) {
         if (!url) return false;
         try {
-            // Очищаем URL от пробелов по краям
-            const trimmedUrl = url.trim();
-            // Пытаемся декодировать URL, но если он уже содержит некорректные проценты - используем как есть
-            let cleanUrl;
+            // 1. Обрезаем пробелы
+            let cleanUrl = url.trim();
+            // 2. Исправляем возможные разрывы в протоколе (https : -> https:)
+            cleanUrl = cleanUrl.replace(/(https?)\s*:/i, '$1:');
+            
+            // Пытаемся декодировать для проверки расширения, но игнорируем ошибки
             try {
-                cleanUrl = decodeURIComponent(trimmedUrl);
+                cleanUrl = decodeURIComponent(cleanUrl);
             } catch (e) {
-                cleanUrl = trimmedUrl;
+                // Если декодирование не удалось, используем обрезанную версию
             }
-            // Регулярное выражение для проверки расширения видео (с учётом возможных пробелов в конце)
+            
             const videoExtensions = /\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv|m4v)\s*$/i;
-            const isVideo = videoExtensions.test(cleanUrl);
-            console.log('isVideoFile check:', { original: url, trimmed: trimmedUrl, decoded: cleanUrl, isVideo: isVideo });
-            return isVideo;
+            return videoExtensions.test(cleanUrl);
         } catch (e) {
             console.warn('Ошибка при проверке видео:', e);
             return false;
@@ -213,18 +213,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Функция для получения прокси-URL для видео
     function getVideoProxyUrl(url) {
-        // Очищаем URL от пробелов и декодируем
-        let cleanUrl;
-        try {
-            cleanUrl = decodeURIComponent(url.trim());
-        } catch (e) {
-            cleanUrl = url.trim();
-        }
-        // Проверяем, является ли URL внешним (с vm-ftp.anosov.ru)
+        let cleanUrl = url.trim().replace(/(https?)\s*:/i, '$1:');
+        try { cleanUrl = decodeURIComponent(cleanUrl); } catch(e){}
+        
         if (cleanUrl.includes('vm-ftp.anosov.ru')) {
             return 'api/video-proxy?url=' + encodeURIComponent(cleanUrl);
         }
-        // Для локальных или других URL возвращаем как есть
         return cleanUrl;
     }
 
@@ -247,22 +241,39 @@ document.addEventListener('DOMContentLoaded', () => {
             if (itemData.url) {
                 saveState();
 
-                // Просто очищаем URL от пробелов по краям, как в старом рабочем коде
-                let cleanUrl = itemData.url.trim();
+                // === КРИТИЧЕСКИ ВАЖНАЯ ОБРАБОТКА URL ===
+                let targetUrl = itemData.url;
                 
-                console.log('handleItemClick:', { name: itemData.name, url: itemData.url, cleanUrl: cleanUrl });
+                // 1. Убираем пробелы по краям
+                targetUrl = targetUrl.trim();
+                
+                // 2. Исправляем "разорванный" протокол (частая проблема при копировании)
+                // Превращаем "https :" в "https:"
+                targetUrl = targetUrl.replace(/(https?|ftp)\s*:/gi, '$1:');
+                
+                console.log('Переход по ссылке:', { original: itemData.url, processed: targetUrl });
 
-                // Проверяем, является ли файл видео по расширению в URL
-                if (isVideoFile(cleanUrl)) {
-                    console.log('Это видео, открываем через video-player');
-                    // Видео – открываем в новой вкладке через видеоплеер
-                    const videoPlayerUrl = `/video-player?url=${encodeURIComponent(cleanUrl)}&name=${encodeURIComponent(itemData.name)}`;
-                    console.log('Video player URL:', videoPlayerUrl);
+                // Проверяем, является ли файл видео
+                if (isVideoFile(targetUrl)) {
+                    const videoPlayerUrl = `/video-player?url=${encodeURIComponent(targetUrl)}&name=${encodeURIComponent(itemData.name)}`;
                     window.open(videoPlayerUrl, '_blank');
                 } else {
-                    console.log('Это не видео, открываем напрямую');
-                    // Остальные файлы – переход в текущей вкладке
-                    window.location.href = cleanUrl;
+                    // === ИСПРАВЛЕНИЕ ПРОБЛЕМЫ ===
+                    // Проверяем, что URL абсолютно начинается с http:// или https://
+                    if (targetUrl.match(/^https?:\/\//i)) {
+                        // Для внешних URL используем window.open для гарантии корректного открытия
+                        window.open(targetUrl, '_blank');
+                    } else {
+                        // Для относительных URL создаём временную ссылку
+                        const anchor = document.createElement('a');
+                        anchor.href = targetUrl;
+                        anchor.target = '_self';
+                        anchor.rel = 'noopener noreferrer';
+                        
+                        document.body.appendChild(anchor);
+                        anchor.click();
+                        document.body.removeChild(anchor);
+                    }
                 }
             } else {
                 alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
