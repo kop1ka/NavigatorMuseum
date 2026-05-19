@@ -1442,8 +1442,52 @@
 
                 // Выводим логи парсера в консоль браузера
                 if (status.logs && status.logs.length > 0) {
-                    console.log('[PARSER LOGS]:');
-                    status.logs.forEach(logEntry => console.log(logEntry));
+                    console.groupCollapsed('[PARSER LOGS] - ' + new Date().toLocaleTimeString());
+                    status.logs.forEach((logEntry, index) => {
+                        // Поддерживаем старый формат (строка) и новый формат (объект)
+                        let logMsg, logType = 'log', errorDetails = null;
+                        
+                        if (typeof logEntry === 'object' && logEntry !== null) {
+                            // Новый формат: объект с полями timestamp, message, type, error_details
+                            logMsg = `[${logEntry.timestamp || 'N/A'}] ${logEntry.message || ''}`;
+                            logType = logEntry.type || 'log';
+                            errorDetails = logEntry.error_details;
+                        } else {
+                            // Старый формат: просто строка
+                            logMsg = String(logEntry);
+                            // Определяем тип лога по содержанию
+                            if (logMsg.includes('ERROR') || logMsg.includes('Ошибка') || logMsg.includes('WARNING')) {
+                                logType = 'error';
+                            } else if (logMsg.includes('Успешно') || logMsg.includes('завершён успешно')) {
+                                logType = 'info';
+                            }
+                        }
+                        
+                        // Вывод в консоль в зависимости от типа
+                        if (logType === 'error') {
+                            console.error(`[${index}] ${logMsg}`);
+                            // Если есть детали ошибки, выводим их отдельно
+                            if (errorDetails) {
+                                console.groupCollapsed(`🔴 Детали ошибки #${index}`);
+                                console.log('Тип ошибки:', errorDetails.type);
+                                console.log('Сообщение:', errorDetails.message);
+                                console.log('URL подключения:', errorDetails.url || 'N/A');
+                                console.log('Timeout:', errorDetails.timeout || 'N/A');
+                                console.log('HTTP статус:', errorDetails.http_status || 'N/A');
+                                console.log('Заголовки ответа:', errorDetails.response_headers || 'N/A');
+                                console.log('Тело ответа:', errorDetails.response_body || 'N/A');
+                                console.log('Причина ошибки:', errorDetails.reason || 'N/A');
+                                console.log('Полный traceback:');
+                                console.error(errorDetails.traceback || 'Traceback недоступен');
+                                console.groupEnd();
+                            }
+                        } else if (logType === 'info') {
+                            console.info(`[${index}] ${logMsg}`);
+                        } else {
+                            console.log(`[${index}] ${logMsg}`);
+                        }
+                    });
+                    console.groupEnd();
                 }
 
                 statusDiv.className = 'parser-status';
@@ -1511,8 +1555,52 @@
 
                 // Выводим логи парсера в консоль браузера при загрузке
                 if (status.logs && status.logs.length > 0) {
-                    console.log('[PARSER LOGS - Initial]:');
-                    status.logs.forEach(logEntry => console.log(logEntry));
+                    console.groupCollapsed('[PARSER LOGS - Initial] - ' + new Date().toLocaleTimeString());
+                    status.logs.forEach((logEntry, index) => {
+                        // Поддерживаем старый формат (строка) и новый формат (объект)
+                        let logMsg, logType = 'log', errorDetails = null;
+                        
+                        if (typeof logEntry === 'object' && logEntry !== null) {
+                            // Новый формат: объект с полями timestamp, message, type, error_details
+                            logMsg = `[${logEntry.timestamp || 'N/A'}] ${logEntry.message || ''}`;
+                            logType = logEntry.type || 'log';
+                            errorDetails = logEntry.error_details;
+                        } else {
+                            // Старый формат: просто строка
+                            logMsg = String(logEntry);
+                            // Определяем тип лога по содержанию
+                            if (logMsg.includes('ERROR') || logMsg.includes('Ошибка') || logMsg.includes('WARNING')) {
+                                logType = 'error';
+                            } else if (logMsg.includes('Успешно') || logMsg.includes('завершён успешно')) {
+                                logType = 'info';
+                            }
+                        }
+                        
+                        // Вывод в консоль в зависимости от типа
+                        if (logType === 'error') {
+                            console.error(`[${index}] ${logMsg}`);
+                            // Если есть детали ошибки, выводим их отдельно
+                            if (errorDetails) {
+                                console.groupCollapsed(`🔴 Детали ошибки #${index}`);
+                                console.log('Тип ошибки:', errorDetails.type);
+                                console.log('Сообщение:', errorDetails.message);
+                                console.log('URL подключения:', errorDetails.url || 'N/A');
+                                console.log('Timeout:', errorDetails.timeout || 'N/A');
+                                console.log('HTTP статус:', errorDetails.http_status || 'N/A');
+                                console.log('Заголовки ответа:', errorDetails.response_headers || 'N/A');
+                                console.log('Тело ответа:', errorDetails.response_body || 'N/A');
+                                console.log('Причина ошибки:', errorDetails.reason || 'N/A');
+                                console.log('Полный traceback:');
+                                console.error(errorDetails.traceback || 'Traceback недоступен');
+                                console.groupEnd();
+                            }
+                        } else if (logType === 'info') {
+                            console.info(`[${index}] ${logMsg}`);
+                        } else {
+                            console.log(`[${index}] ${logMsg}`);
+                        }
+                    });
+                    console.groupEnd();
                 }
 
                 statusDiv.className = 'parser-status';

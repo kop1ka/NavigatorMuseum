@@ -233,17 +233,26 @@ def run_parser_task():
     НЕ сбрасывает уже сохранённые изображения - добавляет только новые.
     """
     import logging
+    import traceback as tb_module
     global parser_status, parser_logs
     try:
         # Очищаем логи перед новым запуском
         parser_logs.clear()
         
-        def log(message):
-            """Добавляет сообщение в лог с временной меткой"""
+        def log(message, log_type='info', error_details=None):
+            """Добавляет сообщение в лог с временной меткой и дополнительной информацией"""
             timestamp = datetime.now().strftime('%H:%M:%S.%f')[:-3]
-            log_entry = f"[{timestamp}] {message}"
+            log_entry = {
+                'timestamp': timestamp,
+                'message': message,
+                'type': log_type,
+                'error_details': error_details
+            }
             parser_logs.append(log_entry)
-            print(log_entry)  # Также выводим в консоль сервера
+            # Также выводим в консоль сервера
+            print(f"[{timestamp}] {message}")
+            if error_details:
+                print(f"[{timestamp}] DETAILS: {error_details}")
         
         # Не меняем статус здесь, так как он уже установлен в start_parser()
         # parser_status['running'] = True
@@ -334,18 +343,47 @@ def run_parser_task():
         import traceback
         error_traceback = traceback.format_exc()
         parser_status['message'] = f'Ошибка парсинга: {str(e)}'
-        log(f"ОШИБКА в run_parser_task(): {str(e)}")
-        log(f"Тип ошибки: {type(e).__name__}")
+        
+        # Формируем детальную информацию об ошибке
+        error_details = {
+            'type': type(e).__name__,
+            'message': str(e),
+            'url': None,
+            'timeout': PARSER_TIMEOUT,
+            'http_status': None,
+            'response_headers': None,
+            'response_body': None,
+            'reason': None,
+            'traceback': error_traceback
+        }
+        
         # Детализация ошибок подключения
         if hasattr(e, 'request') and e.request is not None:
-            log(f"URL запроса: {e.request.url}")
-            log(f"Метод запроса: {e.request.method}")
+            error_details['url'] = e.request.url
+            error_details['method'] = e.request.method
         if hasattr(e, 'response') and e.response is not None:
-            log(f"Статус ответа: {e.response.status_code}")
-            log(f"Тело ответа (первые 500 символов): {str(e.response.text[:500])}")
+            error_details['http_status'] = e.response.status_code
+            error_details['response_headers'] = dict(e.response.headers)
+            error_details['response_body'] = str(e.response.text[:500])
         if hasattr(e, 'reason'):
-            log(f"Причина ошибки: {e.reason}")
-        log(f"Трассировка: {error_traceback}")
+            error_details['reason'] = str(e.reason)
+        
+        # Логируем ошибку с деталями
+        log(f"ОШИБКА в run_parser_task(): {str(e)}", log_type='error', error_details=error_details)
+        log(f"Тип ошибки: {type(e).__name__}", log_type='error')
+        if error_details['url']:
+            log(f"URL запроса: {error_details['url']}", log_type='error')
+        if error_details.get('method'):
+            log(f"Метод запроса: {error_details['method']}", log_type='error')
+        if error_details['http_status']:
+            log(f"Статус ответа: {error_details['http_status']}", log_type='error')
+        if error_details['response_headers']:
+            log(f"Заголовки ответа: {error_details['response_headers']}", log_type='error')
+        if error_details['response_body']:
+            log(f"Тело ответа (первые 500 символов): {error_details['response_body']}", log_type='error')
+        if error_details['reason']:
+            log(f"Причина ошибки: {error_details['reason']}", log_type='error')
+        log(f"Полный traceback: {error_traceback}", log_type='error')
     finally:
         parser_status['running'] = False
         log(f"Завершение run_parser_task(). Статус: running={parser_status['running']}")
