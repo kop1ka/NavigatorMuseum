@@ -199,6 +199,9 @@ def unauthorized():
 # Глобальная переменная для хранения статуса парсера
 parser_status = {'running': False, 'last_run': None, 'message': 'Парсер не запущен', 'images': []}
 
+# Глобальный список для хранения логов парсера (для отправки в браузер)
+parser_logs = []
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -230,31 +233,41 @@ def run_parser_task():
     НЕ сбрасывает уже сохранённые изображения - добавляет только новые.
     """
     import logging
-    global parser_status
+    global parser_status, parser_logs
     try:
+        # Очищаем логи перед новым запуском
+        parser_logs.clear()
+        
+        def log(message):
+            """Добавляет сообщение в лог с временной меткой"""
+            timestamp = datetime.now().strftime('%H:%M:%S.%f')[:-3]
+            log_entry = f"[{timestamp}] {message}"
+            parser_logs.append(log_entry)
+            print(log_entry)  # Также выводим в консоль сервера
+        
         # Не меняем статус здесь, так как он уже установлен в start_parser()
         # parser_status['running'] = True
         # parser_status['message'] = 'Парсинг запущен...'
         
         # ОТЛАДКА: Начало парсинга
-        print("[DEBUG] Запуск run_parser_task()")
-        print(f"[DEBUG] FTP_BASE_URL: {FTP_BASE_URL}")
-        print(f"[DEBUG] PARSER_MAX_DEPTH: {PARSER_MAX_DEPTH}")
-        print(f"[DEBUG] PARSER_TIMEOUT: {PARSER_TIMEOUT}")
+        log("Запуск run_parser_task()")
+        log(f"FTP_BASE_URL: {FTP_BASE_URL}")
+        log(f"PARSER_MAX_DEPTH: {PARSER_MAX_DEPTH}")
+        log(f"PARSER_TIMEOUT: {PARSER_TIMEOUT}")
         
         # Загрузить уже сохранённые изображения, чтобы не потерять их
         existing_images_data = load_json_file(PARSER_IMAGES_FILE, {'images': []})
         existing_images = set(existing_images_data.get('images', []))
-        print(f"[DEBUG] Существующих изображений в файле: {len(existing_images)}")
+        log(f"Существующих изображений в файле: {len(existing_images)}")
         
         # Запустить парсинг FTP-каталога
-        print("[DEBUG] Вызов parse_folder()...")
+        log("Вызов parse_folder()...")
         items = parse_folder(FTP_BASE_URL, max_depth=PARSER_MAX_DEPTH, timeout=PARSER_TIMEOUT)
-        print(f"[DEBUG] parse_folder() вернул элементов: {len(items)}")
+        log(f"parse_folder() вернул элементов: {len(items)}")
         if items:
-            print(f"[DEBUG] Первые 5 элементов: {items[:5]}")
+            log(f"Первые 5 элементов: {items[:5]}")
         else:
-            print("[DEBUG] WARNING: parse_folder() вернул пустой список!")
+            log("WARNING: parse_folder() вернул пустой список!")
         
         # Собрать все найденные изображения из парсера
         new_parser_images = []
@@ -274,11 +287,11 @@ def run_parser_task():
                     if item.get('children'):
                         collect_images(item['children'])
         
-        print("[DEBUG] Сбор изображений из элементов...")
+        log("Сбор изображений из элементов...")
         collect_images(items)
-        print(f"[DEBUG] Найдено новых изображений: {len(new_parser_images)}")
+        log(f"Найдено новых изображений: {len(new_parser_images)}")
         if new_parser_images:
-            print(f"[DEBUG] Первые 5 изображений: {new_parser_images[:5]}")
+            log(f"Первые 5 изображений: {new_parser_images[:5]}")
         
         # Объединить с существующими изображениями (сохраняем старые + добавляем новые)
         all_images = list(existing_images)
@@ -286,11 +299,11 @@ def run_parser_task():
             if img_url not in existing_images:
                 all_images.append(img_url)
         
-        print(f"[DEBUG] Всего изображений после объединения: {len(all_images)}")
+        log(f"Всего изображений после объединения: {len(all_images)}")
         
         # Сохранить все изображения в файл для постоянного доступа
         save_json_file(PARSER_IMAGES_FILE, {'images': all_images})
-        print(f"[DEBUG] Изображения сохранены в {PARSER_IMAGES_FILE}")
+        log(f"Изображения сохранены в {PARSER_IMAGES_FILE}")
         
         # Обновить статус парсера с новыми изображениями
         parser_status['images'] = all_images
@@ -310,22 +323,22 @@ def run_parser_task():
         existing_catalog['children'] = merged_children
         existing_catalog['modified'] = get_current_timestamp()
         save_catalog(CATALOG_FILE, existing_catalog)
-        print(f"[DEBUG] Каталог сохранён в {CATALOG_FILE}")
+        log(f"Каталог сохранён в {CATALOG_FILE}")
         
         # Обновить статус парсера
         parser_status['last_run'] = get_full_timestamp()
         parser_status['message'] = f'Парсинг завершён успешно. Найдено элементов: {len(items)}. Всего изображений: {len(all_images)}'
-        print(f"[DEBUG] Итоговый статус: {parser_status['message']}")
+        log(f"Итоговый статус: {parser_status['message']}")
         
     except Exception as e:
         import traceback
         error_traceback = traceback.format_exc()
         parser_status['message'] = f'Ошибка парсинга: {str(e)}'
-        print(f"[DEBUG ERROR] Ошибка в run_parser_task(): {str(e)}")
-        print(f"[DEBUG ERROR] Трассировка: {error_traceback}")
+        log(f"ОШИБКА в run_parser_task(): {str(e)}")
+        log(f"Трассировка: {error_traceback}")
     finally:
         parser_status['running'] = False
-        print(f"[DEBUG] Завершение run_parser_task(). Статус: running={parser_status['running']}")
+        log(f"Завершение run_parser_task(). Статус: running={parser_status['running']}")
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -984,9 +997,16 @@ def get_parser_status():
     API endpoint для получения статуса парсера
     
     Returns:
-        Response: JSON объект со статусом парсера
+        Response: JSON объект со статусом парсера и логами
     """
-    return jsonify(parser_status)
+    return jsonify({
+        'status': parser_status.get('running', False),
+        'running': parser_status.get('running', False),
+        'last_run': parser_status.get('last_run'),
+        'message': parser_status.get('message', 'Нет данных'),
+        'images': parser_status.get('images', []),
+        'logs': parser_logs[-50:]  # Возвращаем последние 50 записей лога
+    })
 
 
 @app.route('/api/parser/start', methods=['POST'])
