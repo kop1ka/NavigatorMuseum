@@ -181,12 +181,12 @@
             videoPlayer.setAttribute('webkit-playsinline', '');
 
             // Определяем тип видео по расширению
-            let cleanUrl = videoUrl;
+            let cleanUrl = '';
             try {
                 cleanUrl = decodeURIComponent(videoUrl);
-            } catch (e) {}
-            
-            console.log('Decoded URL for extension check:', cleanUrl);
+            } catch (e) {
+                cleanUrl = videoUrl;
+            }
             
             const extMatch = cleanUrl.match(/\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv|m4v)\s*$/i);
             if (extMatch) {
