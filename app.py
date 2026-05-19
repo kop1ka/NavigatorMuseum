@@ -22,7 +22,7 @@ import requests
 from datetime import datetime, timedelta
 from urllib.parse import unquote, urlparse
 from flask import Flask, render_template_string, request, jsonify, send_from_directory, redirect, url_for, session, flash, Response
-from flask_login import LoginManager, login_user, logout_user, current_user
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -47,7 +47,7 @@ from utils.data_utils import (
     load_users, save_users, load_catalog, save_catalog, load_permanent_items, save_permanent_items
 )
 from utils.parser_utils import extract_items_from_html, parse_folder
-from utils.auth_utils import User, hash_password, verify_password
+from utils.auth_utils import User, hash_password, verify_password, admin_required_decorator
 from utils.catalog_utils import (
     get_item_path, mark_permanent_recursive, merge_with_permanent,
     find_item_by_path, delete_item_by_path, update_item_by_path
@@ -620,6 +620,7 @@ def login():
 
 
 @app.route('/logout')
+@login_required
 def logout():
     """
     Выход из системы
@@ -635,6 +636,7 @@ def logout():
 
 
 @app.route('/change-password', methods=['GET', 'POST'])
+@login_required
 def change_password():
     """
     Страница изменения пароля пользователя
@@ -872,6 +874,8 @@ def index():
 
 
 @app.route('/admin')
+@login_required
+@admin_required_decorator  # Только для администраторов
 def admin():
     """
     Панель администратора
@@ -1034,6 +1038,8 @@ def get_catalog():
 
 
 @app.route('/api/parser/status')
+@login_required
+@admin_required_decorator
 def get_parser_status():
     """
     API endpoint для получения статуса парсера
@@ -1052,6 +1058,8 @@ def get_parser_status():
 
 
 @app.route('/api/parser/start', methods=['POST'])
+@login_required
+@admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
 def start_parser():
     """
@@ -1075,6 +1083,8 @@ def start_parser():
 
 
 @app.route('/api/parser/stop', methods=['POST'])
+@login_required
+@admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
 def stop_parser():
     """
@@ -1093,6 +1103,8 @@ def stop_parser():
 
 
 @app.route('/api/parser/reset', methods=['POST'])
+@login_required
+@admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
 def reset_parser():
     """
@@ -1109,6 +1121,8 @@ def reset_parser():
 
 
 @app.route('/api/import/json', methods=['POST'])
+@login_required
+@admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
 def import_json():
     """
@@ -1170,6 +1184,8 @@ def import_json():
 
 
 @app.route('/api/permanent', methods=['GET', 'POST', 'DELETE'])
+@login_required
+@admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
 def permanent_api():
     """
@@ -1203,6 +1219,8 @@ def permanent_api():
 
 
 @app.route('/api/items', methods=['POST', 'PUT', 'DELETE'])
+@login_required
+@admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
 def items_api():
     """
