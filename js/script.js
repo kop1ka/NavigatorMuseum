@@ -195,20 +195,26 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Очищаем URL от пробелов по краям
             let trimmedUrl = url.trim();
-            // Дополнительная очистка: убираем пробелы внутри протокола (например "https :" -> "https:")
-            trimmedUrl = trimmedUrl.replace(/(https?:)\s*\/\//g, '$1//');
             
-            // Пытаемся декодировать URL, но если он уже содержит некорректные проценты - используем как есть
-            let cleanUrl;
+            // Сначала декодируем URL, чтобы избежать двойного кодирования
             try {
-                cleanUrl = decodeURIComponent(trimmedUrl);
+                trimmedUrl = decodeURIComponent(trimmedUrl);
             } catch (e) {
-                cleanUrl = trimmedUrl;
+                // Если декодирование не удалось, используем как есть
             }
+            
+            // Дополнительная очистка: убираем пробелы внутри протокола (например "https :" -> "https:")
+            trimmedUrl = trimmedUrl.replace(/(https?\s*:\s*)/g, (match) => {
+                return match.replace(/\s+/g, '');
+            });
+            
+            // Убеждаемся, что после протокола стоит ровно один слеш перед двумя слешами
+            trimmedUrl = trimmedUrl.replace(/(https?:)\/+/g, '$1//');
+            
             // Регулярное выражение для проверки расширения видео (с учётом возможных пробелов в конце)
             const videoExtensions = /\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv|m4v)\s*$/i;
-            const isVideo = videoExtensions.test(cleanUrl);
-            console.log('isVideoFile check:', { original: url, trimmed: trimmedUrl, decoded: cleanUrl, isVideo: isVideo });
+            const isVideo = videoExtensions.test(trimmedUrl);
+            console.log('isVideoFile check:', { original: url, trimmed: trimmedUrl, isVideo: isVideo });
             return isVideo;
         } catch (e) {
             console.warn('Ошибка при проверке видео:', e);
@@ -266,19 +272,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // --- Полная очистка URL ---
             let cleanUrl = itemData.url.trim();
-            // Убираем пробелы внутри протокола (например "https ://" -> "https://")
-            cleanUrl = cleanUrl.replace(/(https?:)\s*\/\//g, '$1//');
-            // Заменяем все оставшиеся пробелы на %20
-            cleanUrl = cleanUrl.replace(/\s/g, '%20');
             
-            // Декодируем URL, чтобы избежать двойного кодирования
+            // Сначала декодируем URL, чтобы избежать двойного кодирования
             try {
                 cleanUrl = decodeURIComponent(cleanUrl);
             } catch (e) {
                 // Если декодирование не удалось, используем как есть
             }
             
-            // Кодируем не‑ASCII символы (кириллицу и т.п.)
+            // Убираем все пробелы внутри протокола (например "https :" -> "https:")
+            cleanUrl = cleanUrl.replace(/(https?\s*:\s*)/g, (match) => {
+                return match.replace(/\s+/g, '');
+            });
+            
+            // Убеждаемся, что после протокола стоит ровно один слеш перед двумя слешами
+            cleanUrl = cleanUrl.replace(/(https?:)\/+/g, '$1//');
+            
+            // Заменяем все оставшиеся пробелы на %20
+            cleanUrl = cleanUrl.replace(/\s/g, '%20');
+            
+            // Кодируем не-ASCII символы (кириллицу и т.п.)
             cleanUrl = encodeURI(cleanUrl);
             console.log('handleItemClick cleanUrl:', cleanUrl);
 
