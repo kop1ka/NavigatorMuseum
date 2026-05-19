@@ -917,6 +917,380 @@ def video_player():
     return response
 
 
+@app.route('/parser-logs')
+@login_required
+@admin_required_decorator  # Только для администраторов
+def parser_logs_page():
+    """
+    Страница просмотра логов парсера
+    
+    Доступна только авторизованным пользователям с правами администратора.
+    
+    Returns:
+        Response: HTML страница с логами парсера
+    """
+    html_template = '''<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="/navigator/">
+    <title>Логи парсера</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 24px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        .btn-primary:hover {
+            background: #f0f0f0;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .logs-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .log-entry {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        .log-entry.info {
+            background: #f8f9fa;
+        }
+        .log-entry.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .log-entry.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .log-entry.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .log-timestamp {
+            color: #666;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .log-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-right: 10px;
+        }
+        .log-type.info {
+            background: #17a2b8;
+            color: white;
+        }
+        .log-type.success {
+            background: #28a745;
+            color: white;
+        }
+        .log-type.warning {
+            background: #ffc107;
+            color: #000;
+        }
+        .log-type.error {
+            background: #dc3545;
+            color: white;
+        }
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .logs-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .auto-refresh input {
+            width: 20px;
+            height: 20px;
+        }
+        .empty-logs {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+            font-style: italic;
+        }
+        .log-error-details {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 3px solid #dc3545;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                padding: 15px;
+            }
+            .header h1 {
+                font-size: 20px;
+                margin-bottom: 10px;
+                text-align: center;
+            }
+            .header-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 8px;
+            }
+            .btn {
+                padding: 8px 15px;
+                font-size: 13px;
+            }
+            .container {
+                padding: 15px;
+            }
+            .logs-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Логи парсера</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="window.location.href='/navigator/admin'">Назад в админку</button>
+            <button class="btn btn-primary" onclick="window.location.href='/navigator/'">На сайт</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="logs-container">
+            <div class="logs-header">
+                <h2>Журнал работы парсера</h2>
+                <div class="logs-actions">
+                    <button class="btn btn-success" onclick="loadLogs()">Обновить</button>
+                    <button class="btn btn-danger" onclick="clearLogs()">Очистить логи</button>
+                </div>
+            </div>
+            
+            <div class="auto-refresh">
+                <input type="checkbox" id="autoRefresh" checked onchange="toggleAutoRefresh()">
+                <label for="autoRefresh">Автоматическое обновление каждые 5 секунд</label>
+            </div>
+            
+            <div id="logsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        
+        async function loadLogs() {
+            try {
+                const response = await fetch('/navigator/api/parser/status', { credentials: 'include' });
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки логов');
+                }
+                const data = await response.json();
+                renderLogs(data.logs || []);
+            } catch (error) {
+                document.getElementById('logsContent').innerHTML = 
+                    '<div class="empty-logs">Ошибка загрузки логов: ' + error.message + '</div>';
+            }
+        }
+        
+        function renderLogs(logs) {
+            const container = document.getElementById('logsContent');
+            
+            if (!logs || logs.length === 0) {
+                container.innerHTML = '<div class="empty-logs">Логи отсутствуют. Запустите парсер для записи логов.</div>';
+                return;
+            }
+            
+            // Отображаем логи в обратном порядке (новые сверху)
+            const reversedLogs = [...logs].reverse();
+            
+            container.innerHTML = reversedLogs.map(log => {
+                const typeClass = log.type || 'info';
+                const typeLabel = {
+                    'info': 'INFO',
+                    'success': 'SUCCESS',
+                    'warning': 'WARNING',
+                    'error': 'ERROR'
+                }[typeClass] || 'INFO';
+                
+                let detailsHtml = '';
+                if (log.error_details) {
+                    detailsHtml = '<div class="log-error-details">' + 
+                        escapeHtml(JSON.stringify(log.error_details, null, 2)) + 
+                        '</div>';
+                }
+                
+                return '<div class="log-entry ' + typeClass + '">' +
+                    '<span class="log-timestamp">[' + escapeHtml(log.timestamp || '') + ']</span>' +
+                    '<span class="log-type ' + typeClass + '">' + escapeHtml(typeLabel) + '</span>' +
+                    escapeHtml(log.message || '') +
+                    detailsHtml +
+                    '</div>';
+            }).join('');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function toggleAutoRefresh() {
+            const checkbox = document.getElementById('autoRefresh');
+            if (checkbox.checked) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        }
+        
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            autoRefreshInterval = setInterval(loadLogs, 5000);
+        }
+        
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+        
+        async function clearLogs() {
+            if (!confirm('Вы уверены, что хотите очистить логи?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/navigator/api/parser/reset', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken()
+                    }
+                });
+                
+                if (response.ok) {
+                    loadLogs();
+                    showMessage('Логи очищены', 'success');
+                } else {
+                    showMessage('Ошибка при очистке логов', 'error');
+                }
+            } catch (error) {
+                showMessage('Ошибка: ' + error.message, 'error');
+            }
+        }
+        
+        function getCsrfToken() {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrf_token') {
+                    return decodeURIComponent(value);
+                }
+            }
+            return '';
+        }
+        
+        function showMessage(message, type) {
+            // Простое уведомление через alert для simplicity
+            alert(message);
+        }
+        
+        // Загрузка логов при открытии страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLogs();
+            startAutoRefresh();
+        });
+    </script>
+</body>
+</html>'''
+    
+    response = app.response_class(response=html_template, status=200, mimetype='text/html')
+    # Добавляем заголовки для предотвращения кэширования HTML страниц
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
 @app.route('/api/catalog')
 def get_catalog():
     """
