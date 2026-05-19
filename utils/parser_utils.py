@@ -98,9 +98,42 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
     
     try:
         print(f"[DEBUG parse_folder] Запрос к {url} (timeout={timeout})...")
-        response = requests.get(url, timeout=timeout, verify=False)
-        response.raise_for_status()
-        print(f"[DEBUG parse_folder] Получен ответ: status_code={response.status_code}, size={len(response.text)} bytes")
+        log_detail = f"URL: {url}, timeout: {timeout}s, depth: {depth}, max_depth: {max_depth}"
+        
+        try:
+            response = requests.get(url, timeout=timeout, verify=False)
+            print(f"[DEBUG parse_folder] Получен ответ: status_code={response.status_code}, size={len(response.text)} bytes")
+            
+            # Проверка статуса ответа
+            if response.status_code != 200:
+                print(f"[ERROR parse_folder] Неожиданный HTTP статус: {response.status_code}")
+                print(f"[ERROR parse_folder] Заголовки ответа: {dict(response.headers)}")
+                print(f"[ERROR parse_folder] Тело ответа (первые 500 символов): {response.text[:500]}")
+            
+            response.raise_for_status()
+            
+        except requests.exceptions.Timeout as e:
+            print(f"[ERROR parse_folder] Таймаут подключения к {url}")
+            print(f"[ERROR parse_folder] Детали таймаута: {e}")
+            print(f"[ERROR parse_folder] Конфигурация: timeout={timeout}s, url={url}")
+            raise
+        except requests.exceptions.ConnectionError as e:
+            print(f"[ERROR parse_folder] Ошибка подключения к {url}")
+            print(f"[ERROR parse_folder] Детали ошибки подключения: {e}")
+            if hasattr(e, 'reason'):
+                print(f"[ERROR parse_folder] Причина: {e.reason}")
+            if hasattr(e, 'request'):
+                print(f"[ERROR parse_folder] Запрос: {e.request}")
+            print(f"[ERROR parse_folder] Конфигурация: timeout={timeout}s, url={url}")
+            raise
+        except requests.exceptions.RequestException as e:
+            print(f"[ERROR parse_folder] Общая ошибка запроса к {url}")
+            print(f"[ERROR parse_folder] Тип ошибки: {type(e).__name__}")
+            print(f"[ERROR parse_folder] Детали: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                print(f"[ERROR parse_folder] Статус ответа: {e.response.status_code}")
+                print(f"[ERROR parse_folder] Тело ответа (первые 500 символов): {str(e.response.text[:500])}")
+            raise
         
         items = extract_items_from_html(response.text, url)
         print(f"[DEBUG parse_folder] Извлечено элементов: {len(items)}")
