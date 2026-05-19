@@ -1359,19 +1359,29 @@ def serve_project_static(project_name, filename):
     return send_from_directory(static_folder, filename, max_age=86400)
 
 
-@app.route('/projects/<project_name>/<path:remaining_path>')
-def serve_project_file_with_path(project_name, remaining_path):
+@app.route('/projects/<path:remaining_path>', methods=['GET', 'HEAD', 'OPTIONS'])
+def serve_project_file_with_path(remaining_path):
     """
     API endpoint для раздачи файлов проектов с явным указанием пути
     Обработчик для запросов вида /projects/<project_name>/<остальной_путь>
     
     Args:
-        project_name: Имя проекта
-        remaining_path: Оставшийся путь к файлу
+        remaining_path: Полный путь включая имя проекта и остальной путь
     
     Returns:
         Response: Файл проекта или ответ от Flask приложения проекта
     """
+    # Декодируем URL на случай кириллических символов
+    remaining_path = unquote(remaining_path)
+    
+    # Разделяем путь на имя проекта и остальной путь
+    parts = remaining_path.split('/', 1)
+    if len(parts) < 1 or not parts[0]:
+        return jsonify({'error': 'Некорректный путь к проекту'}), 400
+    
+    project_name = parts[0]
+    file_path_suffix = parts[1] if len(parts) > 1 else ''
+    
     project_path = os.path.join(PROJECTS_DIR, project_name)
     
     # Проверяем существование проекта
@@ -1426,7 +1436,7 @@ def serve_project_file_with_path(project_name, remaining_path):
             flask_app = flask_info['app']
             try:
                 environ = request.environ.copy()
-                environ['PATH_INFO'] = '/' + remaining_path
+                environ['PATH_INFO'] = '/' + file_path_suffix
                 environ['SCRIPT_NAME'] = f'/projects/{project_name}'
                 
                 response_iter = flask_app(environ, lambda status, headers: None)
@@ -1443,97 +1453,27 @@ def serve_project_file_with_path(project_name, remaining_path):
                 traceback.print_exc()
     
     # Стандартная обработка - пробуем найти файл
-    file_path = os.path.join(project_path, remaining_path)
-    if os.path.exists(file_path) and os.path.isfile(file_path):
-        return send_from_directory(project_path, remaining_path, max_age=86400)
+    if file_path_suffix:
+        file_path = os.path.join(project_path, file_path_suffix)
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return send_from_directory(project_path, file_path_suffix, max_age=86400)
+        
+        # Для проектов с шаблонами в templates/
+        templates_path = os.path.join(project_path, 'templates', file_path_suffix)
+        if os.path.exists(templates_path) and os.path.isfile(templates_path):
+            return send_from_directory(os.path.join(project_path, 'templates'), file_path_suffix, max_age=86400)
+        
+        # Для статических файлов в static/
+        static_path = os.path.join(project_path, 'static', file_path_suffix)
+        if os.path.exists(static_path) and os.path.isfile(static_path):
+            return send_from_directory(os.path.join(project_path, 'static'), file_path_suffix, max_age=86400)
+    else:
+        # Если file_path_suffix пустой, отдаём index.html
+        index_path = os.path.join(project_path, 'index.html')
+        if os.path.exists(index_path) and os.path.isfile(index_path):
+            return send_from_directory(project_path, 'index.html', max_age=86400)
     
-    # Для проектов с шаблонами в templates/
-    templates_path = os.path.join(project_path, 'templates', remaining_path)
-    if os.path.exists(templates_path) and os.path.isfile(templates_path):
-        return send_from_directory(os.path.join(project_path, 'templates'), remaining_path, max_age=86400)
-    
-    # Для статических файлов в static/
-    static_path = os.path.join(project_path, 'static', remaining_path)
-    if os.path.exists(static_path) and os.path.isfile(static_path):
-        return send_from_directory(os.path.join(project_path, 'static'), remaining_path, max_age=86400)
-    
-    return jsonify({'error': f'Файл не найден: {remaining_path}'}), 404
-
-
-@app.route('/projects/<project_name>')
-@app.route('/projects/<project_name>/')
-def serve_project_root(project_name=None):
-    """
-    API endpoint для раздачи index.html проекта или перенаправления
-    Обработчик для запросов вида /projects/<project_name> или /projects/<project_name>/
-    
-    Args:
-        project_name: Имя проекта
-    
-    Returns:
-        Response: index.html проекта или перенаправление
-    """
-    if project_name is None:
-        return jsonify({'error': 'Некорректный запрос'}), 400
-    
-    project_path = os.path.join(PROJECTS_DIR, project_name)
-    
-    # Проверяем существование проекта
-    if not os.path.exists(project_path) or not os.path.isdir(project_path):
-        return jsonify({'error': f'Проект не найден: {project_name}'}), 404
-    
-    # Проверяем наличие index.html
-    index_path = os.path.join(project_path, 'index.html')
-    if os.path.exists(index_path) and os.path.isfile(index_path):
-        return send_from_directory(project_path, 'index.html', max_age=86400)
-    
-    # Если нет index.html, но есть Flask приложение
-    flask_app_path = os.path.join(project_path, 'app.py')
-    if os.path.exists(flask_app_path):
-        # Пробуем запустить Flask приложение
-        if project_name in project_flask_info:
-            flask_info = project_flask_info[project_name]
-            
-            if not flask_info.get('loaded'):
-                try:
-                    import importlib.util
-                    import sys
-                    
-                    project_dir = os.path.dirname(flask_info['app_path'])
-                    if project_dir not in sys.path:
-                        sys.path.insert(0, project_dir)
-                    
-                    spec = importlib.util.spec_from_file_location(f"{project_name}_app", flask_info['app_path'])
-                    if spec and spec.loader:
-                        project_module = importlib.util.module_from_spec(spec)
-                        sys.modules[f"{project_name}_app"] = project_module
-                        spec.loader.exec_module(project_module)
-                        
-                        if hasattr(project_module, 'app'):
-                            flask_app = project_module.app
-                            project_flask_info[project_name]['app'] = flask_app
-                            project_flask_info[project_name]['loaded'] = True
-                except Exception as e:
-                    print(f"Ошибка загрузки Flask приложения: {e}")
-            
-            if flask_info.get('loaded') and 'app' in flask_info:
-                try:
-                    environ = request.environ.copy()
-                    environ['PATH_INFO'] = '/'
-                    environ['SCRIPT_NAME'] = f'/projects/{project_name}'
-                    
-                    response_iter = flask_info['app'](environ, lambda status, headers: None)
-                    
-                    if response_iter:
-                        from flask import Response
-                        if isinstance(response_iter, Response):
-                            return response_iter
-                        body = b''.join(response_iter)
-                        return Response(body, status='200 OK', content_type='text/html; charset=utf-8')
-                except Exception as e:
-                    print(f"Ошибка обработки запроса Flask приложением: {e}")
-    
-    return jsonify({'error': 'index.html не найден'}), 404
+    return jsonify({'error': f'Файл не найден: {file_path_suffix}'}), 404
 
 
 @app.route('/api/proxy-image')
