@@ -168,8 +168,16 @@ def custom_login_url(next=None):
     # Используем url_for для генерации правильного URL относительно текущего хоста
     from flask import url_for
     base_url = url_for('login', _external=False)
-    
+
     if next:
+        # Проверяем, содержит ли next уже префикс /navigator
+        if not next.startswith(URL_PREFIX):
+            # Если next начинается с / но не содержит префикс, добавляем его
+            if next.startswith('/'):
+                next = URL_PREFIX + next
+            else:
+                # Если next относительный путь, добавляем префикс и слэш
+                next = URL_PREFIX + '/' + next.lstrip('/')
         return base_url + '?next=' + next
     return base_url
 
@@ -179,8 +187,14 @@ login_manager.login_url = custom_login_url
 def unauthorized():
     """Обработчик для неавторизованных пользователей с учётом префикса"""
     from flask import request, redirect
+    from urllib.parse import urlparse
+    # Получаем текущий URL и извлекаем только path часть
+    parsed_url = urlparse(request.url)
+    current_path = parsed_url.path
+    
+    # Убеждаемся, что next содержит префикс
     # Используем кастомный login_url для получения правильного URL
-    login_url = login_manager.login_url(request.url)
+    login_url = login_manager.login_url(current_path)
     return redirect(login_url)
 
 # Глобальная переменная для хранения статуса парсера

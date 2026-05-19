@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="/navigator/">
     <title>Управление контентом</title>
     <style>
         * {
@@ -457,7 +458,7 @@
     <div class="header">
         <h1>Управление контентом</h1>
         <div class="header-actions">
-            <button class="btn btn-primary" onclick="window.location.href='.'">На сайт</button>
+            <button class="btn btn-primary" onclick="window.location.href='/navigator/'">На сайт</button>
             <button class="btn btn-success" onclick="startParser()">Парсер</button>
             <button class="btn btn-primary" onclick="exportJson()">Выгрузить JSON</button>
             <button class="btn btn-primary" onclick="changePassword()">Сменить пароль</button>
@@ -1567,7 +1568,7 @@
 
         // Export JSON
         function exportJson() {
-            fetch('api/catalog')
+            fetch('/navigator/api/catalog')
                 .then(response => response.json())
                 .then(data => {
                     // Функция для сбора всех элементов с указанием родительского каталога

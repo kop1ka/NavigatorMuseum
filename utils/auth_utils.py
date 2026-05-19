@@ -55,8 +55,12 @@ def admin_required_decorator(f):
             
             flash('Требуется права администратора', 'error')
             
-            # Префикс пути (например, /navigator) - используем константу из app.py
-            script_name = '/navigator'
+            # Получаем префикс из SCRIPT_NAME, который устанавливается middleware
+            script_name = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+            
+            # Если SCRIPT_NAME пустой, используем дефолтный префикс
+            if not script_name:
+                script_name = '/navigator'
             
             # Строим URL страницы входа с учётом префикса
             login_url = script_name + '/login'
