@@ -319,10 +319,14 @@ def login():
                 if not next_page:
                     return redirect(URL_PREFIX + '/admin')
                 
-                # Если next_page начинается с '/', добавляем префикс если он есть
-                if next_page.startswith('/') and not next_page.startswith(URL_PREFIX + '/'):
-                    # Добавляем префикс к next_page
+                # Проверяем, если next_page содержит '/admin' но не содержит префикс
+                # Добавляем префикс к next_page
+                if URL_PREFIX not in next_page and next_page.startswith('/'):
                     next_page = URL_PREFIX + next_page
+                elif URL_PREFIX not in next_page:
+                    # Если next_page относительный (например, 'admin'), добавляем префикс
+                    next_page = URL_PREFIX + '/' + next_page.lstrip('/')
+                    
                 return redirect(next_page)
             else:
                 error = 'Неверное имя пользователя или пароль'
