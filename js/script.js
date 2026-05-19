@@ -235,12 +235,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Функция для формирования URL из пути в projects
     function buildProjectsUrl(path) {
         if (!path) return '';
-        const baseUrl = 'https://navigatormuseum.onrender.com';
         // Очищаем путь от ведущих слешей
         let cleanPath = path.replace(/^\/+/, '');
         // Нормализуем разделители
         cleanPath = cleanPath.replace(/\\/g, '/');
-        return `${baseUrl}/${cleanPath}`;
+        return cleanPath;
     }
 
     function handleItemClick(event) {
@@ -276,6 +275,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.open(videoPlayerUrl, '_blank');
                 } else {
                     console.log('Это не видео, переходим напрямую по ссылке');
+                    // Нормализуем URL - убираем пробелы в протоколе (например, "https :" -> "https:")
+                    finalUrl = finalUrl.replace(/(https?)\s*:/i, '$1:');
+                    
                     // Для внешних ссылок используем window.open с _blank, чтобы избежать проблем с относительными путями
                     if (finalUrl.startsWith('http://') || finalUrl.startsWith('https://')) {
                         window.open(finalUrl, '_blank');
