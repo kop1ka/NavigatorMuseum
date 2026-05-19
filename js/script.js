@@ -261,22 +261,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (itemData.url) {
                 saveState();
                 
-                // Берём ссылку как есть из элемента и переходим напрямую
-                const finalUrl = itemData.url.trim();
+                // Очищаем URL от лишних пробелов перед проверкой и использованием
+                const cleanUrl = itemData.url.trim();
                 
-                console.log('handleItemClick:', { name: itemData.name, url: itemData.url, finalUrl: finalUrl });
+                console.log('handleItemClick:', { name: itemData.name, url: itemData.url, cleanUrl: cleanUrl });
                 
                 // Проверяем, является ли файл видео по расширению в URL
-                if (isVideoFile(finalUrl)) {
+                if (isVideoFile(cleanUrl)) {
                     console.log('Это видео, открываем через video-player');
                     // Видео – открываем в новой вкладке через видеоплеер
-                    const videoPlayerUrl = `/video-player?url=${encodeURIComponent(finalUrl)}&name=${encodeURIComponent(itemData.name)}`;
+                    const videoPlayerUrl = `/video-player?url=${encodeURIComponent(cleanUrl)}&name=${encodeURIComponent(itemData.name)}`;
                     console.log('Video player URL:', videoPlayerUrl);
                     window.open(videoPlayerUrl, '_blank');
                 } else {
-                    console.log('Это не видео, переходим напрямую по ссылке');
-                    // Прямой переход по ссылке без добавления домена
-                    window.location.href = finalUrl;
+                    console.log('Это не видео, открываем напрямую');
+                    // Остальные файлы – переход в текущей вкладке
+                    // Кодируем пробелы в URL для корректного перехода
+                    const encodedUrl = cleanUrl.replace(/ /g, '%20');
+                    window.location.href = encodedUrl;
                 }
             } else {
                 alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
