@@ -1,8 +1,12 @@
 """Утилиты для парсинга FTP-каталога"""
 import requests
+import urllib3
 from bs4 import BeautifulSoup
 from urllib.parse import unquote, urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# Подавление SSL-предупреждений при использовании verify=False
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def extract_items_from_html(html_content, base_url):

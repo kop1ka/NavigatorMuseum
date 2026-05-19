@@ -18,7 +18,9 @@ import os
 import json
 import re
 import threading
+import warnings
 import requests
+import urllib3
 from datetime import datetime, timedelta
 from urllib.parse import unquote, urlparse
 from flask import Flask, render_template_string, request, jsonify, send_from_directory, redirect, url_for, session, flash, Response
@@ -26,6 +28,10 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_wtf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+
+# Подавление SSL-предупреждений при использовании verify=False
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+warnings.filterwarnings('ignore', category=urllib3.exceptions.InsecureRequestWarning)
 
 # Импорт конфигурации из модуля settings
 from config.settings import (
