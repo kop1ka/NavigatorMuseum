@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Проверяем, является ли файл видео
                 if (isVideoFile(targetUrl)) {
                     const videoPlayerUrl = `/video-player?url=${encodeURIComponent(targetUrl)}&name=${encodeURIComponent(itemData.name)}`;
-                    window.location.href = cleanUrl;
+                    window.location.href = videoPlayerUrl;
                 } else {
                     // === ИСПРАВЛЕНИЕ ПРОБЛЕМЫ ===
                     // Проверяем, что URL абсолютно начинается с http:// или https://
