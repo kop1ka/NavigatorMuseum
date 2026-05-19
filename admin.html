@@ -1440,6 +1440,12 @@
                 statusText.textContent = status.message;
                 lastRun.textContent = status.last_run || '-';
 
+                // Выводим логи парсера в консоль браузера
+                if (status.logs && status.logs.length > 0) {
+                    console.log('[PARSER LOGS]:');
+                    status.logs.forEach(logEntry => console.log(logEntry));
+                }
+
                 statusDiv.className = 'parser-status';
                 if (status.running) {
                     statusDiv.classList.add('running');
@@ -1502,6 +1508,12 @@
 
                 statusText.textContent = status.message;
                 lastRun.textContent = status.last_run || '-';
+
+                // Выводим логи парсера в консоль браузера при загрузке
+                if (status.logs && status.logs.length > 0) {
+                    console.log('[PARSER LOGS - Initial]:');
+                    status.logs.forEach(logEntry => console.log(logEntry));
+                }
 
                 statusDiv.className = 'parser-status';
                 if (status.running) {
