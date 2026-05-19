@@ -70,7 +70,7 @@ def extract_items_from_html(html_content, base_url):
     return items
 
 
-def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_workers=5):
+def parse_folder(url, depth=0, max_depth=10, timeout=10, max_workers=5):
     """
     Парсинг FTP-каталога с многопоточностью
     
