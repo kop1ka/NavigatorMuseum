@@ -261,65 +261,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // Конечный элемент (файл)
             if (itemData.url) {
                 saveState();
-
-                // Очищаем URL от лишних пробелов перед проверкой и использованием
-                const cleanUrl = itemData.url.trim();
                 
-                console.log('handleItemClick:', { name: itemData.name, url: itemData.url, cleanUrl: cleanUrl });
+                // Берём ссылку как есть из элемента
+                let finalUrl = itemData.url;
+                
+                console.log('handleItemClick:', { name: itemData.name, url: itemData.url, finalUrl: finalUrl });
                 
                 // Проверяем, является ли файл видео по расширению в URL
-                if (isVideoFile(cleanUrl)) {
+                if (isVideoFile(finalUrl)) {
                     console.log('Это видео, открываем через video-player');
                     // Видео – открываем в новой вкладке через видеоплеер
-                    const videoPlayerUrl = `/video-player?url=${encodeURIComponent(cleanUrl)}&name=${encodeURIComponent(itemData.name)}`;
+                    const videoPlayerUrl = `/video-player?url=${encodeURIComponent(finalUrl)}&name=${encodeURIComponent(itemData.name)}`;
                     console.log('Video player URL:', videoPlayerUrl);
                     window.open(videoPlayerUrl, '_blank');
                 } else {
-                    console.log('Это не видео, открываем напрямую');
-                    // Остальные файлы – переход в текущей вкладке
-                    // Сначала нормализуем URL - удаляем ВСЕ пробелы (особенно в протоколе "https ://")
-                    
-                    let finalUrl;
-                    const normalizedUrl = cleanUrl.replace(/\s+/g, '');
-                    
-                    console.log('Нормализованный URL:', normalizedUrl);
-                    
-                    // Проверяем, является ли URL внешним (начинается с http:// или https://)
-                    if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
-                        // Внешний URL с протоколом - переходим напрямую без добавления basePath
-                        finalUrl = normalizedUrl;
-                        console.log('Внешний URL с протоколом:', finalUrl);
-                    } else if (isInProjectsFolder(normalizedUrl)) {
-                        // Если путь в projects, формируем полную ссылку на navigatormuseum.onrender.com
-                        finalUrl = buildProjectsUrl(normalizedUrl);
-                        console.log('URL из projects:', finalUrl);
-                    } else {
-                        // Проверяем, содержит ли URL домен (например, vm-ftp.anosov.ru), но без протокола
-                        const domainPattern = /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/i;
-                        const domainMatch = normalizedUrl.match(domainPattern);
-                        
-                        if (domainMatch && !normalizedUrl.startsWith('/')) {
-                            // Это URL с доменом, но без протокола - добавляем https://
-                            finalUrl = 'https://' + normalizedUrl;
-                            console.log('Внешний URL с доменом (без протокола):', finalUrl);
-                        } else {
-                            // Внутренний URL - добавляем basePath только если его там ещё нет
-                            
-                            // Проверяем, начинается ли URL уже с basePath (например, /navigator/)
-                            // Если да - не добавляем basePath повторно
-                            const basePathPattern = basePath.endsWith('/') ? basePath : basePath + '/';
-                            const urlHasBasePath = normalizedUrl.startsWith(basePathPattern) || 
-                                                   normalizedUrl.startsWith('/' + basePathPattern);
-                            
-                            if (!urlHasBasePath) {
-                                // Убираем возможный leading slash у normalizedUrl, чтобы избежать дублирования слешей
-                                const urlWithoutLeadingSlash = normalizedUrl.startsWith('/') ? normalizedUrl.substring(1) : normalizedUrl;
-                                finalUrl = basePath + '/' + urlWithoutLeadingSlash;
-                            }
-                            console.log('Внутренний URL:', finalUrl);
-                        }
-                    }
-                    console.log('Итоговый URL:', finalUrl);
+                    console.log('Это не видео, переходим напрямую по ссылке');
                     window.location.href = finalUrl;
                 }
             } else {
