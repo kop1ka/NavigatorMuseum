@@ -924,7 +924,7 @@ def get_catalog():
     return response
 
 
-@app.route('/navigator/api/parser/status')
+@app.route('/api/parser/status')
 @login_required
 @admin_required_decorator
 def get_parser_status():
@@ -937,7 +937,7 @@ def get_parser_status():
     return jsonify(parser_status)
 
 
-@app.route('/navigator/api/parser/start', methods=['POST'])
+@app.route('/api/parser/start', methods=['POST'])
 @login_required
 @admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
@@ -956,6 +956,44 @@ def start_parser():
         thread.start()
         return jsonify({'status': 'started'})
     return jsonify({'status': 'already_running'})
+
+
+@app.route('/api/parser/stop', methods=['POST'])
+@login_required
+@admin_required_decorator
+@csrf.exempt  # Освободить от CSRF защиты
+def stop_parser():
+    """
+    API endpoint для остановки парсера
+    
+    Останавливает парсинг (устанавливает флаг running в False).
+    
+    Returns:
+        Response: JSON объект со статусом операции
+    """
+    if parser_status['running']:
+        parser_status['running'] = False
+        parser_status['message'] = 'Парсинг остановлен пользователем'
+        return jsonify({'status': 'stopped'})
+    return jsonify({'status': 'not_running'})
+
+
+@app.route('/api/parser/reset', methods=['POST'])
+@login_required
+@admin_required_decorator
+@csrf.exempt  # Освободить от CSRF защиты
+def reset_parser():
+    """
+    API endpoint для сброса статуса парсера
+    
+    Сбрасывает статус парсера в начальное состояние.
+    
+    Returns:
+        Response: JSON объект со статусом операции
+    """
+    global parser_status
+    parser_status = {'running': False, 'last_run': None, 'message': 'Парсер не запущен', 'images': parser_status.get('images', [])}
+    return jsonify({'status': 'reset'})
 
 
 @app.route('/api/import/json', methods=['POST'])
