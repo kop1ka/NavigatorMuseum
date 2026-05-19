@@ -261,15 +261,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (itemData.url) {
                 saveState();
                 
-                // Берём ссылку как есть из элемента
-                let finalUrl = itemData.url;
-                
-                // Сначала нормализуем протокол - убираем пробелы в "https :" -> "https:"
-                // Это нужно сделать ДО удаления других пробелов, чтобы URL правильно определился как абсолютный
-                finalUrl = finalUrl.replace(/(https?)\s*:/i, '$1:');
-                
-                // Затем удаляем пробелы в начале и конце URL
-                finalUrl = finalUrl.trim();
+                // Берём ссылку как есть из элемента и переходим напрямую
+                const finalUrl = itemData.url.trim();
                 
                 console.log('handleItemClick:', { name: itemData.name, url: itemData.url, finalUrl: finalUrl });
                 
@@ -282,13 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.open(videoPlayerUrl, '_blank');
                 } else {
                     console.log('Это не видео, переходим напрямую по ссылке');
-                    
-                    // Для внешних ссылок используем window.open с _blank, чтобы избежать проблем с относительными путями
-                    if (finalUrl.startsWith('http://') || finalUrl.startsWith('https://')) {
-                        window.open(finalUrl, '_blank');
-                    } else {
-                        window.location.href = finalUrl;
-                    }
+                    // Прямой переход по ссылке без добавления домена
+                    window.location.href = finalUrl;
                 }
             } else {
                 alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
