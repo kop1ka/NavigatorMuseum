@@ -194,7 +194,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!url) return false;
         try {
             // Очищаем URL от пробелов по краям
-            const trimmedUrl = url.trim();
+            let trimmedUrl = url.trim();
+            // Дополнительная очистка: убираем пробелы внутри протокола (например "https :" -> "https:")
+            trimmedUrl = trimmedUrl.replace(/(https?:)\s*\/\//g, '$1//');
+            
             // Пытаемся декодировать URL, но если он уже содержит некорректные проценты - используем как есть
             let cleanUrl;
             try {
@@ -262,7 +265,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveState();
 
                 // Очищаем URL от лишних пробелов перед проверкой и использованием
-                const cleanUrl = itemData.url.trim();
+                // Важно: удаляем все пробелы, включая те, что могут быть внутри протокола
+                let cleanUrl = itemData.url.trim();
+                
+                // Дополнительная очистка: убираем пробелы внутри протокола (например "https :" -> "https:")
+                cleanUrl = cleanUrl.replace(/(https?:)\s*\/\//g, '$1//');
                 
                 console.log('handleItemClick:', { name: itemData.name, url: itemData.url, cleanUrl: cleanUrl });
                 
@@ -276,7 +283,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     console.log('Это не видео, открываем напрямую');
                     // Остальные файлы – переход в текущей вкладке
-                    window.location.href = cleanUrl;
+                    // Убеждаемся, что URL абсолютный (начинается с http:// или https://)
+                    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+                        window.location.href = cleanUrl;
+                    } else {
+                        console.error('Некорректный URL:', cleanUrl);
+                        alert(`Ошибка: некорректный URL для файла "${itemData.name}"`);
+                    }
                 }
             } else {
                 alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
