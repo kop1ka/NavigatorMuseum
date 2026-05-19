@@ -1293,7 +1293,20 @@
             });
             
             try {
-                const response = await fetch('/navigator/api/parser/start', { method: 'POST' });
+                const response = await fetch('/navigator/api/parser/start', { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                // Проверяем, успешен ли ответ
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Требуется авторизация администратора');
+                    }
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                }
+                
                 const data = await response.json();
 
                 if (data.status === 'started') {
@@ -1405,7 +1418,17 @@
         // Check parser status
         async function checkParserStatus() {
             try {
-                const response = await fetch('/navigator/api/parser/status');
+                const response = await fetch('/navigator/api/parser/status', { credentials: 'include' });
+                
+                // Проверяем, успешен ли ответ
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Требуется авторизация администратора');
+                    }
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                }
+                
                 const status = await response.json();
 
                 const statusDiv = document.getElementById('parserStatus');
@@ -1458,7 +1481,17 @@
         // Load initial parser status on page load
         async function loadParserStatus() {
             try {
-                const response = await fetch('/navigator/api/parser/status');
+                const response = await fetch('/navigator/api/parser/status', { credentials: 'include' });
+                
+                // Проверяем, успешен ли ответ
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Требуется авторизация администратора');
+                    }
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                }
+                
                 const status = await response.json();
                 
                 const statusDiv = document.getElementById('parserStatus');

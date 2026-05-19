@@ -47,6 +47,12 @@ def admin_required_decorator(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
+            # Проверяем, является ли запрос API запросом
+            if request.path.startswith('/api/'):
+                # Для API возвращаем JSON 401 вместо редиректа
+                from flask import jsonify
+                return jsonify({'error': 'Требуется авторизация администратора', 'status': 'unauthorized'}), 401
+            
             flash('Требуется права администратора', 'error')
             
             # Префикс пути (например, /navigator) - используем константу из app.py

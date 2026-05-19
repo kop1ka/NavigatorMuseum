@@ -924,7 +924,7 @@ def get_catalog():
     return response
 
 
-@app.route('/api/parser/status')
+@app.route('/navigator/api/parser/status')
 @login_required
 @admin_required_decorator
 def get_parser_status():
@@ -937,7 +937,7 @@ def get_parser_status():
     return jsonify(parser_status)
 
 
-@app.route('/api/parser/start', methods=['POST'])
+@app.route('/navigator/api/parser/start', methods=['POST'])
 @login_required
 @admin_required_decorator
 @csrf.exempt  # Освободить от CSRF защиты
