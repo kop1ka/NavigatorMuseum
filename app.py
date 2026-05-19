@@ -98,6 +98,9 @@ app.wsgi_app = PathPrefixMiddleware(app.wsgi_app, '/navigator')
 # Глобальная переменная для хранения префикса пути
 URL_PREFIX = '/navigator'
 
+# Настройка APPLICATION_ROOT для корректной работы url_for с префиксом
+app.config['APPLICATION_ROOT'] = '/navigator'
+
 # Настройка CORS заголовков для всех ответов (необходимо для работы на render.com и других хостингах)
 @app.after_request
 def add_cors_headers(response):
@@ -906,6 +909,9 @@ def get_catalog():
         # Добавляем все проекты в начало каталога в алфавитном порядке
         # Получаем префикс пути из SCRIPT_NAME для корректной работы в подкаталоге (например, /navigator)
         path_prefix = request.environ.get('SCRIPT_NAME', '').rstrip('/')
+        # Если path_prefix пустой, используем глобальный URL_PREFIX
+        if not path_prefix:
+            path_prefix = URL_PREFIX
         for proj_info in sorted(project_items, key=lambda x: x['name']):
             project_name = proj_info['name']
             settings = saved_project_settings.get(project_name.lower(), {})
@@ -914,7 +920,7 @@ def get_catalog():
                 "name": settings.get('name', project_name),
                 "icon": settings.get('icon', "page/logo.png"),
                 "children": None,
-                "url": f"{path_prefix}/projects/{project_name}/index.html" if path_prefix else f"/projects/{project_name}/index.html",
+                "url": f"{path_prefix}/projects/{project_name}/index.html",
                 "modified": datetime.fromtimestamp(os.path.getmtime(proj_info['index_html_path'])).strftime('%Y-%m-%d %H:%M'),
                 "permanent": True,
                 "has_flask": proj_info['has_flask']
