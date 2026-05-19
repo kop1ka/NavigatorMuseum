@@ -626,6 +626,7 @@
         let selectedElement = null;
         let selectedImage = null;
         let filteredImages = [];
+        let parserCheckTimeout = null; // Флаг для отслеживания таймера проверки парсера
 
         // Инициализация при загрузке
         document.addEventListener('DOMContentLoaded', async () => {
