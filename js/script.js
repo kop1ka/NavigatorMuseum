@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
         saveState();
     }
 
-    function renderItems(items, isSearchResults) {
+    function renderItems(items, isSearchResults, parentPath = '') {
         catalogGrid.innerHTML = '';
 
         if (items.length === 0) {
@@ -178,7 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             itemDiv.appendChild(img);
             itemDiv.appendChild(span);
-            itemDiv._itemData = item;
+            // Сохраняем путь к родительской папке для формирования URL проектов
+            itemDiv._itemData = { ...item, parentPath: parentPath };
 
             catalogGrid.appendChild(itemDiv);
         });
