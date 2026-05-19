@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Конечный элемент (файл)
             if (itemData.url) {
                 saveState();
-                
+
                 // Очищаем URL от лишних пробелов перед проверкой и использованием
                 const cleanUrl = itemData.url.trim();
                 
@@ -276,9 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     console.log('Это не видео, открываем напрямую');
                     // Остальные файлы – переход в текущей вкладке
-                    // Кодируем пробелы в URL для корректного перехода
-                    const encodedUrl = cleanUrl.replace(/ /g, '%20');
-                    window.location.href = encodedUrl;
+                    window.location.href = cleanUrl;
                 }
             } else {
                 alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
