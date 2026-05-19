@@ -1,1 +1,45 @@
-Nothing needs to be added to the .gitignore file since only a source file (index.html) was modified and there are no build artifacts, dependencies, or temporary files in the changes.
+```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+*.class
+*.out
+
+# Dependencies
+.venv/
+venv/
+.env
+.env.local
+*.env.*
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# Editors
+.vscode/
+.idea/
+
+# Coverage reports
+.coverage
+coverage/
+htmlcov/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+target/
+.mypy_cache/
+.pytest_cache/
+```
