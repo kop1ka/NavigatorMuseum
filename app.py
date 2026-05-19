@@ -165,9 +165,8 @@ login_manager.session_protection = SESSION_PROTECTION  # Уровень защи
 # Переопределяем метод login_url для корректной работы с префиксом пути
 def custom_login_url(next=None):
     """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-    # Используем url_for для генерации правильного URL относительно текущего хоста
-    from flask import url_for
-    base_url = url_for('login', _external=False)
+    # Явно добавляем префикс /navigator к URL входа
+    base_url = URL_PREFIX + '/login'
 
     if next:
         # Проверяем, содержит ли next уже префикс /navigator
@@ -362,7 +361,7 @@ def login():
     # -------------------------------------------------------------------
     def get_prefixed_login_url():
         """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-        return url_for('login', _external=False)
+        return URL_PREFIX + '/login'
     
     return render_template_string('''
 <!DOCTYPE html>
