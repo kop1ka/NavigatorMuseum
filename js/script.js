@@ -246,55 +246,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleItemClick(event) {
-        const itemDiv = event.target.closest('.item');
-        if (!itemDiv) return;
+       const itemDiv = event.target.closest('.item');
+    if (!itemDiv) return;
 
-        const itemData = itemDiv._itemData;
-        if (!itemData) return;
+    const itemData = itemDiv._itemData;
+    if (!itemData) return;
 
-        if (itemData.children && itemData.children.length > 0) {
-            // Папка – углубляемся
-            historyStack.push({
-                title: itemData.name,
-                items: itemData.children
-            });
-            renderCurrentLevel();
-        } else {
-            // Конечный элемент (файл)
-            if (itemData.url) {
-                saveState();
+    if (itemData.children && itemData.children.length > 0) {
+        // Папка – углубляемся
+        historyStack.push({
+            title: itemData.name,
+            items: itemData.children
+        });
+        renderCurrentLevel();
+    } else {
+        // Конечный элемент (файл)
+        if (itemData.url) {
+            saveState();
 
-                // Очищаем URL от лишних пробелов перед проверкой и использованием
-                // Важно: удаляем все пробелы, включая те, что могут быть внутри протокола
-                let cleanUrl = itemData.url.trim();
-                
-                // Дополнительная очистка: убираем пробелы внутри протокола (например "https :" -> "https:")
-                cleanUrl = cleanUrl.replace(/(https?:)\s*\/\//g, '$1//');
-                
-                console.log('handleItemClick:', { name: itemData.name, url: itemData.url, cleanUrl: cleanUrl });
-                
-                // Проверяем, является ли файл видео по расширению в URL
-                if (isVideoFile(cleanUrl)) {
-                    console.log('Это видео, открываем через video-player');
-                    // Видео – открываем в новой вкладке через видеоплеер
-                    const videoPlayerUrl = `/video-player?url=${encodeURIComponent(cleanUrl)}&name=${encodeURIComponent(itemData.name)}`;
-                    console.log('Video player URL:', videoPlayerUrl);
-                    window.open(videoPlayerUrl, '_blank');
-                } else {
-                    console.log('Это не видео, открываем напрямую');
-                    // Остальные файлы – переход в текущей вкладке
-                    // Убеждаемся, что URL абсолютный (начинается с http:// или https://)
-                    if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-                        window.location.href = cleanUrl;
-                    } else {
-                        console.error('Некорректный URL:', cleanUrl);
-                        alert(`Ошибка: некорректный URL для файла "${itemData.name}"`);
-                    }
-                }
+            // --- Полная очистка URL ---
+            let cleanUrl = itemData.url.trim();
+            // Убираем пробелы внутри протокола (например "https ://" -> "https://")
+            cleanUrl = cleanUrl.replace(/(https?:)\s*\/\//g, '$1//');
+            // Заменяем все оставшиеся пробелы на %20
+            cleanUrl = cleanUrl.replace(/\s/g, '%20');
+            // Кодируем не‑ASCII символы (кириллицу и т.п.)
+            cleanUrl = encodeURI(cleanUrl);
+            console.log('handleItemClick cleanUrl:', cleanUrl);
+
+            // Проверяем, является ли файл видео по расширению в URL
+            if (isVideoFile(cleanUrl)) {
+                console.log('Это видео, открываем через video-player');
+                // Видео – открываем в новой вкладке через видеоплеер
+                const videoPlayerUrl = `/video-player?url=${encodeURIComponent(cleanUrl)}&name=${encodeURIComponent(itemData.name)}`;
+                console.log('Video player URL:', videoPlayerUrl);
+                window.open(videoPlayerUrl, '_blank');
             } else {
-                alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
+                console.log('Это не видео, открываем напрямую');
+                // Проверяем, что URL абсолютный
+                if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
+                    window.location.href = cleanUrl;
+                } else {
+                    console.error('Некорректный URL:', cleanUrl);
+                    alert(`Ошибка: некорректный URL для файла "${itemData.name}"`);
+                }
             }
+        } else {
+            alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
         }
+    }
     }
 
     function goBack() {
