@@ -654,7 +654,7 @@
         // Загрузка каталога
         async function loadCatalog() {
             try {
-                const response = await fetch('api/catalog', { credentials: 'include' });
+                const response = await fetch('/navigator/api/catalog', { credentials: 'include' });
                 catalogData = await response.json();
                 renderCatalogTree();
                 renderParentList();
@@ -667,7 +667,7 @@
         // Загрузка постоянных элементов
         async function loadPermanentItems() {
             try {
-                const response = await fetch('api/permanent', { credentials: 'include' });
+                const response = await fetch('/navigator/api/permanent', { credentials: 'include' });
                 const data = await response.json();
                 permanentItems = data.permanent_items || [];
             } catch (error) {
@@ -678,7 +678,7 @@
         // Загрузка доступных изображений
         async function loadImages() {
             try {
-                const response = await fetch('api/images', { credentials: 'include' });
+                const response = await fetch('/navigator/api/images', { credentials: 'include' });
                 availableImages = await response.json();
                 filteredImages = [...availableImages];
                 populateImageSelects();
@@ -1098,7 +1098,7 @@
             if (url) updates.url = url;
 
             try {
-                const response = await fetch('api/items', {
+                const response = await fetch('/navigator/api/items', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path, updates }),
@@ -1160,7 +1160,7 @@
                 const requestBody = { parent_path: parentPath, name, icon: iconValue };
                 if (url) requestBody.url = url;
 
-                const response = await fetch('api/items', {
+                const response = await fetch('/navigator/api/items', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestBody),
@@ -1201,7 +1201,7 @@
             }
 
             try {
-                const response = await fetch('api/items', {
+                const response = await fetch('/navigator/api/items', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path: selectedElement.path }),
@@ -1230,7 +1230,7 @@
         // Toggle permanent status
         async function togglePermanent(path, makePermanent) {
             try {
-                await fetch('api/permanent', {
+                await fetch('/navigator/api/permanent', {
                     method: makePermanent ? 'POST' : 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ path }),
@@ -1266,7 +1266,7 @@
         async function makeAllItemsPermanent() {
             try {
                 // Сначала загружаем актуальный каталог для получения всех путей
-                const catalogResponse = await fetch('api/catalog');
+                const catalogResponse = await fetch('/navigator/api/catalog');
                 const catalog = await catalogResponse.json();
                 
                 const allPaths = getAllPaths(catalog.children);
@@ -1293,7 +1293,7 @@
             });
             
             try {
-                const response = await fetch('api/parser/start', { method: 'POST' });
+                const response = await fetch('/navigator/api/parser/start', { method: 'POST' });
                 const data = await response.json();
 
                 if (data.status === 'started') {
@@ -1326,7 +1326,7 @@
             }
 
             try {
-                const response = await fetch('api/import/json', {
+                const response = await fetch('/navigator/api/import/json', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ json_data: jsonData, parent_path: parentPath })
@@ -1405,7 +1405,7 @@
         // Check parser status
         async function checkParserStatus() {
             try {
-                const response = await fetch('api/parser/status');
+                const response = await fetch('/navigator/api/parser/status');
                 const status = await response.json();
 
                 const statusDiv = document.getElementById('parserStatus');
@@ -1458,7 +1458,7 @@
         // Load initial parser status on page load
         async function loadParserStatus() {
             try {
-                const response = await fetch('api/parser/status');
+                const response = await fetch('/navigator/api/parser/status');
                 const status = await response.json();
                 
                 const statusDiv = document.getElementById('parserStatus');
@@ -1523,12 +1523,12 @@
 
         // Logout
         function logout() {
-            window.location.href = 'logout';
+            window.location.href = '/navigator/logout';
         }
 
         // Change password
         function changePassword() {
-            window.location.href = 'change-password';
+            window.location.href = '/navigator/change-password';
         }
 
         // Export JSON
