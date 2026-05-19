@@ -262,8 +262,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (itemData.url) {
                 saveState();
                 
-                // Берём ссылку как есть из элемента
-                let finalUrl = itemData.url;
+                // Берём ссылку как есть из элемента, удаляем все пробелы
+                let finalUrl = itemData.url.replace(/\s+/g, '');
                 
                 console.log('handleItemClick:', { name: itemData.name, url: itemData.url, finalUrl: finalUrl });
                 
@@ -276,7 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.open(videoPlayerUrl, '_blank');
                 } else {
                     console.log('Это не видео, переходим напрямую по ссылке');
-                    window.location.href = finalUrl;
+                    // Для внешних ссылок используем window.open с _blank, чтобы избежать проблем с относительными путями
+                    if (finalUrl.startsWith('http://') || finalUrl.startsWith('https://')) {
+                        window.open(finalUrl, '_blank');
+                    } else {
+                        window.location.href = finalUrl;
+                    }
                 }
             } else {
                 alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
