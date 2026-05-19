@@ -1,6 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Получаем базовый путь из текущего URL (например, /navigator)
-    const basePath = window.location.pathname.split("/projects")[0];
     // ----- Элементы DOM -----
     const sidebar = document.getElementById('sidebarLeft');
     const overlay = document.querySelector('.overlay');
@@ -194,27 +192,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!url) return false;
         try {
             // Очищаем URL от пробелов по краям
-            let trimmedUrl = url.trim();
-            
-            // Сначала декодируем URL, чтобы избежать двойного кодирования
+            const trimmedUrl = url.trim();
+            // Пытаемся декодировать URL, но если он уже содержит некорректные проценты - используем как есть
+            let cleanUrl;
             try {
-                trimmedUrl = decodeURIComponent(trimmedUrl);
+                cleanUrl = decodeURIComponent(trimmedUrl);
             } catch (e) {
-                // Если декодирование не удалось, используем как есть
+                cleanUrl = trimmedUrl;
             }
-            
-            // Дополнительная очистка: убираем пробелы внутри протокола (например "https :" -> "https:")
-            trimmedUrl = trimmedUrl.replace(/(https?\s*:\s*)/g, (match) => {
-                return match.replace(/\s+/g, '');
-            });
-            
-            // Убеждаемся, что после протокола стоит ровно один слеш перед двумя слешами
-            trimmedUrl = trimmedUrl.replace(/(https?:)\/+/g, '$1//');
-            
             // Регулярное выражение для проверки расширения видео (с учётом возможных пробелов в конце)
             const videoExtensions = /\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv|m4v)\s*$/i;
-            const isVideo = videoExtensions.test(trimmedUrl);
-            console.log('isVideoFile check:', { original: url, trimmed: trimmedUrl, isVideo: isVideo });
+            const isVideo = videoExtensions.test(cleanUrl);
+            console.log('isVideoFile check:', { original: url, trimmed: trimmedUrl, decoded: cleanUrl, isVideo: isVideo });
             return isVideo;
         } catch (e) {
             console.warn('Ошибка при проверке видео:', e);
@@ -225,7 +214,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Функция для получения прокси-URL для видео
     function getVideoProxyUrl(url) {
         // Очищаем URL от пробелов и декодируем
-        const cleanUrl = decodeURIComponent(url.trim());
+        let cleanUrl;
+        try {
+            cleanUrl = decodeURIComponent(url.trim());
+        } catch (e) {
+            cleanUrl = url.trim();
+        }
         // Проверяем, является ли URL внешним (с vm-ftp.anosov.ru)
         if (cleanUrl.includes('vm-ftp.anosov.ru')) {
             return 'api/video-proxy?url=' + encodeURIComponent(cleanUrl);
@@ -234,89 +228,46 @@ document.addEventListener('DOMContentLoaded', () => {
         return cleanUrl;
     }
 
-    // Функция для проверки, находится ли путь внутри папки projects
-    function isInProjectsFolder(path) {
-        if (!path) return false;
-        const normalizedPath = path.toLowerCase().replace(/\\/g, '/');
-        return normalizedPath.startsWith('projects/') || normalizedPath.startsWith('/projects/');
-    }
-
-    // Функция для формирования URL из пути в projects
-    function buildProjectsUrl(path) {
-        if (!path) return '';
-        // Очищаем путь от ведущих слешей
-        let cleanPath = path.replace(/^\/+/, '');
-        // Нормализуем разделители
-        cleanPath = cleanPath.replace(/\\/g, '/');
-        return cleanPath;
-    }
-
     function handleItemClick(event) {
-       const itemDiv = event.target.closest('.item');
-    if (!itemDiv) return;
+        const itemDiv = event.target.closest('.item');
+        if (!itemDiv) return;
 
-    const itemData = itemDiv._itemData;
-    if (!itemData) return;
+        const itemData = itemDiv._itemData;
+        if (!itemData) return;
 
-    if (itemData.children && itemData.children.length > 0) {
-        // Папка – углубляемся
-        historyStack.push({
-            title: itemData.name,
-            items: itemData.children
-        });
-        renderCurrentLevel();
-    } else {
-        // Конечный элемент (файл)
-        if (itemData.url) {
-            saveState();
-
-            // --- Полная очистка URL ---
-            let cleanUrl = itemData.url.trim();
-            
-            // Сначала декодируем URL, чтобы избежать двойного кодирования
-            try {
-                cleanUrl = decodeURIComponent(cleanUrl);
-            } catch (e) {
-                // Если декодирование не удалось, используем как есть
-            }
-            
-            // Убираем все пробелы внутри протокола (например "https :" -> "https:")
-            cleanUrl = cleanUrl.replace(/(https?\s*:\s*)/g, (match) => {
-                return match.replace(/\s+/g, '');
+        if (itemData.children && itemData.children.length > 0) {
+            // Папка – углубляемся
+            historyStack.push({
+                title: itemData.name,
+                items: itemData.children
             });
-            
-            // Убеждаемся, что после протокола стоит ровно один слеш перед двумя слешами
-            cleanUrl = cleanUrl.replace(/(https?:)\/+/g, '$1//');
-            
-            // Заменяем все оставшиеся пробелы на %20
-            cleanUrl = cleanUrl.replace(/\s/g, '%20');
-            
-            // Кодируем не-ASCII символы (кириллицу и т.п.)
-            cleanUrl = encodeURI(cleanUrl);
-            console.log('handleItemClick cleanUrl:', cleanUrl);
-
-            // Проверяем, является ли файл видео по расширению в URL
-            if (isVideoFile(cleanUrl)) {
-                console.log('Это видео, открываем через video-player');
-                // Видео – открываем в новой вкладке через видеоплеер
-                const videoPlayerUrl = `/video-player?url=${encodeURIComponent(cleanUrl)}&name=${encodeURIComponent(itemData.name)}`;
-                console.log('Video player URL:', videoPlayerUrl);
-                window.open(videoPlayerUrl, '_blank');
-            } else {
-                console.log('Это не видео, открываем напрямую');
-                // Проверяем, что URL абсолютный
-                if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-                    // Открываем внешний URL в новой вкладке, чтобы избежать проблем с относительными путями
-                    window.open(cleanUrl, '_blank');
-                } else {
-                    console.error('Некорректный URL:', cleanUrl);
-                    alert(`Ошибка: некорректный URL для файла "${itemData.name}"`);
-                }
-            }
+            renderCurrentLevel();
         } else {
-            alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
+            // Конечный элемент (файл)
+            if (itemData.url) {
+                saveState();
+
+                // Просто очищаем URL от пробелов по краям, как в старом рабочем коде
+                let cleanUrl = itemData.url.trim();
+                
+                console.log('handleItemClick:', { name: itemData.name, url: itemData.url, cleanUrl: cleanUrl });
+
+                // Проверяем, является ли файл видео по расширению в URL
+                if (isVideoFile(cleanUrl)) {
+                    console.log('Это видео, открываем через video-player');
+                    // Видео – открываем в новой вкладке через видеоплеер
+                    const videoPlayerUrl = `/video-player?url=${encodeURIComponent(cleanUrl)}&name=${encodeURIComponent(itemData.name)}`;
+                    console.log('Video player URL:', videoPlayerUrl);
+                    window.open(videoPlayerUrl, '_blank');
+                } else {
+                    console.log('Это не видео, открываем напрямую');
+                    // Остальные файлы – переход в текущей вкладке
+                    window.location.href = cleanUrl;
+                }
+            } else {
+                alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
+            }
         }
-    }
     }
 
     function goBack() {
