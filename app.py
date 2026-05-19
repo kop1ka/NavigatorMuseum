@@ -211,8 +211,9 @@ def run_parser_task():
     """
     global parser_status
     try:
-        parser_status['running'] = True
-        parser_status['message'] = 'Парсинг запущен...'
+        # Не меняем статус здесь, так как он уже установлен в start_parser()
+        # parser_status['running'] = True
+        # parser_status['message'] = 'Парсинг запущен...'
         
         # Загрузить уже сохранённые изображения, чтобы не потерять их
         existing_images_data = load_json_file(PARSER_IMAGES_FILE, {'images': []})
@@ -951,6 +952,10 @@ def start_parser():
         Response: JSON объект со статусом операции
     """
     if not parser_status['running']:
+        # Сразу обновляем статус перед запуском потока
+        parser_status['running'] = True
+        parser_status['message'] = 'Парсинг запущен...'
+        
         thread = threading.Thread(target=run_parser_task)
         thread.daemon = True
         thread.start()
