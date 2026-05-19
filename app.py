@@ -70,6 +70,10 @@ class PathPrefixMiddleware:
     Middleware для удаления префикса пути перед обработкой запроса Flask.
     Позволяет приложению работать в поддиректории без изменения маршрутов.
     Работает только если префикс ещё не был установлен nginx (SCRIPT_NAME пустой).
+    
+    ВАЖНО: Этот middleware удаляет префикс /navigator из PATH_INFO, поэтому
+    маршруты в Flask должны быть объявлены БЕЗ префикса /navigator.
+    Например: @app.route('/projects/...'), а НЕ @app.route('/navigator/projects/...')
     """
     def __init__(self, app, prefix):
         self.app = app
@@ -1321,6 +1325,14 @@ def serve_js(filename):
 
 
 
+# -------------------------------------------------------------------
+# Маршруты для проектов (с учётом префикса /navigator)
+# -------------------------------------------------------------------
+# Примечание: Middleware PathPrefixMiddleware автоматически удаляет префикс
+# /navigator из PATH_INFO, поэтому маршруты объявляются БЕЗ префикса.
+# Пользователь обращается по адресу /navigator/projects/..., но Flask
+# получает запрос как /projects/...
+
 @app.route('/projects/<project_name>/static/<path:filename>')
 def serve_project_static(project_name, filename):
     """
@@ -1328,6 +1340,7 @@ def serve_project_static(project_name, filename):
     
     Этот маршрут должен быть объявлен ДО общего маршрута /projects/<path:filename>,
     чтобы перехватывать запросы к статике до того, как они попадут в общий обработчик.
+    Поддерживает оба варианта: с префиксом /navigator и без него.
 
     Args:
         project_name: Имя проекта
