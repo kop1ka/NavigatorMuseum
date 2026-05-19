@@ -261,8 +261,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (itemData.url) {
                 saveState();
                 
-                // Берём ссылку как есть из элемента, удаляем все пробелы
-                let finalUrl = itemData.url.replace(/\s+/g, '');
+                // Берём ссылку как есть из элемента
+                let finalUrl = itemData.url;
+                
+                // Сначала нормализуем протокол - убираем пробелы в "https :" -> "https:"
+                // Это нужно сделать ДО удаления других пробелов, чтобы URL правильно определился как абсолютный
+                finalUrl = finalUrl.replace(/(https?)\s*:/i, '$1:');
+                
+                // Затем удаляем пробелы в начале и конце URL
+                finalUrl = finalUrl.trim();
                 
                 console.log('handleItemClick:', { name: itemData.name, url: itemData.url, finalUrl: finalUrl });
                 
@@ -275,8 +282,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.open(videoPlayerUrl, '_blank');
                 } else {
                     console.log('Это не видео, переходим напрямую по ссылке');
-                    // Нормализуем URL - убираем пробелы в протоколе (например, "https :" -> "https:")
-                    finalUrl = finalUrl.replace(/(https?)\s*:/i, '$1:');
                     
                     // Для внешних ссылок используем window.open с _blank, чтобы избежать проблем с относительными путями
                     if (finalUrl.startsWith('http://') || finalUrl.startsWith('https://')) {
