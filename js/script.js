@@ -270,6 +270,14 @@ document.addEventListener('DOMContentLoaded', () => {
             cleanUrl = cleanUrl.replace(/(https?:)\s*\/\//g, '$1//');
             // Заменяем все оставшиеся пробелы на %20
             cleanUrl = cleanUrl.replace(/\s/g, '%20');
+            
+            // Декодируем URL, чтобы избежать двойного кодирования
+            try {
+                cleanUrl = decodeURIComponent(cleanUrl);
+            } catch (e) {
+                // Если декодирование не удалось, используем как есть
+            }
+            
             // Кодируем не‑ASCII символы (кириллицу и т.п.)
             cleanUrl = encodeURI(cleanUrl);
             console.log('handleItemClick cleanUrl:', cleanUrl);
@@ -285,7 +293,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('Это не видео, открываем напрямую');
                 // Проверяем, что URL абсолютный
                 if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
-                    window.location.href = cleanUrl;
+                    // Открываем внешний URL в новой вкладке, чтобы избежать проблем с относительными путями
+                    window.open(cleanUrl, '_blank');
                 } else {
                     console.error('Некорректный URL:', cleanUrl);
                     alert(`Ошибка: некорректный URL для файла "${itemData.name}"`);
