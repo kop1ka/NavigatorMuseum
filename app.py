@@ -52,7 +52,7 @@ from utils.data_utils import (
     ensure_data_dir, load_json_file, save_json_file, get_current_timestamp, get_full_timestamp,
     load_users, save_users, load_catalog, save_catalog, load_permanent_items, save_permanent_items
 )
-from utils.parser_utils import extract_items_from_html, parse_folder
+from utils.parser_utils import extract_items_from_html, parse_folder, ERROR_LOG_FILE
 from utils.auth_utils import User, hash_password, verify_password, admin_required_decorator
 from utils.catalog_utils import (
     get_item_path, mark_permanent_recursive, merge_with_permanent,
@@ -1433,7 +1433,8 @@ def get_parser_status():
         'last_run': parser_status.get('last_run'),
         'message': parser_status.get('message', 'Нет данных'),
         'images': parser_status.get('images', []),
-        'logs': parser_logs[-50:]  # Возвращаем последние 50 записей лога
+        'logs': parser_logs[-50:],  # Возвращаем последние 50 записей лога
+        'error_logs_available': os.path.exists(ERROR_LOG_FILE)  # Флаг наличия файла ошибок
     })
 
 
@@ -1498,6 +1499,31 @@ def reset_parser():
     global parser_status
     parser_status = {'running': False, 'last_run': None, 'message': 'Парсер не запущен', 'images': parser_status.get('images', [])}
     return jsonify({'status': 'reset'})
+
+
+@app.route('/api/parser/error-logs')
+@login_required
+@admin_required_decorator
+def get_error_logs():
+    """
+    API endpoint для получения логов ошибок парсера
+    
+    Возвращает логи ошибок из JSON файла, который сохраняется при ошибках парсинга.
+    
+    Returns:
+        Response: JSON объект с логами ошибок
+    """
+    try:
+        if os.path.exists(ERROR_LOG_FILE):
+            with open(ERROR_LOG_FILE, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+            return jsonify(logs)
+        else:
+            return jsonify({'errors': [], 'message': 'Файл логов ещё не создан'})
+    except json.JSONDecodeError as e:
+        return jsonify({'error': f'Ошибка чтения JSON: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
 @app.route('/api/import/json', methods=['POST'])
