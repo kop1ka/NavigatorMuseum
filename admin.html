@@ -872,26 +872,6 @@
         // Render images grids с постепенной загрузкой
         let renderedImagePaths = new Set(); // Храним пути уже отображённых изображений в текущей сессии
         
-        function highlightSelectedImage(iconPath, containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-            
-            // Снять выделение со всех изображений
-            container.querySelectorAll('.image-item').forEach(el => el.classList.remove('selected'));
-            
-            // Найти и выделить изображение с matching path
-            if (iconPath) {
-                const imageItems = container.querySelectorAll('.image-item');
-                for (const item of imageItems) {
-                    // Проверяем data-path атрибут
-                    if (item.dataset.path === iconPath) {
-                        item.classList.add('selected');
-                        break;
-                    }
-                }
-            }
-        }
-        
         function renderImagesGrids() {
             // Очищаем множество при полной перерисовке (например, при переключении вкладок)
             // Но сохраняем для предотвращения дублирования внутри одной сессии просмотра
