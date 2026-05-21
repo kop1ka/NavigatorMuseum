@@ -972,10 +972,6 @@
             container.appendChild(imageItem);
         }
 
-        // Setup tabs
-        function setupTabs() {
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', () => {
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     
                     tab.classList.add('active');
