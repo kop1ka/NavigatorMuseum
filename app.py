@@ -145,7 +145,7 @@ csrf = CSRFProtect(app)  # Защита от CSRF атак
 def limiter_enabled():
     """Проверка, включен ли rate limiting для текущего запроса"""
     # Не применяем rate limiting к статическим файлам и proxy-image endpoint
-    if request.path.startswith('/page/') or request.path.startswith('/static/') or request.path.startswith('/projects/') or request.path.startswith('/css/') or request.path.startswith('/js/') or request.path == '/api/proxy-image' or request.path == '/api/images':
+    if request.path.startswith('/page/') or request.path.startswith('/static/') or request.path.startswith('/projects/') or request.path.startswith('/css/') or request.path.startswith('/js/') or request.path == '/api/proxy-image':
         return False
     return RATELIMIT_ENABLED
 
@@ -1986,7 +1986,6 @@ def proxy_image():
     Returns:
         Response: Изображение с appropriate Content-Type
     """
-    import time
     image_url = request.args.get('url', '')
     
     if not image_url:
@@ -1997,64 +1996,29 @@ def proxy_image():
     if parsed.netloc != 'vm-ftp.anosov.ru':
         return jsonify({'error': 'Недоверенный домен'}), 403
     
-    max_retries = 3
-    base_delay = 2  # Базовая задержка в секундах
-    
-    for attempt in range(max_retries):
-        try:
-            # Загружаем изображение с внешнего сервера
-            # Используем verify=False для самоподписанных сертификатов
-            response = requests.get(image_url, timeout=15, stream=True, verify=False)
-            
-            # Обработка 429 ошибки
-            if response.status_code == 429:
-                retry_after = response.headers.get('Retry-After')
-                if retry_after:
-                    wait_time = int(retry_after)
-                else:
-                    # Экспоненциальная задержка: 2, 4, 8 секунд
-                    wait_time = base_delay * (2 ** attempt)
-                
-                print(f"[WARNING proxy-image] Получена 429 ошибка. Ожидание {wait_time}s перед попыткой {attempt + 2}/{max_retries}")
-                
-                if attempt < max_retries - 1:
-                    time.sleep(wait_time)
-                    continue
-                else:
-                    return jsonify({'error': 'Слишком много запросов. Попробуйте позже.'}), 429
-            
-            response.raise_for_status()
-            
-            # Определяем Content-Type
-            content_type = response.headers.get('Content-Type', 'image/jpeg')
-            
-            # Создаём ответ с правильными заголовками
-            proxy_response = Response(
-                response.content,
-                status=200,
-                content_type=content_type
-            )
-            
-            # Добавляем заголовки для кэширования (увеличиваем время кэширования)
-            proxy_response.headers['Cache-Control'] = 'public, max-age=604800'  # 7 дней
-            proxy_response.headers['ETag'] = f'"{hash(image_url)}"'
-            
-            return proxy_response
-            
-        except requests.exceptions.Timeout as e:
-            print(f"[ERROR proxy-image] Таймаут при загрузке {image_url}: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(base_delay * (2 ** attempt))
-                continue
-            return jsonify({'error': f'Таймаут загрузки: {str(e)}'}), 500
-        except requests.exceptions.RequestException as e:
-            print(f"[ERROR proxy-image] Ошибка загрузки {image_url}: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(base_delay * (2 ** attempt))
-                continue
-            return jsonify({'error': f'Ошибка загрузки: {str(e)}'}), 500
-    
-    return jsonify({'error': 'Превышено количество попыток загрузки'}), 500
+    try:
+        # Загружаем изображение с внешнего сервера
+        # Используем verify=False для самоподписанных сертификатов
+        response = requests.get(image_url, timeout=10, stream=True, verify=False)
+        response.raise_for_status()
+        
+        # Определяем Content-Type
+        content_type = response.headers.get('Content-Type', 'image/jpeg')
+        
+        # Создаём ответ с правильными заголовками
+        proxy_response = Response(
+            response.content,
+            status=200,
+            content_type=content_type
+        )
+        
+        # Добавляем заголовки для кэширования
+        proxy_response.headers['Cache-Control'] = 'public, max-age=86400'
+        
+        return proxy_response
+        
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Ошибка загрузки: {str(e)}'}), 500
 
 
 @app.route('/api/video-proxy')

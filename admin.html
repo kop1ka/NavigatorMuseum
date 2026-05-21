@@ -870,12 +870,9 @@
         }
 
         // Render images grids с постепенной загрузкой
-        let renderedImagePaths = new Set(); // Храним пути уже отображённых изображений в текущей сессии
+        let renderedImagePaths = new Set(); // Храним пути уже загруженных изображений
         
         function renderImagesGrids() {
-            // Очищаем множество при полной перерисовке (например, при переключении вкладок)
-            // Но сохраняем для предотвращения дублирования внутри одной сессии просмотра
-            renderedImagePaths.clear();
             renderImagesGrid('editImagesGrid', 'editIcon');
             renderImagesGrid('addImagesGrid', 'addIcon');
         }
@@ -895,26 +892,24 @@
             });
 
             // Затем постепенно загружаем внешние изображения с задержкой
-            // Используем меньшую задержку для ускорения загрузки
             externalImages.forEach((img, index) => {
                 setTimeout(() => {
                     createImageItem(container, img, selectId);
-                }, index * 50); // Задержка 50мс между каждым изображением
+                }, index * 100); // Задержка 100мс между каждым изображением
             });
         }
         
         function createImageItem(container, img, selectId) {
-            // Проверяем, не было ли уже отображено это изображение в текущей сессии
-            // Это предотвращает дублирование при фильтрации/поиске
+            // Проверяем, не было ли уже загружено это изображение
             if (renderedImagePaths.has(img.path)) {
-                return; // Пропускаем уже отображённые
+                return; // Пропускаем уже загруженные
             }
             
             const imageItem = document.createElement('div');
             imageItem.className = 'image-item';
             imageItem.dataset.path = img.path;
             
-            // Помечаем как отображённое
+            // Помечаем как загруженное
             renderedImagePaths.add(img.path);
             
             // Определяем src для изображения
