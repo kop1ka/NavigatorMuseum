@@ -505,6 +505,11 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="editIconUrl">Или вставьте URL изображения из интернета</label>
+                        <input type="text" id="editIconUrl" name="icon_url" placeholder="https://example.com/image.png">
+                    </div>
+
+                    <div class="form-group">
                         <label>Предпросмотр иконок</label>
                         <div class="images-grid" id="editImagesGrid"></div>
                     </div>
@@ -551,6 +556,11 @@
                         <select id="addIcon" name="icon">
                             <option value="">-- Выберите иконку --</option>
                         </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="addIconUrl">Или вставьте URL изображения из интернета</label>
+                        <input type="text" id="addIconUrl" name="icon_url" placeholder="https://example.com/image.png">
                     </div>
 
                     <div class="form-group">
@@ -819,6 +829,8 @@
             document.getElementById('editIcon').value = itemData.icon || '';
             document.getElementById('editUrl').value = itemData.url || '';
             document.getElementById('editPermanent').checked = permanentItems.includes(path);
+            // Очищаем поле URL изображения при выборе элемента
+            document.getElementById('editIconUrl').value = '';
 
             // Выделить текущую иконку в сетке
             highlightSelectedImage(itemData.icon, 'editImagesGrid');
@@ -1011,6 +1023,28 @@
 
         // Setup forms
         function setupForms() {
+            // Обработчик для поля URL изображения на вкладке редактирования
+            document.getElementById('editIconUrl').addEventListener('input', (e) => {
+                const url = e.target.value.trim();
+                if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                    selectedImage = url;
+                    // Снять выделение со всех изображений в сетке
+                    document.querySelectorAll('#editImagesGrid .image-item').forEach(el => el.classList.remove('selected'));
+                    document.getElementById('editIcon').value = '';
+                }
+            });
+            
+            // Обработчик для поля URL изображения на вкладке добавления
+            document.getElementById('addIconUrl').addEventListener('input', (e) => {
+                const url = e.target.value.trim();
+                if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                    selectedImage = url;
+                    // Снять выделение со всех изображений в сетке
+                    document.querySelectorAll('#addImagesGrid .image-item').forEach(el => el.classList.remove('selected'));
+                    document.getElementById('addIcon').value = '';
+                }
+            });
+            
             // Edit form
             document.getElementById('editForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -1113,8 +1147,10 @@
         async function updateItem() {
             const path = document.getElementById('editPath').value;
             
-            // Используем selectedImage если он выбран, иначе берём из селекта
-            let iconValue = selectedImage || document.getElementById('editIcon').value;
+            // Приоритет: URL из поля ввода > selectedImage > значение из селекта
+            let iconValue = document.getElementById('editIconUrl').value.trim() || 
+                           selectedImage || 
+                           document.getElementById('editIcon').value;
             
             // Проверяем, является ли иконка URL-заглушкой, и если да - заменяем на пустую строку
             const placeholderUrls = [
@@ -1157,6 +1193,7 @@
                     await togglePermanent(path, isPermanent);
 
                     showStatus('Элемент успешно обновлён', 'success');
+                    document.getElementById('editIconUrl').value = ''; // Очистить поле URL изображения
                     selectedImage = null; // Сбросить выбранное изображение после обновления
                     await loadCatalog();
                     await loadPermanentItems();
@@ -1177,8 +1214,11 @@
             const parentPath = document.getElementById('addParentPath').value;
             const name = document.getElementById('addName').value.toUpperCase();
             
-            // Используем selectedImage если он выбран, иначе берём из селекта
-            let iconValue = selectedImage || document.getElementById('addIcon').value || 'folder.png';
+            // Приоритет: URL из поля ввода > selectedImage > значение из селекта > default
+            let iconValue = document.getElementById('addIconUrl').value.trim() || 
+                           selectedImage || 
+                           document.getElementById('addIcon').value || 
+                           'folder.png';
             
             // Проверяем, является ли иконка URL-заглушкой, и если да - заменяем на пустую строку
             const placeholderUrls = [
@@ -1223,6 +1263,7 @@
                     showStatus('Элемент успешно добавлен', 'success');
                     document.getElementById('addForm').reset();
                     document.getElementById('addParentPath').value = '';
+                    document.getElementById('addIconUrl').value = ''; // Очистить поле URL изображения
                     selectedImage = null; // Сбросить выбранное изображение
                     await loadCatalog();
                     await loadPermanentItems();
