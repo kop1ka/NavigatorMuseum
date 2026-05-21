@@ -869,7 +869,9 @@
             });
         }
 
-        // Render images grids
+        // Render images grids с постепенной загрузкой
+        let renderedImagePaths = new Set(); // Храним пути уже загруженных изображений
+        
         function renderImagesGrids() {
             renderImagesGrid('editImagesGrid', 'editIcon');
             renderImagesGrid('addImagesGrid', 'addIcon');
@@ -880,84 +882,96 @@
             if (!container) return;
             container.innerHTML = '';
 
-            images.forEach(img => {
-                const imageItem = document.createElement('div');
-                imageItem.className = 'image-item';
-                imageItem.dataset.path = img.path;
-                
-                // Определяем src для изображения
-                let imgSrc = img.path;
-                
-                // Если это внешний URL с vm-ftp.anosov.ru, используем прокси
-                if (img.path.startsWith('http://') || img.path.startsWith('https://')) {
-                    if (img.path.includes('vm-ftp.anosov.ru')) {
-                        imgSrc = 'api/proxy-image?url=' + encodeURIComponent(img.path);
-                    }
+            // Разделяем изображения на локальные и внешние
+            const localImages = images.filter(img => !img.path.startsWith('http'));
+            const externalImages = images.filter(img => img.path.startsWith('http'));
+
+            // Сначала рендерим локальные изображения (они быстрые)
+            localImages.forEach(img => {
+                createImageItem(container, img, selectId);
+            });
+
+            // Затем постепенно загружаем внешние изображения с задержкой
+            externalImages.forEach((img, index) => {
+                setTimeout(() => {
+                    createImageItem(container, img, selectId);
+                }, index * 100); // Задержка 100мс между каждым изображением
+            });
+        }
+        
+        function createImageItem(container, img, selectId) {
+            // Проверяем, не было ли уже загружено это изображение
+            if (renderedImagePaths.has(img.path)) {
+                return; // Пропускаем уже загруженные
+            }
+            
+            const imageItem = document.createElement('div');
+            imageItem.className = 'image-item';
+            imageItem.dataset.path = img.path;
+            
+            // Помечаем как загруженное
+            renderedImagePaths.add(img.path);
+            
+            // Определяем src для изображения
+            let imgSrc = img.path;
+
+            // Если это внешний URL с vm-ftp.anosov.ru, используем прокси
+            if (img.path.startsWith('http://') || img.path.startsWith('https://')) {
+                if (img.path.includes('vm-ftp.anosov.ru')) {
+                    imgSrc = 'api/proxy-image?url=' + encodeURIComponent(img.path);
                 }
-                
-                imageItem.innerHTML = `
-                    <img src="${imgSrc}" alt="${img.name}" loading="lazy" onerror="this.style.display='none'">
-                    <span>${img.name}</span>
-                `;
+            }
 
-                imageItem.addEventListener('click', () => {
-                    // Снять выделение со всех
-                    container.querySelectorAll('.image-item').forEach(el => el.classList.remove('selected'));
-                    imageItem.classList.add('selected');
+            imageItem.innerHTML = `
+                <img src="${imgSrc}" alt="${img.name}" loading="lazy" onerror="this.style.display='none'">
+                <span>${img.name}</span>
+            `;
 
-                    // Выбрать в селекте
-                    const select = document.getElementById(selectId);
-                    select.value = img.path;
-                    selectedImage = img.path;
-                    
-                    // Обновить предпросмотр иконки у выбранного элемента в дереве
-                    if (selectId === 'editIcon' && selectedElement) {
-                        const treeItem = document.querySelector(`.tree-item[data-path="${selectedElement.path}"]`);
-                        if (treeItem) {
-                            const iconSpan = treeItem.querySelector('span:nth-child(2)');
-                            if (iconSpan) {
-                                // Проверяем, является ли выбранная иконка URL-заглушкой
-                                const placeholderUrls = [
-                                    'https://vm-ftp.anosov.ru/icons/folder.gif',
-                                    'http://vm-ftp.anosov.ru/icons/folder.gif',
-                                    'vm-ftp.anosov.ru/icons/folder.gif'
-                                ];
-                                
-                                let isPlaceholder = false;
-                                for (const placeholderUrl of placeholderUrls) {
-                                    if (img.path.includes(placeholderUrl)) {
-                                        isPlaceholder = true;
-                                        break;
-                                    }
+            imageItem.addEventListener('click', () => {
+                // Снять выделение со всех
+                container.querySelectorAll('.image-item').forEach(el => el.classList.remove('selected'));
+                imageItem.classList.add('selected');
+
+                // Выбрать в селекте
+                const select = document.getElementById(selectId);
+                select.value = img.path;
+                selectedImage = img.path;
+
+                // Обновить предпросмотр иконки у выбранного элемента в дереве
+                if (selectId === 'editIcon' && selectedElement) {
+                    const treeItem = document.querySelector(`.tree-item[data-path="${selectedElement.path}"]`);
+                    if (treeItem) {
+                        const iconSpan = treeItem.querySelector('span:nth-child(2)');
+                        if (iconSpan) {
+                            // Проверяем, является ли выбранная иконка URL-заглушкой
+                            const placeholderUrls = [
+                                'https://vm-ftp.anosov.ru/icons/folder.gif',
+                                'http://vm-ftp.anosov.ru/icons/folder.gif',
+                                'vm-ftp.anosov.ru/icons/folder.gif'
+                            ];
+
+                            let isPlaceholder = false;
+                            for (const placeholderUrl of placeholderUrls) {
+                                if (img.path.includes(placeholderUrl)) {
+                                    isPlaceholder = true;
+                                    break;
                                 }
-                                
-                                // Если иконка не пустая и не заглушка - используем 📄, иначе 📁
-                                if (!isPlaceholder && img.path.trim() !== '') {
-                                    iconSpan.textContent = '📄';
-                                } else {
-                                    iconSpan.textContent = '📁';
-                                }
+                            }
+
+                            // Если иконка не пустая и не заглушка - используем 📄, иначе 📁
+                            if (!isPlaceholder && img.path.trim() !== '') {
+                                iconSpan.textContent = '📄';
+                            } else {
+                                iconSpan.textContent = '📁';
                             }
                         }
                     }
-                });
-
-                container.appendChild(imageItem);
+                }
             });
+
+            container.appendChild(imageItem);
         }
 
-        function highlightSelectedImage(iconPath, gridId) {
-            const container = document.getElementById(gridId);
-            container.querySelectorAll('.image-item').forEach(el => {
-                el.classList.toggle('selected', el.dataset.path === iconPath);
-            });
-        }
-
-        // Setup tabs
-        function setupTabs() {
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                     
                     tab.classList.add('active');

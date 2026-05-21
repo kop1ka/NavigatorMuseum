@@ -94,9 +94,9 @@ def extract_items_from_html(html_content, base_url):
     return items
 
 
-def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_workers=5):
+def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_workers=5, delay=2):
     """
-    Парсинг FTP-каталога с многопоточностью
+    Парсинг FTP-каталога с многопоточностью и задержками для избежания 429 ошибок
     
     Args:
         url: URL для парсинга
@@ -105,6 +105,7 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
         max_depth: максимальная глубина парсинга
         timeout: таймаут запроса в секундах
         max_workers: количество потоков для параллельного парсинга
+        delay: задержка между запросами в секундах
     
     Returns:
         list: список элементов каталога
@@ -130,6 +131,12 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
     print(f"[DEBUG parse_folder] Вызов: url={url}, depth={depth}, max_depth={max_depth}")
     
     try:
+        # Добавляем задержку перед запросом для избежания 429 ошибок
+        import time
+        if depth > 0:  # Не задерживаем первый запрос
+            print(f"[DEBUG parse_folder] Задержка {delay}s перед запросом к {url}...")
+            time.sleep(delay)
+        
         print(f"[DEBUG parse_folder] Запрос к {url} (timeout={timeout})...")
         log_detail = f"URL: {url}, timeout: {timeout}s, depth: {depth}, max_depth: {max_depth}"
         
@@ -138,6 +145,15 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
             response = requests.get(url, timeout=timeout, verify=False)
             print(f"[DEBUG parse_folder] Получен ответ: status_code={response.status_code}, size={len(response.text)} bytes")
             print(f"[DEBUG parse_folder] Заголовки ответа: {dict(response.headers)}")
+            
+            # Проверка на 429 ошибку
+            if response.status_code == 429:
+                print(f"[WARNING parse_folder] Получена 429 ошибка (Too Many Requests) от {url}")
+                print(f"[WARNING parse_folder] Увеличиваем задержку и пробуем снова через {delay * 2}s...")
+                time.sleep(delay * 2)
+                # Повторная попытка с увеличенной задержкой
+                response = requests.get(url, timeout=timeout * 2, verify=False)
+                print(f"[DEBUG parse_folder] Повторный ответ: status_code={response.status_code}")
             
             # Проверка статуса ответа
             if response.status_code != 200:
@@ -185,10 +201,10 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
             print(f"[DEBUG parse_folder] Папки для парсинга: {[f['url'] for f in folders_to_parse]}")
         
         if folders_to_parse and depth < max_depth:
-            print(f"[DEBUG parse_folder] Запуск многопоточного парсинга {len(folders_to_parse)} папок...")
+            print(f"[DEBUG parse_folder] Запуск многопоточного парсинга {len(folders_to_parse)} папок с max_workers={max_workers}...")
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 future_to_item = {
-                    executor.submit(_parse_folder_recursive, item['url'], visited, depth + 1, max_depth, timeout): item
+                    executor.submit(_parse_folder_recursive, item['url'], visited, depth + 1, max_depth, timeout, delay): item
                     for item in folders_to_parse
                 }
                 
@@ -222,6 +238,6 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
         return []
 
 
-def _parse_folder_recursive(url, visited, depth, max_depth, timeout):
+def _parse_folder_recursive(url, visited, depth, max_depth, timeout, delay=2):
     """Вспомогательная функция для рекурсивного парсинга"""
-    return parse_folder(url, visited, depth, max_depth, timeout)
+    return parse_folder(url, visited, depth, max_depth, timeout, delay=delay)
