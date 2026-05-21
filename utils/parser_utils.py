@@ -3,6 +3,7 @@ import requests
 import urllib3
 import json
 import os
+import time
 from datetime import datetime
 from bs4 import BeautifulSoup
 from urllib.parse import unquote, urljoin
@@ -13,6 +14,9 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Путь к файлу логов ошибок
 ERROR_LOG_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'error_log.json')
+
+# Задержка между запросами к FTP-серверу (в секундах) для избежания 429 ошибки
+REQUEST_DELAY = 2.0  # 2 секунды между запросами
 
 
 def log_error_to_json(error_type, url, response=None, exception=None, depth=None, timeout=None):
@@ -191,6 +195,9 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
     try:
         print(f"[DEBUG parse_folder] Запрос к {url} (timeout={timeout})...")
         log_detail = f"URL: {url}, timeout: {timeout}s, depth: {depth}, max_depth: {max_depth}"
+        
+        # Добавляем задержку перед запросом для избежания 429 ошибки
+        time.sleep(REQUEST_DELAY)
         
         try:
             print(f"[DEBUG parse_folder] Выполнение requests.get(url='{url}', timeout={timeout}, verify=False)")
