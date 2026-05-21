@@ -146,39 +146,14 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
             print(f"[DEBUG parse_folder] Получен ответ: status_code={response.status_code}, size={len(response.text)} bytes")
             print(f"[DEBUG parse_folder] Заголовки ответа: {dict(response.headers)}")
             
-            # Проверка на 429 ошибку с автоматической обработкой
+            # Проверка на 429 ошибку
             if response.status_code == 429:
                 print(f"[WARNING parse_folder] Получена 429 ошибка (Too Many Requests) от {url}")
-                
-                # Пытаемся получить время ожидания из заголовка Retry-After
-                retry_after = response.headers.get('Retry-After')
-                if retry_after:
-                    wait_time = int(retry_after)
-                    print(f"[WARNING parse_folder] Сервер запросил ожидание {wait_time}s (из заголовка Retry-After)")
-                else:
-                    # Экспоненциальная задержка: delay * 2, delay * 4, delay * 8
-                    wait_time = delay * (2 ** 1)  # Первая повторная попытка
-                    print(f"[WARNING parse_folder] Используем экспоненциальную задержку {wait_time}s")
-                
-                print(f"[WARNING parse_folder] Ожидание {wait_time}s перед повторной попыткой...")
-                time.sleep(wait_time)
-                
-                # Повторная попытка с увеличенным таймаутом
+                print(f"[WARNING parse_folder] Увеличиваем задержку и пробуем снова через {delay * 2}s...")
+                time.sleep(delay * 2)
+                # Повторная попытка с увеличенной задержкой
                 response = requests.get(url, timeout=timeout * 2, verify=False)
                 print(f"[DEBUG parse_folder] Повторный ответ: status_code={response.status_code}")
-                
-                # Если снова 429, пробуем ещё раз с большей задержкой
-                if response.status_code == 429:
-                    retry_after = response.headers.get('Retry-After')
-                    if retry_after:
-                        wait_time = int(retry_after)
-                    else:
-                        wait_time = delay * (2 ** 2)  # Вторая повторная попытка
-                    
-                    print(f"[WARNING parse_folder] Снова 429 ошибка. Ожидание {wait_time}s...")
-                    time.sleep(wait_time)
-                    response = requests.get(url, timeout=timeout * 3, verify=False)
-                    print(f"[DEBUG parse_folder] Третий ответ: status_code={response.status_code}")
             
             # Проверка статуса ответа
             if response.status_code != 200:
