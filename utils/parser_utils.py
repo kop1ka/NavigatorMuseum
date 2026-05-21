@@ -4,9 +4,92 @@ import urllib3
 from bs4 import BeautifulSoup
 from urllib.parse import unquote, urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
 
 # Подавление SSL-предупреждений при использовании verify=False
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+# User-Agent для маскировки под браузер
+DEFAULT_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'DNT': '1'
+}
+
+
+def make_request_with_retry(url, timeout=10, max_retries=5, base_delay=2, **kwargs):
+    """
+    Выполняет HTTP запрос с повторными попытками при ошибках
+    
+    Args:
+        url: URL для запроса
+        timeout: таймаут запроса в секундах
+        max_retries: максимальное количество попыток
+        base_delay: базовая задержка между попытками в секундах
+        **kwargs: дополнительные аргументы для requests.get
+    
+    Returns:
+        requests.Response: объект ответа или None если все попытки неудачны
+    """
+    headers = kwargs.pop('headers', DEFAULT_HEADERS.copy())
+    
+    for attempt in range(max_retries):
+        try:
+            # Добавляем задержку перед запросом (кроме первой попытки)
+            if attempt > 0:
+                wait_time = base_delay * (2 ** (attempt - 1))
+                print(f"[RETRY] Попытка {attempt + 1}/{max_retries}. Ожидание {wait_time}s...")
+                time.sleep(wait_time)
+            
+            response = requests.get(url, timeout=timeout, verify=False, headers=headers, **kwargs)
+            
+            # Обработка 429 ошибки
+            if response.status_code == 429:
+                retry_after = response.headers.get('Retry-After')
+                if retry_after:
+                    wait_time = max(int(retry_after), base_delay)
+                else:
+                    wait_time = base_delay * (2 ** attempt)
+                
+                print(f"[WARNING] Получена 429 ошибка от {url}. Ожидание {wait_time}s")
+                
+                if attempt < max_retries - 1:
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    print(f"[ERROR] Превышено количество попыток после 429 ошибки")
+                    return None
+            
+            # Обработка серверных ошибок (5xx)
+            if response.status_code >= 500:
+                print(f"[WARNING] Получена {response.status_code} ошибка от {url}")
+                if attempt < max_retries - 1:
+                    continue
+                else:
+                    return None
+            
+            response.raise_for_status()
+            return response
+            
+        except requests.exceptions.Timeout as e:
+            print(f"[ERROR] Таймаут при запросе {url}: {e}")
+            if attempt >= max_retries - 1:
+                return None
+        except requests.exceptions.ConnectionError as e:
+            print(f"[ERROR] Ошибка подключения {url}: {e}")
+            if attempt >= max_retries - 1:
+                return None
+        except requests.exceptions.RequestException as e:
+            print(f"[ERROR] Ошибка запроса {url}: {e}")
+            if attempt >= max_retries - 1:
+                return None
+    
+    return None
 
 
 def extract_items_from_html(html_content, base_url):
@@ -94,7 +177,7 @@ def extract_items_from_html(html_content, base_url):
     return items
 
 
-def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_workers=5, delay=2):
+def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=30, max_workers=2, delay=3):
     """
     Парсинг FTP-каталога с многопоточностью и задержками для избежания 429 ошибок
     
@@ -103,8 +186,8 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
         visited: множество посещённых URL
         depth: текущая глубина рекурсии
         max_depth: максимальная глубина парсинга
-        timeout: таймаут запроса в секундах
-        max_workers: количество потоков для параллельного парсинга
+        timeout: таймаут запроса в секундах (увеличен для медленных соединений)
+        max_workers: количество потоков для параллельного парсинга (уменьшено для снижения нагрузки)
         delay: задержка между запросами в секундах
     
     Returns:
@@ -131,86 +214,26 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
     print(f"[DEBUG parse_folder] Вызов: url={url}, depth={depth}, max_depth={max_depth}")
     
     try:
-        # Добавляем задержку перед запросом для избежания 429 ошибок
-        import time
-        if depth > 0:  # Не задерживаем первый запрос
-            print(f"[DEBUG parse_folder] Задержка {delay}s перед запросом к {url}...")
-            time.sleep(delay)
+        # Используем новую функцию make_request_with_retry для надёжного запроса
+        print(f"[DEBUG parse_folder] Запрос к {url} с retry логикой (timeout={timeout})...")
         
-        print(f"[DEBUG parse_folder] Запрос к {url} (timeout={timeout})...")
-        log_detail = f"URL: {url}, timeout: {timeout}s, depth: {depth}, max_depth: {max_depth}"
+        response = make_request_with_retry(url, timeout=timeout, max_retries=5, base_delay=delay)
         
-        try:
-            print(f"[DEBUG parse_folder] Выполнение requests.get(url='{url}', timeout={timeout}, verify=False)")
-            response = requests.get(url, timeout=timeout, verify=False)
-            print(f"[DEBUG parse_folder] Получен ответ: status_code={response.status_code}, size={len(response.text)} bytes")
-            print(f"[DEBUG parse_folder] Заголовки ответа: {dict(response.headers)}")
-            
-            # Проверка на 429 ошибку с автоматической обработкой
-            if response.status_code == 429:
-                print(f"[WARNING parse_folder] Получена 429 ошибка (Too Many Requests) от {url}")
-                
-                # Пытаемся получить время ожидания из заголовка Retry-After
-                retry_after = response.headers.get('Retry-After')
-                if retry_after:
-                    wait_time = int(retry_after)
-                    print(f"[WARNING parse_folder] Сервер запросил ожидание {wait_time}s (из заголовка Retry-After)")
-                else:
-                    # Экспоненциальная задержка: delay * 2, delay * 4, delay * 8
-                    wait_time = delay * (2 ** 1)  # Первая повторная попытка
-                    print(f"[WARNING parse_folder] Используем экспоненциальную задержку {wait_time}s")
-                
-                print(f"[WARNING parse_folder] Ожидание {wait_time}s перед повторной попыткой...")
-                time.sleep(wait_time)
-                
-                # Повторная попытка с увеличенным таймаутом
-                response = requests.get(url, timeout=timeout * 2, verify=False)
-                print(f"[DEBUG parse_folder] Повторный ответ: status_code={response.status_code}")
-                
-                # Если снова 429, пробуем ещё раз с большей задержкой
-                if response.status_code == 429:
-                    retry_after = response.headers.get('Retry-After')
-                    if retry_after:
-                        wait_time = int(retry_after)
-                    else:
-                        wait_time = delay * (2 ** 2)  # Вторая повторная попытка
-                    
-                    print(f"[WARNING parse_folder] Снова 429 ошибка. Ожидание {wait_time}s...")
-                    time.sleep(wait_time)
-                    response = requests.get(url, timeout=timeout * 3, verify=False)
-                    print(f"[DEBUG parse_folder] Третий ответ: status_code={response.status_code}")
-            
-            # Проверка статуса ответа
-            if response.status_code != 200:
-                print(f"[ERROR parse_folder] Неожиданный HTTP статус: {response.status_code}")
-                print(f"[ERROR parse_folder] Заголовки ответа: {dict(response.headers)}")
-                print(f"[ERROR parse_folder] Тело ответа (первые 1000 символов): {response.text[:1000]}")
-            
-            response.raise_for_status()
-            print(f"[DEBUG parse_folder] response.raise_for_status() выполнен успешно")
-            
-        except requests.exceptions.Timeout as e:
-            print(f"[ERROR parse_folder] Таймаут подключения к {url}")
-            print(f"[ERROR parse_folder] Детали таймаута: {e}")
-            print(f"[ERROR parse_folder] Конфигурация: timeout={timeout}s, url={url}")
-            raise
-        except requests.exceptions.ConnectionError as e:
-            print(f"[ERROR parse_folder] Ошибка подключения к {url}")
-            print(f"[ERROR parse_folder] Детали ошибки подключения: {e}")
-            if hasattr(e, 'reason'):
-                print(f"[ERROR parse_folder] Причина: {e.reason}")
-            if hasattr(e, 'request'):
-                print(f"[ERROR parse_folder] Запрос: {e.request}")
-            print(f"[ERROR parse_folder] Конфигурация: timeout={timeout}s, url={url}")
-            raise
-        except requests.exceptions.RequestException as e:
-            print(f"[ERROR parse_folder] Общая ошибка запроса к {url}")
-            print(f"[ERROR parse_folder] Тип ошибки: {type(e).__name__}")
-            print(f"[ERROR parse_folder] Детали: {e}")
-            if hasattr(e, 'response') and e.response is not None:
-                print(f"[ERROR parse_folder] Статус ответа: {e.response.status_code}")
-                print(f"[ERROR parse_folder] Тело ответа (первые 1000 символов): {str(e.response.text[:1000])}")
-            raise
+        if response is None:
+            print(f"[ERROR parse_folder] Не удалось получить ответ от {url} после всех попыток")
+            return []
+        
+        print(f"[DEBUG parse_folder] Получен ответ: status_code={response.status_code}, size={len(response.text)} bytes")
+        print(f"[DEBUG parse_folder] Заголовки ответа: {dict(response.headers)}")
+        
+        # Проверка статуса ответа
+        if response.status_code != 200:
+            print(f"[ERROR parse_folder] Неожиданный HTTP статус: {response.status_code}")
+            print(f"[ERROR parse_folder] Заголовки ответа: {dict(response.headers)}")
+            print(f"[ERROR parse_folder] Тело ответа (первые 1000 символов): {response.text[:1000]}")
+        
+        response.raise_for_status()
+        print(f"[DEBUG parse_folder] response.raise_for_status() выполнен успешно")
         
         print(f"[DEBUG parse_folder] Начало обработки HTML контента...")
         items = extract_items_from_html(response.text, url)
