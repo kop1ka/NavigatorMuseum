@@ -162,13 +162,13 @@
             console.log('Clean video URL:', videoUrl);
             
             // Используем прокси для открытия видео в браузере
-            // URL уже закодирован в параметре, декодируем его перед созданием прокси
+            // URL уже закодирован в параметре, декодируем его перед использованием
             let decodedVideoUrl = videoUrl;
             try {
                 decodedVideoUrl = decodeURIComponent(videoUrl);
             } catch (e) {}
             
-            const proxyUrl = './api/video-proxy?url=' + encodeURIComponent(decodedVideoUrl);
+            const proxyUrl = decodedVideoUrl;
 
             console.log('Proxy URL:', proxyUrl);
 
