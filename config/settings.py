@@ -13,9 +13,7 @@ PARSER_IMAGES_FILE = os.path.join(DATA_DIR, 'parser_images.json')
 # FTP парсер
 FTP_BASE_URL = 'https://vm-ftp.anosov.ru/vm/'
 PARSER_MAX_DEPTH = 10
-PARSER_TIMEOUT = 60  # Увеличенный таймаут для избежания 429 ошибок
-PARSER_DELAY = 2  # Задержка между запросами в секундах для избежания 429 ошибок
-PARSER_MAX_WORKERS = 3  # Уменьшенное количество потоков для снижения нагрузки
+PARSER_TIMEOUT = 30
 
 # Безопасность
 SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
