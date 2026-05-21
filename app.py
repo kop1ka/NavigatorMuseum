@@ -36,7 +36,7 @@ warnings.filterwarnings('ignore', category=urllib3.exceptions.InsecureRequestWar
 # Импорт конфигурации из модуля settings
 from config.settings import (
     DATA_DIR, CATALOG_FILE, PERMANENT_FILE, USERS_FILE, PARSER_IMAGES_FILE, SECRET_KEY,
-    FTP_BASE_URL, PARSER_MAX_DEPTH, PARSER_TIMEOUT, PARSER_DELAY, PARSER_MAX_WORKERS,
+    FTP_BASE_URL, PARSER_MAX_DEPTH, PARSER_TIMEOUT,
     RATELIMIT_STORAGE_URI, RATELIMIT_DEFAULT, RATELIMIT_LOGIN, RATELIMIT_ENABLED,
     LOGIN_VIEW, LOGIN_MESSAGE, SESSION_PROTECTION
 )
@@ -277,8 +277,7 @@ def run_parser_task():
         
         # Запустить парсинг FTP-каталога
         log("Вызов parse_folder()...")
-        items = parse_folder(FTP_BASE_URL, max_depth=PARSER_MAX_DEPTH, timeout=PARSER_TIMEOUT, 
-                            max_workers=PARSER_MAX_WORKERS, delay=PARSER_DELAY)
+        items = parse_folder(FTP_BASE_URL, max_depth=PARSER_MAX_DEPTH, timeout=PARSER_TIMEOUT)
         log(f"parse_folder() вернул элементов: {len(items)}")
         if items:
             log(f"Первые 5 элементов: {items[:5]}")
