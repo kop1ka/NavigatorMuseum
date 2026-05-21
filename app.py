@@ -1987,9 +1987,6 @@ def proxy_image():
         Response: Изображение с appropriate Content-Type
     """
     import time
-    import hashlib
-    from functools import lru_cache
-    
     image_url = request.args.get('url', '')
     
     if not image_url:
@@ -2000,57 +1997,31 @@ def proxy_image():
     if parsed.netloc != 'vm-ftp.anosov.ru':
         return jsonify({'error': 'Недоверенный домен'}), 403
     
-    # Максимальное количество попыток и базовая задержка
-    max_retries = 5
-    base_delay = 1.5  # Базовая задержка в секундах
-    request_timeout = 20  # Увеличенный таймаут для запроса
-    
-    # User-Agent для маскировки под браузер
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Referer': 'https://vm.anosov.ru/'
-    }
+    max_retries = 3
+    base_delay = 2  # Базовая задержка в секундах
     
     for attempt in range(max_retries):
         try:
             # Загружаем изображение с внешнего сервера
             # Используем verify=False для самоподписанных сертификатов
-            response = requests.get(
-                image_url, 
-                timeout=request_timeout, 
-                stream=True, 
-                verify=False,
-                headers=headers,
-                allow_redirects=True
-            )
+            response = requests.get(image_url, timeout=15, stream=True, verify=False)
             
             # Обработка 429 ошибки
             if response.status_code == 429:
                 retry_after = response.headers.get('Retry-After')
                 if retry_after:
-                    wait_time = max(int(retry_after), base_delay)
+                    wait_time = int(retry_after)
                 else:
-                    # Экспоненциальная задержка с джиттером: 1.5, 3, 6, 12 секунд
-                    wait_time = base_delay * (2 ** attempt) + (hash(image_url) % 1000) / 1000
+                    # Экспоненциальная задержка: 2, 4, 8 секунд
+                    wait_time = base_delay * (2 ** attempt)
                 
-                print(f"[WARNING proxy-image] Получена 429 ошибка. Ожидание {wait_time:.2f}s перед попыткой {attempt + 2}/{max_retries}")
+                print(f"[WARNING proxy-image] Получена 429 ошибка. Ожидание {wait_time}s перед попыткой {attempt + 2}/{max_retries}")
                 
                 if attempt < max_retries - 1:
                     time.sleep(wait_time)
                     continue
                 else:
                     return jsonify({'error': 'Слишком много запросов. Попробуйте позже.'}), 429
-            
-            # Обработка других ошибок
-            if response.status_code >= 500:
-                print(f"[WARNING proxy-image] Получена {response.status_code} ошибка. Повторная попытка {attempt + 2}/{max_retries}")
-                if attempt < max_retries - 1:
-                    time.sleep(base_delay * (2 ** attempt))
-                    continue
             
             response.raise_for_status()
             
@@ -2065,9 +2036,8 @@ def proxy_image():
             )
             
             # Добавляем заголовки для кэширования (увеличиваем время кэширования)
-            proxy_response.headers['Cache-Control'] = 'public, max-age=604800, immutable'  # 7 дней
-            proxy_response.headers['ETag'] = f'"{hashlib.md5(image_url.encode()).hexdigest()}"'
-            proxy_response.headers['X-Cache-Status'] = 'MISS'
+            proxy_response.headers['Cache-Control'] = 'public, max-age=604800'  # 7 дней
+            proxy_response.headers['ETag'] = f'"{hash(image_url)}"'
             
             return proxy_response
             
@@ -2077,12 +2047,6 @@ def proxy_image():
                 time.sleep(base_delay * (2 ** attempt))
                 continue
             return jsonify({'error': f'Таймаут загрузки: {str(e)}'}), 500
-        except requests.exceptions.ConnectionError as e:
-            print(f"[ERROR proxy-image] Ошибка подключения {image_url}: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(base_delay * (2 ** attempt))
-                continue
-            return jsonify({'error': f'Ошибка подключения: {str(e)}'}), 500
         except requests.exceptions.RequestException as e:
             print(f"[ERROR proxy-image] Ошибка загрузки {image_url}: {e}")
             if attempt < max_retries - 1:
@@ -2108,8 +2072,6 @@ def proxy_video():
     Returns:
         Response: Видеофайл с правильным Content-Type для воспроизведения в браузере
     """
-    import time
-    
     video_url = request.args.get('url', '')
     
     if not video_url:
@@ -2120,12 +2082,6 @@ def proxy_video():
     allowed_domains = ['vm-ftp.anosov.ru', 'testnavi.onrender.com']
     if parsed.netloc not in allowed_domains:
         return jsonify({'error': 'Недоверенный домен'}), 403
-    
-    # Максимальное количество попыток и базовая задержка
-    max_retries = 5
-    base_delay = 2.0  # Базовая задержка в секундах
-    request_timeout_head = 30
-    request_timeout_get = 120  # Увеличенный таймаут для больших видео
     
     try:
         # Определяем Content-Type по расширению файла
@@ -2147,154 +2103,80 @@ def proxy_video():
         ext = os.path.splitext(decoded_url)[1].lower()
         content_type = video_content_types.get(ext, 'video/mp4')
 
-        # User-Agent для маскировки под браузер
+        # Сначала получаем информацию о файле (размер) с правильным User-Agent
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': '*/*',
             'Accept-Language': 'en-US,en;q=0.9',
-            'Accept-Encoding': 'identity;q=1, *;q=0',  # Запрашиваем несжатые данные
-            'Connection': 'keep-alive',
-            'Referer': 'https://vm.anosov.ru/',
-            'DNT': '1'
+            'Connection': 'keep-alive'
         }
         
-        for attempt in range(max_retries):
-            try:
-                # Сначала получаем информацию о файле (размер) с правильным User-Agent
-                head_response = requests.head(video_url, headers=headers, timeout=request_timeout_head, allow_redirects=True, verify=False)
+        head_response = requests.head(video_url, headers=headers, timeout=30, allow_redirects=True, verify=False)
+        head_response.raise_for_status()
+        file_size = int(head_response.headers.get('Content-Length', 0))
+        
+        # Проверяем поддержку Range запросов на удалённом сервере
+        supports_ranges = head_response.headers.get('Accept-Ranges', '').lower() == 'bytes'
+        
+        # Обрабатываем Range запрос от браузера
+        range_header = request.headers.get('Range', '')
+        
+        if range_header and supports_ranges and file_size > 0:
+            # Браузер запрашивает часть файла (для перемотки)
+            range_match = re.match(r'bytes=(\d+)-(\d*)', range_header)
+            if range_match:
+                start = int(range_match.group(1))
+                end = int(range_match.group(2)) if range_match.group(2) else file_size - 1
+                end = min(end, file_size - 1)
                 
-                # Обработка 429 ошибки
-                if head_response.status_code == 429:
-                    retry_after = head_response.headers.get('Retry-After')
-                    if retry_after:
-                        wait_time = max(int(retry_after), base_delay)
-                    else:
-                        wait_time = base_delay * (2 ** attempt)
-                    
-                    print(f"[WARNING video-proxy] Получена 429 ошибка на HEAD запросе. Ожидание {wait_time}s перед попыткой {attempt + 2}/{max_retries}")
-                    
-                    if attempt < max_retries - 1:
-                        time.sleep(wait_time)
-                        continue
-                    else:
-                        return jsonify({'error': 'Слишком много запросов. Попробуйте позже.'}), 429
+                # Запрашиваем диапазон с удалённого сервера
+                headers['Range'] = f'bytes={start}-{end}'
+                response = requests.get(video_url, headers=headers, timeout=60, stream=True, verify=False)
+                response.raise_for_status()
                 
-                head_response.raise_for_status()
-                file_size = int(head_response.headers.get('Content-Length', 0))
-                
-                # Проверяем поддержку Range запросов на удалённом сервере
-                supports_ranges = head_response.headers.get('Accept-Ranges', '').lower() == 'bytes'
-                
-                # Обрабатываем Range запрос от браузера
-                range_header = request.headers.get('Range', '')
-                
-                if range_header and supports_ranges and file_size > 0:
-                    # Браузер запрашивает часть файла (для перемотки)
-                    range_match = re.match(r'bytes=(\d+)-(\d*)', range_header)
-                    if range_match:
-                        start = int(range_match.group(1))
-                        end = int(range_match.group(2)) if range_match.group(2) else file_size - 1
-                        end = min(end, file_size - 1)
-                        
-                        # Запрашиваем диапазон с удалённого сервера
-                        headers['Range'] = f'bytes={start}-{end}'
-                        
-                        get_response = requests.get(video_url, headers=headers, timeout=request_timeout_get, stream=True, verify=False)
-                        
-                        # Обработка 429 ошибки на GET запросе
-                        if get_response.status_code == 429:
-                            retry_after = get_response.headers.get('Retry-After')
-                            if retry_after:
-                                wait_time = max(int(retry_after), base_delay)
-                            else:
-                                wait_time = base_delay * (2 ** attempt)
-                            
-                            print(f"[WARNING video-proxy] Получена 429 ошибка на GET запросе. Ожидание {wait_time}s")
-                            
-                            if attempt < max_retries - 1:
-                                time.sleep(wait_time)
-                                continue
-                            else:
-                                return jsonify({'error': 'Слишком много запросов. Попробуйте позже.'}), 429
-                        
-                        get_response.raise_for_status()
-                        
-                        # Возвращаем частичный контент
-                        proxy_response = Response(
-                            get_response.iter_content(chunk_size=8192),
-                            status=206,  # Partial Content
-                            mimetype=content_type
-                        )
-                        proxy_response.headers['Content-Length'] = str(end - start + 1)
-                        proxy_response.headers['Content-Range'] = f'bytes {start}-{end}/{file_size}'
-                        proxy_response.headers['Accept-Ranges'] = 'bytes'
-                        # КРИТИЧЕСКИ ВАЖНО: Устанавливаем inline и убираем любые следы attachment
-                        proxy_response.headers['Content-Disposition'] = f'inline; filename*=UTF-8\'\'{os.path.basename(decoded_url)}'
-                        # Убираем заголовки, которые могут вызвать скачивание в Edge
-                        proxy_response.headers.pop('X-Download-Options', None)
-                        proxy_response.headers['Cache-Control'] = 'public, max-age=3600'
-                        return proxy_response
-                
-                # Если нет Range запроса или сервер не поддерживает ranges - отдаём всё видео
-                get_response = requests.get(video_url, headers=headers, timeout=request_timeout_get, stream=True, verify=False)
-                
-                # Обработка 429 ошибки на GET запросе
-                if get_response.status_code == 429:
-                    retry_after = get_response.headers.get('Retry-After')
-                    if retry_after:
-                        wait_time = max(int(retry_after), base_delay)
-                    else:
-                        wait_time = base_delay * (2 ** attempt)
-                    
-                    print(f"[WARNING video-proxy] Получена 429 ошибка на GET запросе. Ожидание {wait_time}s")
-                    
-                    if attempt < max_retries - 1:
-                        time.sleep(wait_time)
-                        continue
-                    else:
-                        return jsonify({'error': 'Слишком много запросов. Попробуйте позже.'}), 429
-                
-                get_response.raise_for_status()
-                
-                # Создаём ответ для клиента
+                # Возвращаем частичный контент
                 proxy_response = Response(
-                    get_response.iter_content(chunk_size=8192),
-                    status=get_response.status_code,
+                    response.iter_content(chunk_size=8192),
+                    status=206,  # Partial Content
                     mimetype=content_type
                 )
-
-                # Копируем важные заголовки от оригинального ответа
-                if file_size > 0:
-                    proxy_response.headers['Content-Length'] = str(file_size)
-
-                # Критически важные заголовки для воспроизведения вместо скачивания:
-                # 1. Content-Disposition: inline - говорит браузеру отображать файл
-                # Используем filename* для лучшей совместимости с UTF-8 именами
-                proxy_response.headers['Content-Disposition'] = f'inline; filename*=UTF-8\'\'{os.path.basename(decoded_url)}'
-                # 2. Accept-Ranges: bytes - поддержка перемотки
+                proxy_response.headers['Content-Length'] = str(end - start + 1)
+                proxy_response.headers['Content-Range'] = f'bytes {start}-{end}/{file_size}'
                 proxy_response.headers['Accept-Ranges'] = 'bytes'
-                # 3. Cache-Control - кэширование для лучшей производительности
-                proxy_response.headers['Cache-Control'] = 'public, max-age=3600'
-                # 4. Убираем заголовки, которые могут вызвать скачивание в Edge
+                # КРИТИЧЕСКИ ВАЖНО: Устанавливаем inline и убираем любые следы attachment
+                proxy_response.headers['Content-Disposition'] = f'inline; filename*=UTF-8\'\'{os.path.basename(decoded_url)}'
+                # Убираем заголовки, которые могут вызвать скачивание в Edge
                 proxy_response.headers.pop('X-Download-Options', None)
-                proxy_response.headers.pop('Content-Transfer-Encoding', None)
-
                 return proxy_response
-                
-            except requests.exceptions.Timeout as e:
-                print(f"[ERROR video-proxy] Таймаут при загрузке {video_url}: {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(base_delay * (2 ** attempt))
-                    continue
-                return jsonify({'error': f'Таймаут загрузки: {str(e)}'}), 500
-            except requests.exceptions.ConnectionError as e:
-                print(f"[ERROR video-proxy] Ошибка подключения {video_url}: {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(base_delay * (2 ** attempt))
-                    continue
-                return jsonify({'error': f'Ошибка подключения: {str(e)}'}), 500
         
-        return jsonify({'error': 'Превышено количество попыток загрузки'}), 500
+        # Если нет Range запроса или сервер не поддерживает ranges - отдаём всё видео
+        response = requests.get(video_url, headers=headers, timeout=60, stream=True, verify=False)
+        response.raise_for_status()
+        
+        # Создаём ответ для клиента
+        proxy_response = Response(
+            response.iter_content(chunk_size=8192),
+            status=response.status_code,
+            mimetype=content_type
+        )
+
+        # Копируем важные заголовки от оригинального ответа
+        if file_size > 0:
+            proxy_response.headers['Content-Length'] = str(file_size)
+
+        # Критически важные заголовки для воспроизведения вместо скачивания:
+        # 1. Content-Disposition: inline - говорит браузеру отображать файл
+        # Используем filename* для лучшей совместимости с UTF-8 именами
+        proxy_response.headers['Content-Disposition'] = f'inline; filename*=UTF-8\'\'{os.path.basename(decoded_url)}'
+        # 2. Accept-Ranges: bytes - поддержка перемотки
+        proxy_response.headers['Accept-Ranges'] = 'bytes'
+        # 3. Cache-Control - кэширование для лучшей производительности
+        proxy_response.headers['Cache-Control'] = 'public, max-age=3600'
+        # 4. Убираем заголовки, которые могут вызвать скачивание в Edge
+        proxy_response.headers.pop('X-Download-Options', None)
+        proxy_response.headers.pop('Content-Transfer-Encoding', None)
+
+        return proxy_response
 
     except requests.exceptions.RequestException as e:
         return jsonify({'error': f'Ошибка загрузки видео: {str(e)}'}), 500
