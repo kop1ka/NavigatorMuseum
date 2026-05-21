@@ -885,14 +885,15 @@
                 imageItem.className = 'image-item';
                 imageItem.dataset.path = img.path;
                 
-                // Определяем src для изображения
+                // Используем прямую ссылку для всех изображений
                 let imgSrc = img.path;
                 
-                // Если это внешний URL с vm-ftp.anosov.ru, используем прокси
+                // Если это внешний URL, используем его напрямую
                 if (img.path.startsWith('http://') || img.path.startsWith('https://')) {
-                    if (img.path.includes('vm-ftp.anosov.ru')) {
-                        imgSrc = 'api/proxy-image?url=' + encodeURIComponent(img.path);
-                    }
+                    imgSrc = img.path;
+                } else if (!img.path.startsWith('/')) {
+                    // Для относительных путей добавляем базовый путь
+                    imgSrc = '/' + img.path;
                 }
                 
                 imageItem.innerHTML = `

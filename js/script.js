@@ -70,10 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Если iconName начинается с http:// или https:// – используем как есть
         if (iconName.startsWith('http://') || iconName.startsWith('https://')) {
-            // Для внешних URL с vm-ftp.anosov.ru используем прокси для обхода rate limiting
-            if (iconName.includes('vm-ftp.anosov.ru')) {
-                return 'api/proxy-image?url=' + encodeURIComponent(iconName);
-            }
             return iconName;
         }
         
@@ -216,9 +212,6 @@ document.addEventListener('DOMContentLoaded', () => {
         let cleanUrl = url.trim().replace(/(https?)\s*:/i, '$1:');
         try { cleanUrl = decodeURIComponent(cleanUrl); } catch(e){}
         
-        if (cleanUrl.includes('vm-ftp.anosov.ru')) {
-            return 'api/video-proxy?url=' + encodeURIComponent(cleanUrl);
-        }
         return cleanUrl;
     }
 
