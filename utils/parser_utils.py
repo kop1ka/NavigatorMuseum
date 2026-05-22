@@ -15,8 +15,55 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Путь к файлу логов ошибок
 ERROR_LOG_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'error_log.json')
 
+# Путь к файлу детальных логов парсера (для отладки ответов сервера)
+PARSER_DEBUG_LOG_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'parser_debug_log.json')
+
 # Задержка между запросами к FTP-серверу (в секундах) для избежания 429 ошибки
 REQUEST_DELAY = 2.0  # 2 секунды между запросами
+
+
+def log_parser_response(url, response, depth=0):
+    """
+    Сохранить детальную информацию об ответе сервера в JSON файл для отладки
+    
+    Args:
+        url: URL запроса
+        response: объект ответа requests
+        depth: глубина рекурсии
+    """
+    log_entry = {
+        'timestamp': datetime.now().isoformat(),
+        'url': url,
+        'depth': depth,
+        'response': {
+            'status_code': response.status_code,
+            'headers': dict(response.headers),
+            'content_length': len(response.text),
+            'encoding': response.encoding,
+            'apparent_encoding': response.apparent_encoding,
+            'full_content': response.text,
+            'content_preview': response.text[:5000] if len(response.text) > 5000 else response.text
+        }
+    }
+    
+    # Читаем существующие логи или создаём новую структуру
+    if os.path.exists(PARSER_DEBUG_LOG_FILE):
+        try:
+            with open(PARSER_DEBUG_LOG_FILE, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+        except (json.JSONDecodeError, IOError):
+            logs = {'responses': []}
+    else:
+        logs = {'responses': []}
+    
+    # Добавляем новую запись
+    logs['responses'].append(log_entry)
+    
+    # Сохраняем обратно в файл
+    with open(PARSER_DEBUG_LOG_FILE, 'w', encoding='utf-8') as f:
+        json.dump(logs, f, indent=2, ensure_ascii=False)
+    
+    print(f"[LOG] Ответ сервера записан в {PARSER_DEBUG_LOG_FILE}: {url} (status={response.status_code}, size={len(response.text)} bytes)")
 
 
 def log_error_to_json(error_type, url, response=None, exception=None, depth=None, timeout=None):
@@ -204,6 +251,9 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
             response = requests.get(url, timeout=timeout, verify=False)
             print(f"[DEBUG parse_folder] Получен ответ: status_code={response.status_code}, size={len(response.text)} bytes")
             print(f"[DEBUG parse_folder] Заголовки ответа: {dict(response.headers)}")
+            
+            # Логирование полного ответа сервера для отладки
+            log_parser_response(url, response, depth)
             
             # Проверка статуса ответа
             if response.status_code != 200:

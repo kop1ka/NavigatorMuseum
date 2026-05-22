@@ -1291,6 +1291,296 @@ def parser_logs_page():
     return response
 
 
+@app.route('/parser-debug-log')
+@login_required
+@admin_required_decorator
+def parser_debug_log_page():
+    """
+    Страница просмотра детальных отладочных логов парсера
+    
+    Доступна только авторизованным пользователям с правами администратора.
+    
+    Returns:
+        Response: HTML страница с отладочными логами
+    """
+    html_template = '''<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="/navigator/">
+    <title>Отладочные логи парсера</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 24px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .logs-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .log-entry {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .log-info {
+            border-left: 4px solid #17a2b8;
+        }
+        .log-url {
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+        .log-timestamp {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .log-section {
+            margin-top: 10px;
+        }
+        .log-section-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .log-details {
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .status-code {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .status-success {
+            background: #28a745;
+            color: white;
+        }
+        .status-error {
+            background: #dc3545;
+            color: white;
+        }
+        .empty-logs {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+            font-style: italic;
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                padding: 15px;
+            }
+            .header h1 {
+                font-size: 20px;
+                margin-bottom: 10px;
+                text-align: center;
+            }
+            .header-actions {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 8px;
+            }
+            .btn {
+                padding: 8px 15px;
+                font-size: 13px;
+            }
+            .container {
+                padding: 15px;
+            }
+            .logs-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Отладочные логи парсера</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="window.location.href='/navigator/admin'">Назад в админку</button>
+            <button class="btn btn-primary" onclick="window.location.href='/navigator/parser-logs'">Обычные логи</button>
+            <button class="btn btn-primary" onclick="window.location.href='/navigator/'">На сайт</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="logs-container">
+            <div class="logs-header">
+                <h2>Детальные ответы сервера</h2>
+                <button class="btn btn-success" onclick="loadLogs()">Обновить</button>
+            </div>
+            
+            <div id="logsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        async function loadLogs() {
+            try {
+                const response = await fetch('/navigator/api/parser/debug-log', { credentials: 'include' });
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки логов');
+                }
+                const data = await response.json();
+                renderLogs(data.responses || []);
+            } catch (error) {
+                document.getElementById('logsContent').innerHTML = 
+                    '<div class="empty-logs">Ошибка загрузки логов: ' + error.message + '</div>';
+            }
+        }
+        
+        function renderLogs(responses) {
+            const container = document.getElementById('logsContent');
+            
+            if (!responses || responses.length === 0) {
+                container.innerHTML = '<div class="empty-logs">Отладочные логи отсутствуют. Запустите парсер для записи логов.</div>';
+                return;
+            }
+            
+            // Отображаем логи в обратном порядке (новые сверху)
+            const reversedLogs = [...responses].reverse();
+            
+            container.innerHTML = reversedLogs.map(log => {
+                const resp = log.response || {};
+                const statusCode = resp.status_code || 'N/A';
+                const statusClass = (statusCode >= 200 && statusCode < 300) ? 'status-success' : 'status-error';
+                
+                let headersHtml = '';
+                if (resp.headers) {
+                    headersHtml = '<div class="log-section">' +
+                        '<div class="log-section-title">Заголовки:</div>' +
+                        '<div class="log-details">' + escapeHtml(JSON.stringify(resp.headers, null, 2)) + '</div>' +
+                        '</div>';
+                }
+                
+                let contentPreview = '';
+                if (resp.content_preview) {
+                    contentPreview = '<div class="log-section">' +
+                        '<div class="log-section-title">Предпросмотр контента:</div>' +
+                        '<div class="log-details">' + escapeHtml(resp.content_preview.substring(0, 2000)) + '</div>' +
+                        '</div>';
+                }
+                
+                let fullContent = '';
+                if (resp.full_content) {
+                    fullContent = '<div class="log-section">' +
+                        '<div class="log-section-title">Полный контент:</div>' +
+                        '<div class="log-details">' + escapeHtml(resp.full_content) + '</div>' +
+                        '</div>';
+                }
+                
+                return '<div class="log-entry log-info">' +
+                    '<div class="log-url">URL: ' + escapeHtml(log.url || 'N/A') + '</div>' +
+                    '<div class="log-timestamp">Время: ' + escapeHtml(log.timestamp || 'N/A') + ' | Глубина: ' + (log.depth || 0) + '</div>' +
+                    '<div><span class="status-code ' + statusClass + '">Status: ' + statusCode + '</span>' +
+                    ' | Длина контента: ' + (resp.content_length || 'N/A') + ' bytes' +
+                    ' | Кодировка: ' + (resp.encoding || 'N/A') + '</div>' +
+                    headersHtml +
+                    contentPreview +
+                    fullContent +
+                    '</div>';
+            }).join('');
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Загрузка логов при открытии страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadLogs();
+        });
+    </script>
+</body>
+</html>'''
+    
+    response = app.response_class(response=html_template, status=200, mimetype='text/html')
+    # Добавляем заголовки для предотвращения кэширования HTML страниц
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
 @app.route('/api/catalog')
 def get_catalog():
     """
@@ -1520,6 +1810,32 @@ def get_error_logs():
             return jsonify(logs)
         else:
             return jsonify({'errors': [], 'message': 'Файл логов ещё не создан'})
+    except json.JSONDecodeError as e:
+        return jsonify({'error': f'Ошибка чтения JSON: {str(e)}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'Ошибка: {str(e)}'}), 500
+
+
+@app.route('/api/parser/debug-log')
+@login_required
+@admin_required_decorator
+def get_parser_debug_log():
+    """
+    API endpoint для получения детальных логов отладки парсера
+    
+    Возвращает полные ответы сервера с заголовками и контентом для отладки.
+    
+    Returns:
+        Response: JSON объект с детальными логами
+    """
+    try:
+        debug_log_file = os.path.join(os.path.dirname(__file__), 'parser_debug_log.json')
+        if os.path.exists(debug_log_file):
+            with open(debug_log_file, 'r', encoding='utf-8') as f:
+                logs = json.load(f)
+            return jsonify(logs)
+        else:
+            return jsonify({'responses': [], 'message': 'Файл отладочных логов ещё не создан'})
     except json.JSONDecodeError as e:
         return jsonify({'error': f'Ошибка чтения JSON: {str(e)}'}), 500
     except Exception as e:
