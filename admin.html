@@ -457,6 +457,7 @@
             <button class="btn btn-primary" onclick="window.location.href='/navigator/parser-logs'">Логи парсера</button>
             <button class="btn btn-primary" onclick="exportJson()">Выгрузить JSON</button>
             <button class="btn btn-primary" onclick="changePassword()">Сменить пароль</button>
+            <button class="btn btn-danger" onclick="clearImages()">Очистить картинки</button>
             <button class="btn btn-danger" onclick="logout()">Выйти</button>
         </div>
     </div>
@@ -1660,6 +1661,36 @@
         // Change password
         function changePassword() {
             window.location.href = '/navigator/change-password';
+        }
+
+        // Clear images
+        async function clearImages() {
+            if (!confirm('Вы уверены, что хотите очистить список изображений? Это действие нельзя отменить.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/navigator/api/images/clear', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Список изображений успешно очищен');
+                    // Перезагрузить изображения
+                    availableImages = [];
+                    filteredImages = [];
+                    populateImageSelects();
+                    renderImagesGrids();
+                } else {
+                    alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при очистке изображений:', error);
+                alert('Ошибка при очистке изображений: ' + error.message);
+            }
         }
 
         // Export JSON

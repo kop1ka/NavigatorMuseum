@@ -2176,6 +2176,26 @@ def get_images():
     return response
 
 
+@app.route('/api/images/clear', methods=['POST'])
+def clear_images():
+    """
+    API endpoint для очистки списка изображений из парсера
+    
+    Очищает файл parser_images.json, удаляя все сохранённые изображения.
+    
+    Returns:
+        Response: JSON объект с результатом операции
+    """
+    try:
+        # Сохранить пустой список изображений
+        save_json_file(PARSER_IMAGES_FILE, {'images': []})
+        log("Список изображений очищен")
+        return jsonify({'success': True, 'message': 'Список изображений успешно очищен'})
+    except Exception as e:
+        log(f"Ошибка при очистке изображений: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/page/<path:filename>')
 def serve_page_image(filename):
     """
