@@ -248,7 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Проверяем, является ли файл видео
                 if (isVideoFile(targetUrl)) {
-                    const videoPlayerUrl = `/video-player?url=${encodeURIComponent(targetUrl)}&name=${encodeURIComponent(itemData.name)}`;
+                    const videoPlayerUrl = `/navigator/video-player?url=${encodeURIComponent(targetUrl)}&name=${encodeURIComponent(itemData.name)}`;
                     window.location.href = videoPlayerUrl;
                 } else {
                     // === ИСПРАВЛЕНИЕ ПРОБЛЕМЫ ===
