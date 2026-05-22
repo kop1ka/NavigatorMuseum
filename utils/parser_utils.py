@@ -31,8 +31,12 @@ def log_parser_response(url, response, depth=0):
         response: объект ответа requests
         depth: глубина рекурсии
     """
+    # Форматируем время в читаемом формате: ДД.ММ.ГГГГ ЧЧ:ММ:СС
+    now = datetime.now()
+    formatted_timestamp = now.strftime('%d.%m.%Y %H:%M:%S')
+    
     log_entry = {
-        'timestamp': datetime.now().isoformat(),
+        'timestamp': formatted_timestamp,
         'url': url,
         'depth': depth,
         'response': {

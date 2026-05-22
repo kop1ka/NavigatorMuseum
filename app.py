@@ -1359,6 +1359,13 @@ def parser_debug_log_page():
         .btn-success:hover {
             background: #218838;
         }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -1476,7 +1483,8 @@ def parser_debug_log_page():
         <div class="header-actions">
             <button class="btn btn-primary" onclick="window.location.href='/navigator/admin'">Назад в админку</button>
             <button class="btn btn-primary" onclick="window.location.href='/navigator/parser-logs'">Обычные логи</button>
-            <button class="btn btn-primary" onclick="window.location.href='/navigator/'">На сайт</button>
+            <button class="btn btn-success" onclick="loadLogs()">Обновить</button>
+            <button class="btn btn-danger" onclick="deleteLogs()">Удалить логи</button>
         </div>
     </div>
 
@@ -1563,6 +1571,30 @@ def parser_debug_log_page():
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+        
+        // Функция для удаления логов
+        async function deleteLogs() {
+            if (!confirm('Вы уверены, что хотите удалить все отладочные логи?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/navigator/api/parser/debug-log', { 
+                    method: 'DELETE',
+                    credentials: 'include' 
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка удаления логов');
+                }
+                
+                const data = await response.json();
+                alert(data.message || 'Логи успешно удалены');
+                loadLogs(); // Обновить список логов
+            } catch (error) {
+                alert('Ошибка удаления логов: ' + error.message);
+            }
         }
         
         // Загрузка логов при открытии страницы
@@ -1816,20 +1848,31 @@ def get_error_logs():
         return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
-@app.route('/api/parser/debug-log')
+@app.route('/api/parser/debug-log', methods=['GET', 'DELETE'])
 @login_required
 @admin_required_decorator
 def get_parser_debug_log():
     """
-    API endpoint для получения детальных логов отладки парсера
+    API endpoint для получения/удаления детальных логов отладки парсера
     
-    Возвращает полные ответы сервера с заголовками и контентом для отладки.
+    GET: Возвращает полные ответы сервера с заголовками и контентом для отладки.
+    DELETE: Удаляет файл отладочных логов.
     
     Returns:
-        Response: JSON объект с детальными логами
+        Response: JSON объект с детальными логами или статусом удаления
     """
     try:
         debug_log_file = os.path.join(os.path.dirname(__file__), 'parser_debug_log.json')
+        
+        # Обработка DELETE запроса - удаление логов
+        if request.method == 'DELETE':
+            if os.path.exists(debug_log_file):
+                os.remove(debug_log_file)
+                return jsonify({'success': True, 'message': 'Отладочные логи успешно удалены'})
+            else:
+                return jsonify({'success': True, 'message': 'Файл отладочных логов не существует'})
+        
+        # Обработка GET запроса - получение логов
         if os.path.exists(debug_log_file):
             with open(debug_log_file, 'r', encoding='utf-8') as f:
                 logs = json.load(f)
