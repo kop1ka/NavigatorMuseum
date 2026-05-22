@@ -134,7 +134,7 @@
     <div id="loading" class="loading">Загрузка видео</div>
     
     <div style="position: fixed; top: 20px; left: 20px; z-index: 100;">
-        <button onclick="window.close()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px;">← Назад к каталогу</button>
+        <button onclick="goBackToCatalog()" style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px;">← Назад к каталогу</button>
     </div>
     
     <div id="error" class="error-message" style="display: none;"></div>
@@ -259,6 +259,16 @@
             const errorDiv = document.getElementById('error');
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
+        }
+
+        function goBackToCatalog() {
+            // Проверяем, есть ли referrer (страница, с которой пришли)
+            if (document.referrer) {
+                window.location.href = document.referrer;
+            } else {
+                // Если referrer нет, переходим на главную страницу
+                window.location.href = '/navigator/index.html';
+            }
         }
     </script>
 </body>
