@@ -458,6 +458,7 @@
             <button class="btn btn-primary" onclick="exportJson()">Выгрузить JSON</button>
             <button class="btn btn-primary" onclick="changePassword()">Сменить пароль</button>
             <button class="btn btn-danger" onclick="clearImages()">Очистить картинки</button>
+            <button class="btn btn-danger" onclick="clearCatalog()">Очистить каталог</button>
             <button class="btn btn-danger" onclick="logout()">Выйти</button>
         </div>
     </div>
@@ -1690,6 +1691,33 @@
             } catch (error) {
                 console.error('Ошибка при очистке изображений:', error);
                 alert('Ошибка при очистке изображений: ' + error.message);
+            }
+        }
+
+        // Clear catalog
+        async function clearCatalog() {
+            if (!confirm('Вы уверены, что хотите очистить каталог? Это действие удалит все элементы каталога и нельзя отменить.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/navigator/api/catalog/clear', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Каталог успешно очищен');
+                    // Перезагрузить дерево каталога
+                    loadCatalog();
+                } else {
+                    alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                }
+            } catch (error) {
+                console.error('Ошибка при очистке каталога:', error);
+                alert('Ошибка при очистке каталога: ' + error.message);
             }
         }
 
