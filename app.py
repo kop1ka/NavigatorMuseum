@@ -2383,7 +2383,7 @@ def proxy_image():
     try:
         # Загружаем изображение с внешнего сервера
         # Используем verify=False для самоподписанных сертификатов
-        response = requests.get(image_url, timeout=10, stream=True, verify=False)
+        response = requests.get(image_url, timeout=10)
         response.raise_for_status()
         
         # Определяем Content-Type
