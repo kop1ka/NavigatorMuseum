@@ -888,9 +888,10 @@
                 // Используем прямую ссылку для всех изображений
                 let imgSrc = img.path;
                 
-                // Если это внешний URL, используем его напрямую
+                // Если это внешний URL, используем прокси для обхода CORS
                 if (img.path.startsWith('http://') || img.path.startsWith('https://')) {
-                    imgSrc = img.path;
+                    // Используем прокси-эндпоинт для загрузки внешних изображений
+                    imgSrc = '/navigator/api/proxy-image?url=' + encodeURIComponent(img.path);
                 } else if (!img.path.startsWith('/')) {
                     // Для относительных путей добавляем базовый путь
                     imgSrc = '/' + img.path;
