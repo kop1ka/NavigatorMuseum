@@ -178,6 +178,8 @@ def extract_items_from_html(html_content, base_url):
         print(f"[DEBUG extract_items] is_folder={is_folder}, alt='{img.get('alt', '') if img else 'N/A'}'")
         
         full_url = urljoin(base_url, href)
+        # Заменить домен с 192.168.3.78:8085 на vm-ftp.anosov.ru
+        full_url = full_url.replace('192.168.3.78:8085', 'vm-ftp.anosov.ru')
         print(f"[DEBUG extract_items] full_url: {full_url}")
         
         print(f"[DEBUG extract_items] Элемент: name='{name_text}', href='{href}', is_folder={is_folder}")
