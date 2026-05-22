@@ -189,12 +189,6 @@
             height: 80px;
             object-fit: contain;
         }
-        .image-item span {
-            display: block;
-            font-size: 11px;
-            margin-top: 5px;
-            word-break: break-all;
-        }
         .status-message {
             padding: 15px;
             border-radius: 5px;
@@ -883,7 +877,6 @@
             images.forEach(img => {
                 const imageItem = document.createElement('div');
                 imageItem.className = 'image-item';
-                imageItem.dataset.path = img.path;
                 
                 // Используем прямую ссылку для всех изображений
                 let imgSrc = img.path;
@@ -898,7 +891,6 @@
                 
                 imageItem.innerHTML = `
                     <img src="${imgSrc}" alt="${img.name}" loading="lazy" onerror="this.style.display='none'">
-                    <span>${img.name}</span>
                 `;
 
                 imageItem.addEventListener('click', () => {
@@ -908,8 +900,8 @@
 
                     // Выбрать в селекте
                     const select = document.getElementById(selectId);
-                    select.value = img.path;
-                    selectedImage = img.path;
+                    select.value = imgSrc;
+                    selectedImage = imgSrc;
                     
                     // Обновить предпросмотр иконки у выбранного элемента в дереве
                     if (selectId === 'editIcon' && selectedElement) {
@@ -926,14 +918,14 @@
                                 
                                 let isPlaceholder = false;
                                 for (const placeholderUrl of placeholderUrls) {
-                                    if (img.path.includes(placeholderUrl)) {
+                                    if (imgSrc.includes(placeholderUrl)) {
                                         isPlaceholder = true;
                                         break;
                                     }
                                 }
                                 
                                 // Если иконка не пустая и не заглушка - используем 📄, иначе 📁
-                                if (!isPlaceholder && img.path.trim() !== '') {
+                                if (!isPlaceholder && imgSrc.trim() !== '') {
                                     iconSpan.textContent = '📄';
                                 } else {
                                     iconSpan.textContent = '📁';
@@ -950,7 +942,9 @@
         function highlightSelectedImage(iconPath, gridId) {
             const container = document.getElementById(gridId);
             container.querySelectorAll('.image-item').forEach(el => {
-                el.classList.toggle('selected', el.dataset.path === iconPath);
+                const img = el.querySelector('img');
+                const isSelected = img && img.src === iconPath;
+                el.classList.toggle('selected', isSelected);
             });
         }
 
