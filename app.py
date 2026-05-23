@@ -2177,9 +2177,6 @@ def get_images():
 
 
 @app.route('/api/images/clear', methods=['POST'])
-@login_required
-@admin_required_decorator
-@csrf.exempt  # Освободить от CSRF защиты
 def clear_images():
     """
     API endpoint для очистки списка изображений из парсера
