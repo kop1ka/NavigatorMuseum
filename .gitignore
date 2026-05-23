@@ -1,5 +1,18 @@
-(js/script.js is a source file, and there are no build artifacts, dependencies, or temporary files in the changes)
+```
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 
-```javascript
+# Logs
+*.log
 
+# Environment
+.env
+.env.local
+.env.*
+
+# Data files (if they follow a pattern that suggests they're generated)
+data/audit/audit_*.json
 ```

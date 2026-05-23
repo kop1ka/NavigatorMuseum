@@ -207,6 +207,42 @@
       "username": "admin",
       "description": "Просмотр журнала аудита",
       "additional_data": {}
+    },
+    {
+      "id": "AUDIT_20260523080207611128",
+      "timestamp": "2026-05-23T13:02:07.611118",
+      "timestamp_formatted": "23.05.2026 13:02:07",
+      "event_type": "catalog_item_open",
+      "object_id": "/",
+      "object_type": "index",
+      "ip_address": "unknown",
+      "user_id": null,
+      "username": null,
+      "description": "Открытие главной страницы каталога",
+      "additional_data": {
+        "item_path": "/",
+        "item_name": "Главная страница",
+        "status_code": 200,
+        "status_text": "success"
+      }
+    },
+    {
+      "id": "AUDIT_20260523080229997017",
+      "timestamp": "2026-05-23T13:02:29.997002",
+      "timestamp_formatted": "23.05.2026 13:02:29",
+      "event_type": "catalog_item_open",
+      "object_id": "/",
+      "object_type": "index",
+      "ip_address": "127.0.0.1",
+      "user_id": null,
+      "username": null,
+      "description": "Открытие главной страницы каталога",
+      "additional_data": {
+        "item_path": "/",
+        "item_name": "Главная страница",
+        "status_code": 200,
+        "status_text": "success"
+      }
     }
   ]
 }
