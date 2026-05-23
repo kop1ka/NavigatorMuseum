@@ -677,7 +677,7 @@ def logout():
     return redirect(URL_PREFIX + '/')
 
 
-@app.route(URL_PREFIX + '/change-password', methods=['GET', 'POST'])
+@app.route('/change-password', methods=['GET', 'POST'])
 @login_required
 def change_password():
     """
