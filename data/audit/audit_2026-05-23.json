@@ -168,6 +168,19 @@
       "additional_data": {
         "page": "index.html"
       }
+    },
+    {
+      "id": "AUDIT_20260523065023348204",
+      "timestamp": "2026-05-23T11:50:23.348190",
+      "timestamp_formatted": "23.05.2026 11:50:23",
+      "event_type": "web_resource_view",
+      "object_id": "test_main_page",
+      "object_type": "ui_element",
+      "ip_address": "127.0.0.1",
+      "user_id": null,
+      "username": null,
+      "description": "Тест события с главной страницы",
+      "additional_data": {}
     }
   ]
 }

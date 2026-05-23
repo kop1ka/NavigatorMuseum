@@ -14,18 +14,20 @@ __pycache__/
 *.env.*
 
 # Dependencies
-venv/
 .venv/
-.env/
+venv/
+node_modules/
+
+# Build artifacts
+dist/
+build/
+target/
 
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# Build artifacts
-build/
-dist/
-target/
+# OS
+.DS_Store
+Thumbs.db
 ```

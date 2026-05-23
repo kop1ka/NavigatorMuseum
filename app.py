@@ -2020,7 +2020,8 @@ def get_parser_debug_log():
         return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
-@app.route('/api/audit/logs', methods=['GET', 'POST'])
+@app.route('/navigator/api/audit/logs', methods=['GET', 'POST'])
+@csrf.exempt  # Отключаем CSRF для POST запросов от фронтенда
 def handle_audit_logs():
     """
     API endpoint для работы с журналом аудита
@@ -2123,7 +2124,7 @@ def handle_audit_logs():
             return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
-@app.route('/api/audit/clear', methods=['POST'])
+@app.route('/navigator/api/audit/clear', methods=['POST'])
 @login_required
 @admin_required_decorator
 @csrf.exempt
