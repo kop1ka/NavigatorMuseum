@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ----- Функция отправки событий аудита -----
     function sendAuditEvent(eventType, objectId, objectType, description, additionalData = {}) {
-        fetch('/navigator/api/audit/logs', {
+        fetch('/api/audit/logs', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -443,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ----- Загрузка каталога с сервера -----
     async function loadCatalog() {
         try {
-            const response = await fetch('/navigator/api/catalog');
+            const response = await fetch('/api/catalog');
             if (!response.ok) throw new Error('Ошибка загрузки');
             catalogData = await response.json();
             if (sidebar.classList.contains('active')) {
