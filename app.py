@@ -23,7 +23,7 @@ import requests
 import urllib3
 from datetime import datetime, timedelta
 from urllib.parse import unquote, urlparse
-from flask import Flask, render_template_string, request, jsonify, send_from_directory, redirect, url_for, session, flash, Response
+from flask import Flask, render_template_string, request, jsonify, send_from_directory, redirect, url_for, session, flash, Response, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf import CSRFProtect
 from flask_limiter import Limiter

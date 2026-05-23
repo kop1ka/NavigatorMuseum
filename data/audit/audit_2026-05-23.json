@@ -181,6 +181,32 @@
       "username": null,
       "description": "Тест события с главной страницы",
       "additional_data": {}
+    },
+    {
+      "id": "AUDIT_20260523071351258116",
+      "timestamp": "2026-05-23T12:13:51.258103",
+      "timestamp_formatted": "23.05.2026 12:13:51",
+      "event_type": "test_event",
+      "object_id": "test_obj",
+      "object_type": "web_event",
+      "ip_address": "127.0.0.1",
+      "user_id": null,
+      "username": null,
+      "description": "",
+      "additional_data": {}
+    },
+    {
+      "id": "AUDIT_20260523071648419538",
+      "timestamp": "2026-05-23T12:16:48.419529",
+      "timestamp_formatted": "23.05.2026 12:16:48",
+      "event_type": "web_resource_view",
+      "object_id": "audit_logs",
+      "object_type": "resource",
+      "ip_address": "127.0.0.1",
+      "user_id": 1,
+      "username": "admin",
+      "description": "Просмотр журнала аудита",
+      "additional_data": {}
     }
   ]
 }
