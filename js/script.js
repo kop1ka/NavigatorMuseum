@@ -265,26 +265,86 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 console.log('Переход по ссылке:', { original: itemData.url, processed: targetUrl });
 
+                // Аудит: попытка перехода по ссылке
+                const linkType = isVideoFile(targetUrl) ? 'video_file' : 
+                                 targetUrl.match(/^https?:\/\//i) ? 'external_link' : 'internal_link';
+                
+                sendAuditEvent('link_click', itemData.name, 'catalog_item_link', 
+                    `Попытка перехода по ссылке: ${itemData.name}`, {
+                        url: targetUrl,
+                        link_type: linkType,
+                        status: 'initiated'
+                    });
+
                 // Проверяем, является ли файл видео
                 if (isVideoFile(targetUrl)) {
                     const videoPlayerUrl = `/video-player?url=${encodeURIComponent(targetUrl)}&name=${encodeURIComponent(itemData.name)}`;
+                    
+                    // Аудит: переход к видео-плееру
+                    sendAuditEvent('video_player_open', itemData.name, 'video_file', 
+                        `Открытие видео-плеера для: ${itemData.name}`, {
+                            url: targetUrl,
+                            player_url: videoPlayerUrl,
+                            status: 'success'
+                        });
+                    
                     window.location.href = videoPlayerUrl;
                 } else {
                     // === ИСПРАВЛЕНИЕ ПРОБЛЕМЫ ===
                     // Проверяем, что URL абсолютно начинается с http:// или https://
                     if (targetUrl.match(/^https?:\/\//i)) {
                         // Для внешних URL используем window.open для гарантии корректного открытия
-                        window.open(targetUrl, '_blank');
+                        try {
+                            const newWindow = window.open(targetUrl, '_blank');
+                            
+                            // Аудит: результат попытки открытия внешней ссылки
+                            if (newWindow && !newWindow.closed) {
+                                sendAuditEvent('external_link_open', itemData.name, 'external_link', 
+                                    `Внешняя ссылка открыта успешно: ${itemData.name}`, {
+                                        url: targetUrl,
+                                        status: 'success'
+                                    });
+                            } else {
+                                sendAuditEvent('external_link_blocked', itemData.name, 'external_link', 
+                                    `Внешняя ссылка заблокирована браузером: ${itemData.name}`, {
+                                        url: targetUrl,
+                                        status: 'blocked_by_browser'
+                                    });
+                            }
+                        } catch (error) {
+                            sendAuditEvent('external_link_error', itemData.name, 'external_link', 
+                                `Ошибка при открытии внешней ссылки: ${itemData.name}`, {
+                                    url: targetUrl,
+                                    status: 'error',
+                                    error_message: error.message
+                                });
+                        }
                     } else {
                         // Для относительных URL создаём временную ссылку
-                        const anchor = document.createElement('a');
-                        anchor.href = targetUrl;
-                        anchor.target = '_self';
-                        anchor.rel = 'noopener noreferrer';
-                        
-                        document.body.appendChild(anchor);
-                        anchor.click();
-                        document.body.removeChild(anchor);
+                        try {
+                            const anchor = document.createElement('a');
+                            anchor.href = targetUrl;
+                            anchor.target = '_self';
+                            anchor.rel = 'noopener noreferrer';
+                            
+                            document.body.appendChild(anchor);
+                            anchor.click();
+                            document.body.removeChild(anchor);
+                            
+                            // Аудит: внутренний переход (статус неизвестен, так как страница перезагружается)
+                            sendAuditEvent('internal_link_navigate', itemData.name, 'internal_link', 
+                                `Переход по внутренней ссылке: ${itemData.name}`, {
+                                    url: targetUrl,
+                                    status: 'navigating'
+                                });
+                        } catch (error) {
+                            sendAuditEvent('internal_link_error', itemData.name, 'internal_link', 
+                                `Ошибка при переходе по внутренней ссылке: ${itemData.name}`, {
+                                    url: targetUrl,
+                                    status: 'error',
+                                    error_message: error.message
+                                });
+                        }
                     }
                 }
             } else {
