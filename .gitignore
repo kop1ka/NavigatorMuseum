@@ -18,13 +18,26 @@ venv/
 .venv/
 .env/
 
+# Editors
+.vscode/
+.idea/
+
+# Build artifacts
+build/
+dist/
+target/
+
 # Coverage
 .coverage
-htmlcov/
 coverage/
+htmlcov/
 
 # Temporary files
 *.tmp
 *.swp
-*~
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
 ```
