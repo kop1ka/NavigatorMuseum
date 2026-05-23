@@ -312,10 +312,10 @@ def run_parser_task():
         if new_parser_images:
             log(f"Первые 5 изображений: {new_parser_images[:5]}")
         
-        # Заменить все ссылки с 192.168.3.78:8085 на vm-ftp.anosov.ru
+        # Заменить все ссылки с http://192.168.3.78:8085/vm на https://vm-ftp.anosov.ru/vm/
         def replace_url_domain(url):
-            """Заменить домен в URL с 192.168.3.78:8085 на vm-ftp.anosov.ru"""
-            return url.replace('192.168.3.78:8085', 'vm-ftp.anosov.ru')
+            """Заменить домен в URL с http://192.168.3.78:8085/vm на https://vm-ftp.anosov.ru/vm/"""
+            return url.replace('http://192.168.3.78:8085/vm', 'https://vm-ftp.anosov.ru/vm/')
         
         # Применяем замену ко всем новым изображениям
         new_parser_images = [replace_url_domain(img) for img in new_parser_images]
@@ -335,13 +335,13 @@ def run_parser_task():
         # Обновить статус парсера с новыми изображениями
         parser_status['images'] = all_images
         
-        # Заменить все ссылки с 192.168.3.78:8085 на vm-ftp.anosov.ru в элементах каталога
+        # Заменить все ссылки с http://192.168.3.78:8085/vm на https://vm-ftp.anosov.ru/vm/ в элементах каталога
         def replace_url_domain_recursive(items_list):
             """Рекурсивно заменить домен в URL всех элементов"""
             for item in items_list:
                 # Заменяем URL в текущем элементе
                 if 'url' in item and item['url']:
-                    item['url'] = item['url'].replace('192.168.3.78:8085', 'vm-ftp.anosov.ru')
+                    item['url'] = item['url'].replace('http://192.168.3.78:8085/vm', 'https://vm-ftp.anosov.ru/vm/')
                 # Рекурсивно обрабатываем дочерние элементы
                 if item.get('children') and isinstance(item['children'], list):
                     replace_url_domain_recursive(item['children'])
