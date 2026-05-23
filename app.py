@@ -2196,31 +2196,6 @@ def clear_images():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-@app.route('/api/catalog/clear', methods=['POST'])
-def clear_catalog():
-    """
-    API endpoint для очистки каталога
-    
-    Очищает файл catalog.json, оставляя только корневой элемент без детей.
-    
-    Returns:
-        Response: JSON объект с результатом операции
-    """
-    try:
-        # Сохранить пустой каталог с корневым элементом
-        empty_catalog = {
-            'name': 'ВЕБ-РЕСУРСЫ МУЛЬТИМЕДИЙНОГО КОНТЕНТА ПО НАПРАВЛЕНИЯМ',
-            'icon': 'folder.png',
-            'children': []
-        }
-        save_catalog(CATALOG_FILE, empty_catalog)
-        log("Каталог очищен")
-        return jsonify({'success': True, 'message': 'Каталог успешно очищен'})
-    except Exception as e:
-        log(f"Ошибка при очистке каталога: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
 @app.route('/page/<path:filename>')
 def serve_page_image(filename):
     """
