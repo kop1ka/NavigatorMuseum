@@ -2020,7 +2020,7 @@ def get_parser_debug_log():
         return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
-@app.route('/navigator/api/audit/logs', methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/api/audit/logs', methods=['GET', 'POST', 'OPTIONS'])
 @csrf.exempt  # Отключаем CSRF для POST запросов от фронтенда
 def handle_audit_logs():
     """
