@@ -186,6 +186,24 @@ document.addEventListener('DOMContentLoaded', () => {
             span.className = 'item-name';
             span.textContent = item.name;
 
+            // Динамическая проверка: элемент пустой, если нет детей И нет URL
+            const isCurrentlyEmpty = (!item.children || item.children.length === 0) && !item.url;
+            
+            // Если элемент пустой, добавляем сообщение
+            if (isCurrentlyEmpty) {
+                const emptySpan = document.createElement('span');
+                emptySpan.className = 'item-empty-message';
+                emptySpan.textContent = '(пустой)';
+                emptySpan.style.color = '#999';
+                emptySpan.style.fontSize = '12px';
+                emptySpan.style.marginTop = '4px';
+                span.appendChild(document.createElement('br'));
+                span.appendChild(emptySpan);
+                
+                // Делаем элемент визуально менее активным
+                itemDiv.style.opacity = '0.7';
+            }
+
             // Если это результаты поиска, добавляем путь к элементу
             if (isSearchResults && item.searchPath) {
                 const pathSpan = document.createElement('span');
@@ -246,6 +264,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const itemData = itemDiv._itemData;
         if (!itemData) return;
+
+        // Проверяем, является ли элемент пустым (динамически: нет детей И нет URL)
+        const isCurrentlyEmpty = (!itemData.children || itemData.children.length === 0) && !itemData.url;
+        
+        if (isCurrentlyEmpty) {
+            // Показываем сообщение о том, что элемент пустой
+            alert(`Элемент "${itemData.name}" пустой: не содержит элементов и не имеет ссылки.`);
+            return;
+        }
 
         if (itemData.children && itemData.children.length > 0) {
             // Папка – углубляемся

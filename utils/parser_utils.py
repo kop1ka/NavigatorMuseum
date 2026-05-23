@@ -183,24 +183,30 @@ def extract_items_from_html(html_content, base_url):
         print(f"[DEBUG extract_items] Элемент: name='{name_text}', href='{href}', is_folder={is_folder}")
         
         if is_folder:
+            # Проверяем, является ли папка пустой (нет детей и нет URL)
+            is_empty = True  # По умолчанию считаем папку пустой, будет перезаписано при рекурсивном парсинге
             items.append({
                 'name': unquote(name_text.rstrip('/')),
                 'icon': 'page/logo.png',
                 'children': [],
                 'url': full_url,
-                'modified': modified
+                'modified': modified,
+                'isEmpty': is_empty  # Будет обновлено после рекурсивного парсинга
             })
             print(f"[DEBUG extract_items] Добавлена папка: {name_text}")
         else:
             name_without_ext = unquote(name_text)
             if '.' in name_without_ext:
                 name_without_ext = name_without_ext.rsplit('.', 1)[0]
+            # Проверяем, является ли файл пустым (нет URL)
+            is_empty = not full_url or full_url.strip() == ''
             items.append({
                 'name': name_without_ext,
                 'icon': 'page/logo.png',
                 'children': None,
-                'url': full_url,
-                'modified': modified
+                'url': full_url if not is_empty else None,
+                'modified': modified,
+                'isEmpty': is_empty
             })
             print(f"[DEBUG extract_items] Добавлен файл: {name_text}")
     
@@ -325,17 +331,28 @@ def parse_folder(url, visited=None, depth=0, max_depth=10, timeout=10, max_worke
                     try:
                         result = future.result()
                         item['children'] = result
-                        print(f"[DEBUG parse_folder] Спарсена папка {item['url']}: найдено {len(result)} элементов")
+                        # Обновляем флаг isEmpty: папка пустая, если нет детей И нет URL
+                        has_children = len(result) > 0
+                        has_url = item.get('url') and item['url'].strip()
+                        item['isEmpty'] = not has_children and not has_url
+                        print(f"[DEBUG parse_folder] Спарсена папка {item['url']}: найдено {len(result)} элементов, isEmpty={item['isEmpty']}")
                     except Exception as e:
                         import traceback
                         print(f"[DEBUG parse_folder] Ошибка при парсинге папки {item['url']}: {e}")
                         print(f"[DEBUG parse_folder] Трассировка: {traceback.format_exc()}")
                         item['children'] = []
+                        item['isEmpty'] = True
         else:
             if depth >= max_depth:
                 print(f"[DEBUG parse_folder] Пропуск рекурсивного парсинга: достигнута максимальная глубина depth={depth}")
             else:
                 print(f"[DEBUG parse_folder] Пропуск рекурсивного парсинга: нет папок для обработки")
+            # Обновляем isEmpty для папок, которые не были распаршены
+            for item in items:
+                if item.get('children') is not None:  # Это папка
+                    has_children = len(item.get('children', [])) > 0
+                    has_url = item.get('url') and item['url'].strip()
+                    item['isEmpty'] = not has_children and not has_url
         
         print(f"[DEBUG parse_folder] Завершение: url={url}, возвращено {len(items)} элементов")
         return items
