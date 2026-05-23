@@ -122,6 +122,24 @@
       "additional_data": {
         "file_path": "/path/to/file.txt"
       }
+    },
+    {
+      "id": "AUDIT_20260523052959620753",
+      "timestamp": "2026-05-23T05:29:59.620749",
+      "timestamp_formatted": "23.05.2026 05:29:59",
+      "event_type": "catalog_item_open",
+      "object_id": "/projects/TestProject/index.html",
+      "object_type": "project",
+      "ip_address": "unknown",
+      "user_id": null,
+      "username": null,
+      "description": "Тестовое открытие проекта",
+      "additional_data": {
+        "item_path": "/projects/TestProject/index.html",
+        "item_name": "TestProject",
+        "status_code": 200,
+        "status_text": "success"
+      }
     }
   ]
 }

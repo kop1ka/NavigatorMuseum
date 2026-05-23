@@ -37,6 +37,9 @@ class AuditEventType:
     
     # Файловая система
     FILESYSTEM_READ = 'filesystem_read'
+    
+    # Каталог - открытие элементов
+    CATALOG_ITEM_OPEN = 'catalog_item_open'
 
 
 # Пути к файлам логов аудита
@@ -309,6 +312,48 @@ def audit_filesystem_read(file_path, description=None, additional_data=None):
     )
 
 
+def audit_catalog_item_open(item_path, item_name, status_code, item_type='item', description=None, additional_data=None):
+    """
+    Зафиксировать открытие элемента каталога с указанием статуса
+    
+    Args:
+        item_path (str): Путь элемента каталога
+        item_name (str): Имя элемента
+        status_code (int): Статус ответа (200 - успех, 404 - не найдено, и т.д.)
+        item_type (str, optional): Тип элемента (item, folder, resource)
+        description (str, optional): Описание
+        additional_data (dict, optional): Дополнительные данные
+    
+    Returns:
+        dict: Запись аудита
+    """
+    from flask_login import current_user
+    
+    user_id = current_user.id if hasattr(current_user, 'id') and current_user.is_authenticated else None
+    username = current_user.username if hasattr(current_user, 'username') and current_user.is_authenticated else None
+    
+    # Определение статуса в текстовом виде
+    status_text = 'success' if status_code == 200 else 'error' if status_code >= 400 else 'redirect'
+    
+    data = {
+        'item_path': item_path,
+        'item_name': item_name,
+        'status_code': status_code,
+        'status_text': status_text,
+        **(additional_data or {})
+    }
+    
+    return log_audit_event(
+        event_type=AuditEventType.CATALOG_ITEM_OPEN,
+        object_id=item_path,
+        object_type=item_type,
+        description=description or f'Открытие элемента каталога: {item_name} (статус: {status_code})',
+        additional_data=data,
+        user_id=user_id,
+        username=username
+    )
+
+
 def load_audit_logs(date=None, limit=100, offset=0, event_type=None, object_id=None):
     """
     Загрузить записи журнала аудита с фильтрацией
@@ -447,6 +492,7 @@ __all__ = [
     'audit_upload_success',
     'audit_web_resource',
     'audit_filesystem_read',
+    'audit_catalog_item_open',
     'load_audit_logs',
     'clear_audit_logs',
     'audit_decorator'
