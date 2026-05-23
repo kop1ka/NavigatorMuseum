@@ -2192,10 +2192,10 @@ def clear_images():
     try:
         # Сохранить пустой список изображений
         save_json_file(PARSER_IMAGES_FILE, {'images': []})
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Список изображений очищен")
+        log("Список изображений очищен")
         return jsonify({'success': True, 'message': 'Список изображений успешно очищен'})
     except Exception as e:
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Ошибка при очистке изображений: {e}")
+        log(f"Ошибка при очистке изображений: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
