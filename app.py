@@ -58,6 +58,10 @@ from utils.catalog_utils import (
     get_item_path, mark_permanent_recursive, merge_with_permanent,
     find_item_by_path, delete_item_by_path, update_item_by_path
 )
+from utils.audit_utils import (
+    audit_error, audit_upload_success, audit_web_resource, audit_filesystem_read,
+    load_audit_logs, clear_audit_logs, AuditEventType
+)
 
 # Инициализация Flask приложения
 # static_folder='.' указывает, что статические файлы находятся в корневой директории
@@ -361,6 +365,11 @@ def run_parser_task():
         save_catalog(CATALOG_FILE, existing_catalog)
         log(f"Каталог сохранён в {CATALOG_FILE}")
         
+        # Аудит: успешная загрузка элементов парсером
+        audit_upload_success('ftp_parser', object_type='catalog', 
+                           description=f'Успешный парсинг FTP: найдено {len(items)} элементов',
+                           additional_data={'items_count': len(items), 'images_count': len(all_images)})
+        
         # Обновить статус парсера
         parser_status['last_run'] = get_full_timestamp()
         parser_status['message'] = f'Парсинг завершён успешно. Найдено элементов: {len(items)}. Всего изображений: {len(all_images)}'
@@ -411,6 +420,12 @@ def run_parser_task():
         if error_details['reason']:
             log(f"Причина ошибки: {error_details['reason']}", log_type='error')
         log(f"Полный traceback: {error_traceback}", log_type='error')
+        
+        # Аудит: ошибка парсинга
+        audit_error('parser_error', 'ftp_parser', 
+                   description=f'Ошибка парсинга FTP: {str(e)}',
+                   exception=e,
+                   additional_data=error_details)
     finally:
         parser_status['running'] = False
         log(f"Завершение run_parser_task(). Статус: running={parser_status['running']}")
@@ -1644,6 +1659,9 @@ def get_catalog():
     Returns:
         Response: JSON объект каталога
     """
+    # Аудит: просмотр каталога
+    audit_web_resource('view', 'catalog', description='Просмотр каталога веб-ресурсов')
+    
     catalog = load_catalog(CATALOG_FILE)
     permanent_items = load_permanent_items(PERMANENT_FILE)
     permanent_paths = set(permanent_items.get('permanent_items', []))
@@ -1856,6 +1874,9 @@ def get_error_logs():
     Returns:
         Response: JSON объект с логами ошибок
     """
+    # Аудит: просмотр логов ошибок
+    audit_web_resource('view', 'error_logs', description='Просмотр логов ошибок парсера')
+    
     try:
         if os.path.exists(ERROR_LOG_FILE):
             with open(ERROR_LOG_FILE, 'r', encoding='utf-8') as f:
@@ -1903,6 +1924,87 @@ def get_parser_debug_log():
     except json.JSONDecodeError as e:
         return jsonify({'error': f'Ошибка чтения JSON: {str(e)}'}), 500
     except Exception as e:
+        return jsonify({'error': f'Ошибка: {str(e)}'}), 500
+
+
+@app.route('/api/audit/logs', methods=['GET'])
+@login_required
+@admin_required_decorator
+def get_audit_logs():
+    """
+    API endpoint для получения записей журнала аудита
+    
+    Возвращает записи журнала аудита с фильтрацией и пагинацией.
+    
+    Query Parameters:
+        date (str, optional): Дата в формате YYYY-MM-DD
+        limit (int, optional): Максимальное количество записей (по умолчанию 100)
+        offset (int, optional): Смещение для пагинации (по умолчанию 0)
+        event_type (str, optional): Фильтр по типу события
+        object_id (str, optional): Фильтр по ID объекта
+    
+    Returns:
+        Response: JSON объект с записями аудита
+    """
+    # Аудит: просмотр журнала аудита
+    audit_web_resource('view', 'audit_logs', description='Просмотр журнала аудита')
+    
+    try:
+        date = request.args.get('date')
+        limit = int(request.args.get('limit', 100))
+        offset = int(request.args.get('offset', 0))
+        event_type = request.args.get('event_type')
+        object_id = request.args.get('object_id')
+        
+        result = load_audit_logs(
+            date=date,
+            limit=limit,
+            offset=offset,
+            event_type=event_type,
+            object_id=object_id
+        )
+        
+        return jsonify(result)
+    except ValueError as e:
+        return jsonify({'error': f'Неверный формат параметров: {str(e)}'}), 400
+    except Exception as e:
+        audit_error('audit_logs_error', 'audit_logs', 
+                   description=f'Ошибка получения журнала аудита: {str(e)}',
+                   exception=e)
+        return jsonify({'error': f'Ошибка: {str(e)}'}), 500
+
+
+@app.route('/api/audit/clear', methods=['POST'])
+@login_required
+@admin_required_decorator
+@csrf.exempt
+def clear_audit_logs_route():
+    """
+    API endpoint для очистки журнала аудита
+    
+    Request Body:
+        date (str, optional): Дата для очистки. Если не указана, очищается текущий день.
+    
+    Returns:
+        Response: JSON объект со статусом операции
+    """
+    # Аудит: очистка журнала аудита
+    audit_web_resource('change', 'audit_logs', description='Очистка журнала аудита')
+    
+    try:
+        data = request.json or {}
+        date = data.get('date')
+        
+        success = clear_audit_logs(date=date)
+        
+        if success:
+            return jsonify({'status': 'success', 'message': 'Журнал аудита очищен'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Ошибка при очистке журнала'}), 500
+    except Exception as e:
+        audit_error('audit_clear_error', 'audit_logs',
+                   description=f'Ошибка очистки журнала аудита: {str(e)}',
+                   exception=e)
         return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
@@ -1960,6 +2062,9 @@ def import_json():
         
         add_imported_items(imported_items, target_list)
         save_catalog(CATALOG_FILE, catalog)
+        
+        # Аудит: добавление ресурса через импорт
+        audit_web_resource('add', 'import_json', description=f'Импорт JSON данных: {len(target_list)} элементов')
         
         return jsonify({'status': 'success', 'message': f'Импортировано элементов: {len(target_list)}'})
     
@@ -2052,6 +2157,10 @@ def items_api():
             new_item['url'] = url
         target_list.append(new_item)
         save_catalog(CATALOG_FILE, catalog)
+        
+        # Аудит: добавление ресурса
+        audit_web_resource('add', path or name, description=f'Добавлен новый элемент: {name}')
+        
         response = jsonify({'status': 'success'})
         response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         return response
@@ -2059,6 +2168,10 @@ def items_api():
     elif request.method == 'DELETE':
         if delete_item_by_path(catalog['children'], path):
             save_catalog(CATALOG_FILE, catalog)
+            
+            # Аудит: удаление ресурса
+            audit_web_resource('delete', path, description=f'Удален элемент: {path}')
+            
             response = jsonify({'status': 'success'})
             response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
             return response
@@ -2074,6 +2187,10 @@ def items_api():
         # Попытаться обновить существующий элемент
         if update_item_by_path(catalog['children'], path, updates):
             save_catalog(CATALOG_FILE, catalog)
+            
+            # Аудит: изменение ресурса
+            audit_web_resource('change', path, description=f'Обновлен элемент: {path}')
+            
             response = jsonify({'status': 'success'})
             response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
             return response
@@ -2187,6 +2304,9 @@ def serve_page_image(filename):
     Returns:
         Response: Файл изображения
     """
+    # Аудит: чтение файла из файловой системы
+    audit_filesystem_read(f'page/{filename}', description=f'Чтение файла из page/: {filename}')
+    
     page_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'page')
     return send_from_directory(page_dir, filename, max_age=86400)  # Кэширование на 24 часа
 
@@ -2202,6 +2322,9 @@ def serve_css(filename):
     Returns:
         Response: CSS файл
     """
+    # Аудит: чтение файла из файловой системы
+    audit_filesystem_read(f'css/{filename}', description=f'Чтение CSS файла: {filename}')
+    
     css_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'css')
     response = send_from_directory(css_dir, filename, max_age=86400)
     response.headers['Content-Type'] = 'text/css; charset=utf-8'
@@ -2219,6 +2342,9 @@ def serve_js(filename):
     Returns:
         Response: JS файл
     """
+    # Аудит: чтение файла из файловой системы
+    audit_filesystem_read(f'js/{filename}', description=f'Чтение JS файла: {filename}')
+    
     js_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'js')
     response = send_from_directory(js_dir, filename, max_age=86400)
     response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
