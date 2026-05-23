@@ -140,6 +140,34 @@
         "status_code": 200,
         "status_text": "success"
       }
+    },
+    {
+      "id": "AUDIT_20260523063842446559",
+      "timestamp": "2026-05-23T11:38:42.446552",
+      "timestamp_formatted": "23.05.2026 11:38:42",
+      "event_type": "web_resource_view",
+      "object_id": "test_main_page",
+      "object_type": "test",
+      "ip_address": "unknown",
+      "user_id": null,
+      "username": null,
+      "description": "Тестовая запись с временем ЕКБ",
+      "additional_data": {}
+    },
+    {
+      "id": "AUDIT_20260523063908089845",
+      "timestamp": "2026-05-23T11:39:08.089841",
+      "timestamp_formatted": "23.05.2026 11:39:08",
+      "event_type": "web_resource_view",
+      "object_id": "main_page_logo",
+      "object_type": "image",
+      "ip_address": "unknown",
+      "user_id": null,
+      "username": null,
+      "description": "Просмотр логотипа на главной странице",
+      "additional_data": {
+        "page": "index.html"
+      }
     }
   ]
 }

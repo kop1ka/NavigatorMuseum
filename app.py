@@ -909,19 +909,12 @@ def index():
     """
     # Фиксируем открытие главной страницы (каталог)
     try:
-        ip_address = request.remote_addr or '127.0.0.1'
-        user_id = getattr(g, 'user_id', None)
-        username = getattr(g, 'username', 'anonymous')
-        
         audit_catalog_item_open(
             item_path='/',
             item_name='Главная страница',
             status_code=200,
             item_type='index',
-            description='Открытие главной страницы каталога',
-            ip_address=ip_address,
-            user_id=user_id,
-            username=username
+            description='Открытие главной страницы каталога'
         )
     except Exception as e:
         # Если аудит не удался, просто логируем ошибку, но не прерываем работу
@@ -947,6 +940,26 @@ def admin():
     Returns:
         Response: HTML файл admin.html
     """
+    # Фиксируем открытие панели администратора
+    try:
+        ip_address = request.remote_addr or '127.0.0.1'
+        user_id = getattr(g, 'user_id', None)
+        username = getattr(g, 'username', 'anonymous')
+        
+        audit_catalog_item_open(
+            item_path='/admin',
+            item_name='Панель администратора',
+            status_code=200,
+            item_type='admin_page',
+            description='Открытие панели администратора',
+            ip_address=ip_address,
+            user_id=user_id,
+            username=username
+        )
+    except Exception as e:
+        # Если аудит не удался, просто логируем ошибку, но не прерываем работу
+        app.logger.error(f"Ошибка аудита панели администратора: {e}")
+    
     response = send_from_directory('.', 'admin.html')
     # Добавляем заголовки для предотвращения кэширования HTML страниц
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -965,6 +978,26 @@ def video_player():
     Returns:
         Response: HTML файл video-player.html
     """
+    # Фиксируем открытие страницы видеоплеера
+    try:
+        ip_address = request.remote_addr or '127.0.0.1'
+        user_id = getattr(g, 'user_id', None)
+        username = getattr(g, 'username', 'anonymous')
+        
+        audit_catalog_item_open(
+            item_path='/video-player',
+            item_name='Видеоплеер',
+            status_code=200,
+            item_type='video_player_page',
+            description='Открытие страницы видеоплеера',
+            ip_address=ip_address,
+            user_id=user_id,
+            username=username
+        )
+    except Exception as e:
+        # Если аудит не удался, просто логируем ошибку, но не прерываем работу
+        app.logger.error(f"Ошибка аудита видеоплеера: {e}")
+    
     response = send_from_directory('.', 'video-player.html')
     # Добавляем заголовки для предотвращения кэширования HTML страниц
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -985,6 +1018,26 @@ def parser_logs_page():
     Returns:
         Response: HTML страница с логами парсера
     """
+    # Фиксируем открытие страницы логов парсера
+    try:
+        ip_address = request.remote_addr or '127.0.0.1'
+        user_id = getattr(g, 'user_id', None)
+        username = getattr(g, 'username', 'anonymous')
+        
+        audit_catalog_item_open(
+            item_path='/parser-logs',
+            item_name='Логи парсера',
+            status_code=200,
+            item_type='parser_logs_page',
+            description='Открытие страницы логов парсера',
+            ip_address=ip_address,
+            user_id=user_id,
+            username=username
+        )
+    except Exception as e:
+        # Если аудит не удался, просто логируем ошибку, но не прерываем работу
+        app.logger.error(f"Ошибка аудита страницы логов парсера: {e}")
+    
     html_template = '''<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -1359,6 +1412,26 @@ def parser_debug_log_page():
     Returns:
         Response: HTML страница с отладочными логами
     """
+    # Фиксируем открытие страницы отладочных логов парсера
+    try:
+        ip_address = request.remote_addr or '127.0.0.1'
+        user_id = getattr(g, 'user_id', None)
+        username = getattr(g, 'username', 'anonymous')
+        
+        audit_catalog_item_open(
+            item_path='/parser-debug-log',
+            item_name='Отладочные логи парсера',
+            status_code=200,
+            item_type='parser_debug_log_page',
+            description='Открытие страницы отладочных логов парсера',
+            ip_address=ip_address,
+            user_id=user_id,
+            username=username
+        )
+    except Exception as e:
+        # Если аудит не удался, просто логируем ошибку, но не прерываем работу
+        app.logger.error(f"Ошибка аудита страницы отладочных логов: {e}")
+    
     html_template = '''<!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -1947,51 +2020,107 @@ def get_parser_debug_log():
         return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
-@app.route('/api/audit/logs', methods=['GET'])
-@login_required
-@admin_required_decorator
-def get_audit_logs():
+@app.route('/api/audit/logs', methods=['GET', 'POST'])
+def handle_audit_logs():
     """
-    API endpoint для получения записей журнала аудита
+    API endpoint для работы с журналом аудита
     
-    Возвращает записи журнала аудита с фильтрацией и пагинацией.
+    GET: Возвращает записи журнала аудита с фильтрацией и пагинацией.
+         Требуется авторизация администратора.
     
-    Query Parameters:
+    POST: Добавляет новую запись в журнал аудита.
+          Доступно без авторизации для фронтенд-событий.
+    
+    Query Parameters (для GET):
         date (str, optional): Дата в формате YYYY-MM-DD
         limit (int, optional): Максимальное количество записей (по умолчанию 100)
         offset (int, optional): Смещение для пагинации (по умолчанию 0)
         event_type (str, optional): Фильтр по типу события
         object_id (str, optional): Фильтр по ID объекта
     
-    Returns:
-        Response: JSON объект с записями аудита
-    """
-    # Аудит: просмотр журнала аудита
-    audit_web_resource('view', 'audit_logs', description='Просмотр журнала аудита')
+    Request Body (для POST):
+        event_type (str): Тип события
+        object_id (str): Идентификатор объекта
+        object_type (str, optional): Тип объекта
+        description (str, optional): Описание
+        additional_data (dict, optional): Дополнительные данные
     
-    try:
-        date = request.args.get('date')
-        limit = int(request.args.get('limit', 100))
-        offset = int(request.args.get('offset', 0))
-        event_type = request.args.get('event_type')
-        object_id = request.args.get('object_id')
+    Returns:
+        Response: JSON объект с записями аудита (GET) или подтверждением создания (POST)
+    """
+    from flask_login import current_user
+    
+    if request.method == 'POST':
+        # Обработка POST запроса - добавление записи аудита от фронтенда
+        try:
+            data = request.get_json()
+            
+            if not data or 'event_type' not in data or 'object_id' not in data:
+                return jsonify({'error': 'Требуемые поля: event_type и object_id'}), 400
+            
+            event_type = data.get('event_type')
+            object_id = data.get('object_id')
+            object_type = data.get('object_type', 'web_event')
+            description = data.get('description', '')
+            additional_data = data.get('additional_data', {})
+            
+            # Получаем информацию о пользователе если доступна
+            user_id = current_user.id if hasattr(current_user, 'id') and current_user.is_authenticated else None
+            username = current_user.username if hasattr(current_user, 'username') and current_user.is_authenticated else None
+            
+            # Создаем запись аудита через log_audit_event
+            from utils.audit_utils import log_audit_event
+            audit_entry = log_audit_event(
+                event_type=event_type,
+                object_id=object_id,
+                object_type=object_type,
+                description=description,
+                additional_data=additional_data,
+                user_id=user_id,
+                username=username
+            )
+            
+            return jsonify({
+                'success': True,
+                'message': 'Событие аудита сохранено',
+                'audit_id': audit_entry.get('id')
+            }), 201
+            
+        except Exception as e:
+            app.logger.error(f"Ошибка при сохранении события аудита: {e}")
+            return jsonify({'error': f'Ошибка: {str(e)}'}), 500
+    
+    else:  # GET запрос
+        # Требуется авторизация администратора для просмотра логов
+        if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
+            return jsonify({'error': 'Требуется авторизация администратора'}), 403
         
-        result = load_audit_logs(
-            date=date,
-            limit=limit,
-            offset=offset,
-            event_type=event_type,
-            object_id=object_id
-        )
+        # Аудит: просмотр журнала аудита
+        audit_web_resource('view', 'audit_logs', description='Просмотр журнала аудита')
         
-        return jsonify(result)
-    except ValueError as e:
-        return jsonify({'error': f'Неверный формат параметров: {str(e)}'}), 400
-    except Exception as e:
-        audit_error('audit_logs_error', 'audit_logs', 
-                   description=f'Ошибка получения журнала аудита: {str(e)}',
-                   exception=e)
-        return jsonify({'error': f'Ошибка: {str(e)}'}), 500
+        try:
+            date = request.args.get('date')
+            limit = int(request.args.get('limit', 100))
+            offset = int(request.args.get('offset', 0))
+            event_type = request.args.get('event_type')
+            object_id = request.args.get('object_id')
+            
+            result = load_audit_logs(
+                date=date,
+                limit=limit,
+                offset=offset,
+                event_type=event_type,
+                object_id=object_id
+            )
+            
+            return jsonify(result)
+        except ValueError as e:
+            return jsonify({'error': f'Неверный формат параметров: {str(e)}'}), 400
+        except Exception as e:
+            audit_error('audit_logs_error', 'audit_logs', 
+                       description=f'Ошибка получения журнала аудита: {str(e)}',
+                       exception=e)
+            return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
 @app.route('/api/audit/clear', methods=['POST'])

@@ -15,6 +15,25 @@ document.addEventListener('DOMContentLoaded', () => {
     let catalogData = null; // будет загружен с сервера
     let currentSearchQuery = ''; // текущий поисковый запрос
 
+    // ----- Функция отправки событий аудита -----
+    function sendAuditEvent(eventType, objectId, objectType, description, additionalData = {}) {
+        fetch('/navigator/api/audit/logs', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                event_type: eventType,
+                object_id: objectId,
+                object_type: objectType,
+                description: description,
+                additional_data: additionalData
+            })
+        }).catch(error => {
+            console.warn('Не удалось отправить событие аудита:', error);
+        });
+    }
+
     // ----- Функции для сохранения/восстановления состояния -----
     function saveState() {
         const state = {
@@ -387,12 +406,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ----- Обработчики событий -----
-    openBtn.addEventListener('click', openSidebar);
+    openBtn.addEventListener('click', () => {
+        // Аудит: открытие каталога с главной страницы
+        sendAuditEvent('web_resource_view', 'main_page_catalog', 'ui_element', 'Открытие каталога с главной страницы');
+        openSidebar();
+    });
+    
     closeBtn.addEventListener('click', closeSidebar);
     overlay.addEventListener('click', closeSidebar);
     backBtn.addEventListener('click', goBack);
 
-    catalogGrid.addEventListener('click', handleItemClick);
+    catalogGrid.addEventListener('click', (e) => {
+        // Аудит: взаимодействие с элементами каталога
+        const itemDiv = e.target.closest('.item');
+        if (itemDiv && itemDiv._itemData) {
+            const itemData = itemDiv._itemData;
+            sendAuditEvent('web_resource_view', itemData.name, 'catalog_item', `Просмотр элемента каталога: ${itemData.name}`, {
+                url: itemData.url || null,
+                hasChildren: !!itemData.children
+            });
+        }
+        handleItemClick(e);
+    });
 
     catalogGrid.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
