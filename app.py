@@ -907,6 +907,26 @@ def index():
     Returns:
         Response: HTML файл index.html
     """
+    # Фиксируем открытие главной страницы (каталог)
+    try:
+        ip_address = request.remote_addr or '127.0.0.1'
+        user_id = getattr(g, 'user_id', None)
+        username = getattr(g, 'username', 'anonymous')
+        
+        audit_catalog_item_open(
+            item_path='/',
+            item_name='Главная страница',
+            status_code=200,
+            item_type='index',
+            description='Открытие главной страницы каталога',
+            ip_address=ip_address,
+            user_id=user_id,
+            username=username
+        )
+    except Exception as e:
+        # Если аудит не удался, просто логируем ошибку, но не прерываем работу
+        app.logger.error(f"Ошибка аудита главной страницы: {e}")
+    
     response = send_from_directory('.', 'index.html')
     # Добавляем заголовки для предотвращения кэширования HTML страниц
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
