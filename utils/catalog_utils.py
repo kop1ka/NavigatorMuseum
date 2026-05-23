@@ -44,12 +44,20 @@ def merge_with_permanent(new_data, existing_catalog, permanent_paths, parent_pat
             merged_item = existing_item.copy()
             has_custom_icon = existing_item.get('icon') and existing_item.get('icon').strip()
             
+            # Сохраняем флаг isEmpty из новых данных парсера
+            if 'isEmpty' in new_item:
+                merged_item['isEmpty'] = new_item['isEmpty']
+            
             if 'children' in new_item:
                 if new_item['children'] is not None:
                     merged_item['children'] = _merge_children(
                         new_item['children'], existing_item.get('children', []),
                         permanent_paths, current_path
                     )
+                    # Пересчитываем isEmpty после слияния children
+                    has_children = len(merged_item.get('children', [])) > 0
+                    has_url = merged_item.get('url') and str(merged_item['url']).strip()
+                    merged_item['isEmpty'] = not has_children and not has_url
                 else:
                     merged_item['children'] = None
             
@@ -103,6 +111,14 @@ def _merge_children(new_children, existing_children, permanent_paths, parent_pat
                             new_item['children'], result_item.get('children', []),
                             permanent_paths, current_path
                         )
+                        # Пересчитываем isEmpty после слияния children
+                        has_children_flag = len(result[i].get('children', [])) > 0
+                        has_url_flag = result[i].get('url') and str(result[i]['url']).strip()
+                        result[i]['isEmpty'] = not has_children_flag and not has_url_flag
+                    
+                    # Сохраняем флаг isEmpty из новых данных, если он есть
+                    if 'isEmpty' in new_item and 'children' not in new_item:
+                        result[i]['isEmpty'] = new_item['isEmpty']
                     
                     if not has_custom_icon:
                         if 'url' in new_item:
