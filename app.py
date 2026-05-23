@@ -60,7 +60,7 @@ from utils.catalog_utils import (
 )
 from utils.audit_utils import (
     audit_error, audit_upload_success, audit_web_resource, audit_filesystem_read,
-    load_audit_logs, clear_audit_logs, AuditEventType
+    audit_catalog_item_open, load_audit_logs, clear_audit_logs, AuditEventType
 )
 
 # Инициализация Flask приложения
@@ -2411,8 +2411,24 @@ def serve_project_file_with_path(remaining_path):
     
     project_path = os.path.join(PROJECTS_DIR, project_name)
     
+    # Аудит: открытие элемента каталога (проекта)
+    audit_catalog_item_open(
+        item_path=f'/projects/{project_name}/{file_path_suffix}' if file_path_suffix else f'/projects/{project_name}',
+        item_name=project_name,
+        status_code=200,  # Будет обновлен ниже при ошибках
+        item_type='project'
+    )
+    
     # Проверяем существование проекта
     if not os.path.exists(project_path) or not os.path.isdir(project_path):
+        # Обновляем аудит с ошибкой 404
+        audit_catalog_item_open(
+            item_path=f'/projects/{project_name}',
+            item_name=project_name,
+            status_code=404,
+            item_type='project',
+            description=f'Проект не найден: {project_name}'
+        )
         return jsonify({'error': f'Проект не найден: {project_name}'}), 404
     
     # Проверяем, есть ли у этого проекта Flask приложение
@@ -2483,23 +2499,59 @@ def serve_project_file_with_path(remaining_path):
     if file_path_suffix:
         file_path = os.path.join(project_path, file_path_suffix)
         if os.path.exists(file_path) and os.path.isfile(file_path):
+            # Аудит: успешное открытие файла проекта
+            audit_catalog_item_open(
+                item_path=f'/projects/{project_name}/{file_path_suffix}',
+                item_name=file_path_suffix,
+                status_code=200,
+                item_type='file'
+            )
             return send_from_directory(project_path, file_path_suffix, max_age=86400)
         
         # Для проектов с шаблонами в templates/
         templates_path = os.path.join(project_path, 'templates', file_path_suffix)
         if os.path.exists(templates_path) and os.path.isfile(templates_path):
+            # Аудит: успешное открытие файла из templates
+            audit_catalog_item_open(
+                item_path=f'/projects/{project_name}/templates/{file_path_suffix}',
+                item_name=file_path_suffix,
+                status_code=200,
+                item_type='template'
+            )
             return send_from_directory(os.path.join(project_path, 'templates'), file_path_suffix, max_age=86400)
         
         # Для статических файлов в static/
         static_path = os.path.join(project_path, 'static', file_path_suffix)
         if os.path.exists(static_path) and os.path.isfile(static_path):
+            # Аудит: успешное открытие файла из static
+            audit_catalog_item_open(
+                item_path=f'/projects/{project_name}/static/{file_path_suffix}',
+                item_name=file_path_suffix,
+                status_code=200,
+                item_type='static'
+            )
             return send_from_directory(os.path.join(project_path, 'static'), file_path_suffix, max_age=86400)
     else:
         # Если file_path_suffix пустой, отдаём index.html
         index_path = os.path.join(project_path, 'index.html')
         if os.path.exists(index_path) and os.path.isfile(index_path):
+            # Аудит: успешное открытие index.html проекта
+            audit_catalog_item_open(
+                item_path=f'/projects/{project_name}/index.html',
+                item_name='index.html',
+                status_code=200,
+                item_type='index'
+            )
             return send_from_directory(project_path, 'index.html', max_age=86400)
     
+    # Аудит: файл не найден (404)
+    audit_catalog_item_open(
+        item_path=f'/projects/{project_name}/{file_path_suffix}' if file_path_suffix else f'/projects/{project_name}',
+        item_name=file_path_suffix or 'index.html',
+        status_code=404,
+        item_type='file',
+        description=f'Файл не найден: {file_path_suffix}'
+    )
     return jsonify({'error': f'Файл не найден: {file_path_suffix}'}), 404
 
 

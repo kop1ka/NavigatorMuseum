@@ -1,13 +1,4 @@
-```gitignore
-# Python compiled files
-*.pyc
+```
 __pycache__/
-
-# Environment files
-.env
-.env.local
-*.env.*
-
-# Logs
-*.log
+*.pyc
 ```
