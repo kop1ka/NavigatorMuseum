@@ -1265,7 +1265,7 @@ def parser_logs_page():
         
         async function loadLogs() {
             try {
-                const response = await fetch('/navigator/api/parser/status', { credentials: 'include' });
+                const response = await fetch('/api/parser/status', { credentials: 'include' });
                 if (!response.ok) {
                     throw new Error('Ошибка загрузки логов');
                 }
@@ -1348,7 +1348,7 @@ def parser_logs_page():
             }
             
             try {
-                const response = await fetch('/navigator/api/parser/reset', {
+                const response = await fetch('/api/parser/reset', {
                     method: 'POST',
                     credentials: 'include',
                     headers: {
@@ -1631,7 +1631,7 @@ def parser_debug_log_page():
     <script>
         async function loadLogs() {
             try {
-                const response = await fetch('/navigator/api/parser/debug-log', { credentials: 'include' });
+                const response = await fetch('/api/parser/debug-log', { credentials: 'include' });
                 if (!response.ok) {
                     throw new Error('Ошибка загрузки логов');
                 }
@@ -1709,7 +1709,7 @@ def parser_debug_log_page():
             }
             
             try {
-                const response = await fetch('/navigator/api/parser/debug-log', { 
+                const response = await fetch('/api/parser/debug-log', { 
                     method: 'DELETE',
                     credentials: 'include' 
                 });
@@ -2020,7 +2020,7 @@ def get_parser_debug_log():
         return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
-@app.route('/navigator/api/audit/logs', methods=['GET', 'POST', 'OPTIONS'])
+@app.route('/api/audit/logs', methods=['GET', 'POST', 'OPTIONS'])
 @csrf.exempt  # Отключаем CSRF для POST запросов от фронтенда
 def handle_audit_logs():
     """
@@ -2134,7 +2134,7 @@ def handle_audit_logs():
             return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
-@app.route('/navigator/api/audit/clear', methods=['POST'])
+@app.route('/api/audit/clear', methods=['POST'])
 @login_required
 @admin_required_decorator
 @csrf.exempt
