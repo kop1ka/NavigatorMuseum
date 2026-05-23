@@ -2020,7 +2020,7 @@ def get_parser_debug_log():
         return jsonify({'error': f'Ошибка: {str(e)}'}), 500
 
 
-@app.route('/navigator/api/audit/logs', methods=['GET', 'POST'])
+@app.route('/navigator/api/audit/logs', methods=['GET', 'POST', 'OPTIONS'])
 @csrf.exempt  # Отключаем CSRF для POST запросов от фронтенда
 def handle_audit_logs():
     """
@@ -2031,6 +2031,8 @@ def handle_audit_logs():
     
     POST: Добавляет новую запись в журнал аудита.
           Доступно без авторизации для фронтенд-событий.
+    
+    OPTIONS: Обработка preflight запросов для CORS.
     
     Query Parameters (для GET):
         date (str, optional): Дата в формате YYYY-MM-DD
@@ -2050,6 +2052,14 @@ def handle_audit_logs():
         Response: JSON объект с записями аудита (GET) или подтверждением создания (POST)
     """
     from flask_login import current_user
+    
+    # Обработка OPTIONS запроса для CORS preflight
+    if request.method == 'OPTIONS':
+        response = make_response('')
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-CSRFToken'
+        return response
     
     if request.method == 'POST':
         # Обработка POST запроса - добавление записи аудита от фронтенда
