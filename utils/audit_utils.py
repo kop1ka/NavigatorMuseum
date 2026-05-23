@@ -1,7 +1,7 @@
 """Утилиты для системы аудита
 
 Модуль обеспечивает автоматическое ведение журнала событий с фиксацией всех значимых параметров:
-- дата и время совершения события
+- дата и время совершения события (по часовому поясу Екатеринбург, UTC+5)
 - IP-адрес источника запроса
 - тип события (добавление, изменение, удаление, просмотр, экспорт, ошибка, загрузка)
 - объект воздействия (идентификатор ресурса, файла и др.)
@@ -17,6 +17,9 @@ import json
 from datetime import datetime
 from functools import wraps
 from flask import request, g
+
+# Часовой пояс Екатеринбург (UTC+5)
+YEKATERINBURG_OFFSET = 5 * 3600  # 5 часов в секундах
 
 
 # Типы событий аудита
@@ -97,6 +100,20 @@ def get_audit_log_path():
     return os.path.join(AUDIT_LOG_DIR, f'audit_{today}.json')
 
 
+def get_yekaterinburg_time():
+    """
+    Получить текущее время по Екатеринбургу (UTC+5)
+    
+    Returns:
+        datetime: Текущее время в часовом поясе Екатеринбург
+    """
+    # Получаем текущее UTC время и добавляем 5 часов
+    from datetime import timedelta
+    utc_now = datetime.utcnow()
+    yekaterinburg_time = utc_now + timedelta(seconds=YEKATERINBURG_OFFSET)
+    return yekaterinburg_time
+
+
 def log_audit_event(event_type, object_id, object_type=None, description=None, 
                     additional_data=None, user_id=None, username=None):
     """
@@ -114,7 +131,7 @@ def log_audit_event(event_type, object_id, object_type=None, description=None,
     Returns:
         dict: Созданная запись аудита
     """
-    timestamp = datetime.now()
+    timestamp = get_yekaterinburg_time()
     
     audit_entry = {
         'id': generate_audit_id(),
@@ -486,6 +503,8 @@ __all__ = [
     'AuditEventType',
     'AUDIT_LOG_FILE',
     'AUDIT_LOG_DIR',
+    'YEKATERINBURG_OFFSET',
+    'get_yekaterinburg_time',
     'get_client_ip',
     'log_audit_event',
     'audit_error',
