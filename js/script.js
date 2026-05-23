@@ -29,7 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 description: description,
                 additional_data: additionalData
             })
-        }).catch(error => {
+        })
+        .then(response => {
+            if (!response.ok) {
+                console.warn('Не удалось отправить событие аудита:', response.status, response.statusText);
+            }
+        })
+        .catch(error => {
             console.warn('Не удалось отправить событие аудита:', error);
         });
     }
