@@ -203,7 +203,7 @@ def audit_error(error_type, object_id, description=None, exception=None, additio
     Returns:
         dict: Запись аудита
     """
-    _, username = _get_current_user_info()
+    username = _get_current_user_info()
     
     data = {
         'error_type': error_type,
@@ -224,26 +224,25 @@ def audit_error(error_type, object_id, description=None, exception=None, additio
 
 def _get_current_user_info():
     """
-    Получить информацию о текущем пользователе
+    Получить имя текущего пользователя
     
     Работает как внутри Flask-контекста, так и без него.
-    Если пользователь не авторизован или контекст недоступен, возвращает (None, None).
+    Если пользователь не авторизован или контекст недоступен, возвращает None.
     
     Returns:
-        tuple: (user_id, username) или (None, None) если недоступно
+        str or None: Имя пользователя или None если недоступно
     """
     try:
         from flask import has_request_context
         if not has_request_context():
-            return None, None
+            return None
         
         from flask_login import current_user
-        user_id = current_user.id if hasattr(current_user, 'id') and current_user.is_authenticated else None
         username = current_user.username if hasattr(current_user, 'username') and current_user.is_authenticated else None
-        return user_id, username
+        return username
     except Exception:
         # В случае любой ошибки (например, нет контекста приложения)
-        return None, None
+        return None
 
 
 def audit_upload_success(object_id, object_type='item', description=None, additional_data=None):
@@ -259,7 +258,7 @@ def audit_upload_success(object_id, object_type='item', description=None, additi
     Returns:
         dict: Запись аудита
     """
-    _, username = _get_current_user_info()
+    username = _get_current_user_info()
     
     return log_audit_event(
         event_type=AuditEventType.UPLOAD_SUCCESS,
@@ -285,7 +284,7 @@ def audit_web_resource(event_type, object_id, object_type='resource', descriptio
     Returns:
         dict: Запись аудита
     """
-    _, username = _get_current_user_info()
+    username = _get_current_user_info()
     
     # Маппинг типов событий
     event_type_map = {
@@ -320,7 +319,7 @@ def audit_filesystem_read(file_path, description=None, additional_data=None):
     Returns:
         dict: Запись аудита
     """
-    _, username = _get_current_user_info()
+    username = _get_current_user_info()
     
     return log_audit_event(
         event_type=AuditEventType.FILESYSTEM_READ,
@@ -350,7 +349,7 @@ def audit_catalog_item_open(item_path, item_name, status_code, item_type='item',
     Returns:
         dict: Запись аудита
     """
-    _, username = _get_current_user_info()
+    username = _get_current_user_info()
     
     # Определение статуса в текстовом виде
     status_text = 'success' if status_code == 200 else 'error' if status_code >= 400 else 'redirect'

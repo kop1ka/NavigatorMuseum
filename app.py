@@ -2075,8 +2075,7 @@ def handle_audit_logs():
             description = data.get('description', '')
             additional_data = data.get('additional_data', {})
             
-            # Получаем информацию о пользователе если доступна
-            user_id = current_user.id if hasattr(current_user, 'id') and current_user.is_authenticated else None
+            # Получаем имя пользователя если доступна авторизация
             username = current_user.username if hasattr(current_user, 'username') and current_user.is_authenticated else None
             
             # Создаем запись аудита через log_audit_event
@@ -2087,7 +2086,6 @@ def handle_audit_logs():
                 object_type=object_type,
                 description=description,
                 additional_data=additional_data,
-                user_id=user_id,
                 username=username
             )
             

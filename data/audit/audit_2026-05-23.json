@@ -243,6 +243,30 @@
         "status_code": 200,
         "status_text": "success"
       }
+    },
+    {
+      "id": "AUDIT_20260523081323637055",
+      "timestamp": "2026-05-23T13:13:23.637045",
+      "timestamp_formatted": "23.05.2026 13:13:23",
+      "event_type": "page_view",
+      "object_id": "/",
+      "object_type": "web_event",
+      "ip_address": "127.0.0.1",
+      "username": null,
+      "description": "Просмотр главной страницы",
+      "additional_data": {}
+    },
+    {
+      "id": "AUDIT_20260523081440375242",
+      "timestamp": "2026-05-23T13:14:40.375233",
+      "timestamp_formatted": "23.05.2026 13:14:40",
+      "event_type": "page_view",
+      "object_id": "/",
+      "object_type": "web_event",
+      "ip_address": "127.0.0.1",
+      "username": null,
+      "description": "Просмотр главной страницы",
+      "additional_data": {}
     }
   ]
 }
