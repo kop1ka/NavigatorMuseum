@@ -1,0 +1,64 @@
+{
+  "entries": [
+    {
+      "id": "AUDIT_20260524161952553664",
+      "timestamp": "2026-05-24T21:19:52.553651",
+      "timestamp_formatted": "24.05.2026 21:19:52",
+      "event_type": "web_resource_view",
+      "object_id": "catalog",
+      "object_type": "resource",
+      "ip_address": "127.0.0.1",
+      "username": null,
+      "description": "Просмотр каталога веб-ресурсов",
+      "additional_data": {}
+    },
+    {
+      "id": "AUDIT_20260524161958847138",
+      "timestamp": "2026-05-24T21:19:58.847128",
+      "timestamp_formatted": "24.05.2026 21:19:58",
+      "event_type": "web_resource_view",
+      "object_id": "catalog",
+      "object_type": "resource",
+      "ip_address": "127.0.0.1",
+      "username": null,
+      "description": "Просмотр каталога веб-ресурсов",
+      "additional_data": {}
+    },
+    {
+      "id": "AUDIT_20260524162009396457",
+      "timestamp": "2026-05-24T21:20:09.396447",
+      "timestamp_formatted": "24.05.2026 21:20:09",
+      "event_type": "web_resource_view",
+      "object_id": "catalog",
+      "object_type": "resource",
+      "ip_address": "127.0.0.1",
+      "username": null,
+      "description": "Просмотр каталога веб-ресурсов",
+      "additional_data": {}
+    },
+    {
+      "id": "AUDIT_20260524162015696567",
+      "timestamp": "2026-05-24T21:20:15.696553",
+      "timestamp_formatted": "24.05.2026 21:20:15",
+      "event_type": "web_resource_view",
+      "object_id": "catalog",
+      "object_type": "resource",
+      "ip_address": "127.0.0.1",
+      "username": null,
+      "description": "Просмотр каталога веб-ресурсов",
+      "additional_data": {}
+    },
+    {
+      "id": "AUDIT_20260524162022407690",
+      "timestamp": "2026-05-24T21:20:22.407679",
+      "timestamp_formatted": "24.05.2026 21:20:22",
+      "event_type": "web_resource_view",
+      "object_id": "catalog",
+      "object_type": "resource",
+      "ip_address": "127.0.0.1",
+      "username": null,
+      "description": "Просмотр каталога веб-ресурсов",
+      "additional_data": {}
+    }
+  ]
+}
