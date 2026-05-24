@@ -70,6 +70,10 @@ from utils.audit_utils import (
 app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = SECRET_KEY  # Использование секретного ключа из конфига для сессий
 
+# Настройка JSON: сохранять UTF-8 символы без экранирования \uXXXX
+app.config['JSON_AS_ASCII'] = False
+app.json.ensure_ascii = False
+
 # Настройка для работы за обратным прокси (nginx, Apache и т.д.)
 # Позволяет приложению работать в поддиректории (например, /navigator/)
 from werkzeug.middleware.proxy_fix import ProxyFix
