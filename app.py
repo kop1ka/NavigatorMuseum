@@ -139,7 +139,7 @@ csrf = CSRFProtect(app)  # Защита от CSRF атак
 def limiter_enabled():
     """Проверка, включен ли rate limiting для текущего запроса"""
     static_paths = ('/page/', '/static/', '/projects/', '/css/', '/js/')
-    if request.path.startswith(static_paths) or request.path == '/api/proxy-image':
+    if request.path.startswith(static_paths):
         return False
     return RATELIMIT_ENABLED
 
@@ -1525,55 +1525,6 @@ def serve_project_file_with_path(remaining_path):
         description=f'Файл не найден: {file_path_suffix}'
     )
     return jsonify({'error': f'Файл не найден: {file_path_suffix}'}), 404
-
-
-@app.route('/api/proxy-image')
-def proxy_image():
-    """
-    API endpoint для проксирования изображений с внешних URL
-    
-    Используется для обхода CORS и rate limiting при загрузке изображений
-    с FTP-сервера vm-ftp.anosov.ru
-    
-    Query params:
-        url: Полный URL изображения
-    
-    Returns:
-        Response: Изображение с appropriate Content-Type
-    """
-    image_url = request.args.get('url', '')
-    
-    if not image_url:
-        return jsonify({'error': 'URL не указан'}), 400
-    
-    # Проверка, что URL принадлежит нашему доверенному домену
-    parsed = urlparse(image_url)
-    if parsed.netloc != 'vm-ftp.anosov.ru':
-        return jsonify({'error': 'Недоверенный домен'}), 403
-    
-    try:
-        # Загружаем изображение с внешнего сервера
-        # Используем verify=False для самоподписанных сертификатов
-        response = requests.get(image_url, timeout=10)
-        response.raise_for_status()
-        
-        # Определяем Content-Type
-        content_type = response.headers.get('Content-Type', 'image/jpeg')
-        
-        # Создаём ответ с правильными заголовками
-        proxy_response = Response(
-            response.content,
-            status=200,
-            content_type=content_type
-        )
-        
-        # Добавляем заголовки для кэширования
-        proxy_response.headers['Cache-Control'] = 'public, max-age=86400'
-        
-        return proxy_response
-        
-    except requests.exceptions.RequestException as e:
-        return jsonify({'error': f'Ошибка загрузки: {str(e)}'}), 500
 
 
 @app.route('/api/video-proxy')
