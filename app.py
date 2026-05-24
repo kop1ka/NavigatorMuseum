@@ -317,13 +317,23 @@ def run_parser_task():
             """Заменить домен в URL с 192.168.3.78:8085 на vm-ftp.anosov.ru"""
             return url.replace('192.168.3.78:8085', 'vm-ftp.anosov.ru')
         
-        # Применяем замену ко всем новым изображениям
-        new_parser_images = [replace_url_domain(img) for img in new_parser_images]
+        def normalize_url(url):
+            """Нормализовать URL: заменить http:// на https:// для единообразия"""
+            url = url.strip()
+            if url.startswith('http://'):
+                url = 'https://' + url[7:]
+            return url
+        
+        # Применяем замену и нормализацию ко всем новым изображениям
+        new_parser_images = [normalize_url(replace_url_domain(img)) for img in new_parser_images]
+        
+        # Нормализуем существующие изображения для корректного сравнения
+        existing_images_normalized = {normalize_url(img) for img in existing_images}
         
         # Объединить с существующими изображениями (сохраняем старые + добавляем новые)
         all_images = list(existing_images)
         for img_url in new_parser_images:
-            if img_url not in existing_images:
+            if img_url not in existing_images_normalized:
                 all_images.append(img_url)
         
         log(f"Всего изображений после объединения: {len(all_images)}")
@@ -1261,34 +1271,43 @@ def get_images():
     images = []
     seen_paths = set()  # Для предотвращения дубликатов
     
+    def normalize_url(url):
+        """Нормализовать URL: убрать пробелы по краям, заменить http:// на https://"""
+        url = url.strip()
+        if url.startswith('http://'):
+            url = 'https://' + url[7:]
+        return url
+    
     # Загрузить изображения из парсера (сохранённые в файле)
     parser_images_data = load_json_file(PARSER_IMAGES_FILE, default={'images': []})
     parser_images = parser_images_data.get('images', [])
     
-    # Добавить изображения из парсера
+    # Добавить изображения из парсера (с нормализацией URL для избежания дубликатов)
     for icon_url in parser_images:
-        if icon_url and icon_url not in seen_paths:
+        normalized_url = normalize_url(icon_url)
+        if normalized_url and normalized_url not in seen_paths:
             # Извлечь имя файла из URL и декодировать URL-кодирование для корректного отображения кириллицы
             try:
                 # Сначала декодируем весь URL, затем извлекаем имя файла
-                decoded_url = unquote(icon_url)
+                decoded_url = unquote(normalized_url)
                 filename = decoded_url.split('/')[-1]
             except:
-                filename = os.path.basename(icon_url)
-            images.append({'name': filename, 'path': icon_url})
-            seen_paths.add(icon_url)
+                filename = os.path.basename(normalized_url)
+            images.append({'name': filename, 'path': normalized_url})
+            seen_paths.add(normalized_url)
     
     # Также добавить изображения из текущего статуса парсера (если он активен)
     if parser_status.get('images'):
         for icon_url in parser_status['images']:
-            if icon_url and icon_url not in seen_paths:
+            normalized_url = normalize_url(icon_url)
+            if normalized_url and normalized_url not in seen_paths:
                 try:
-                    decoded_url = unquote(icon_url)
+                    decoded_url = unquote(normalized_url)
                     filename = decoded_url.split('/')[-1]
                 except:
-                    filename = os.path.basename(icon_url)
-                images.append({'name': filename, 'path': icon_url})
-                seen_paths.add(icon_url)
+                    filename = os.path.basename(normalized_url)
+                images.append({'name': filename, 'path': normalized_url})
+                seen_paths.add(normalized_url)
     
     # Создаем response с явным указанием кодировки UTF-8
     response = Response(
