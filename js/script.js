@@ -145,10 +145,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentSearchQuery && currentSearchQuery.trim() !== '') {
             catalogTitle.textContent = `Поиск: "${currentSearchQuery}"`;
             const searchResults = searchInCatalog(currentSearchQuery);
-            renderItems(searchResults, true);
+            renderItems(searchResults, true, '');
         } else {
             catalogTitle.textContent = currentLevel.title;
-            renderItems(currentLevel.items, false);
+            renderItems(currentLevel.items, false, '');
         }
         
         updateBackButton();
@@ -280,10 +280,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Сначала проверяем наличие URL - если есть, переходим по ссылке
-        // Только если URL нет, но есть дети - переходим в папку
-        if (itemData.url && itemData.url.trim() !== '') {
-            // Элемент имеет URL - переходим по нему
+        // Сначала проверяем, является ли элемент папкой (есть дети)
+        // Если да - переходим в папку и прорисовываем элементы
+        // Только если это не папка - переходим по ссылке
+        if (hasChildren) {
+            // Это папка с детьми - переходим в неё и прорисовываем элементы
+            // При переходе в папку из поиска очищаем поисковый запрос
+            if (currentSearchQuery && currentSearchQuery.trim() !== '') {
+                clearSearch();
+            }
+            historyStack.push({
+                title: itemData.name,
+                items: itemData.children
+            });
+            renderCurrentLevel();
+        } else if (itemData.url && itemData.url.trim() !== '') {
+            // Элемент не папка, но имеет URL - переходим по нему
             saveState();
 
             // === КРИТИЧЕСКИ ВАЖНАЯ ОБРАБОТКА URL ===
@@ -351,13 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                 }
             }
-        } else if (hasChildren) {
-            // Папка без URL, но с детьми – углубляемся
-            historyStack.push({
-                title: itemData.name,
-                items: itemData.children
-            });
-            renderCurrentLevel();
+            
+            // После успешного перехода по URL из поиска очищаем поисковый запрос
+            if (currentSearchQuery && currentSearchQuery.trim() !== '') {
+                clearSearch();
+            }
         } else {
             // Нет ни URL, ни детей (но это уже проверено выше как isCurrentlyEmpty)
             alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
