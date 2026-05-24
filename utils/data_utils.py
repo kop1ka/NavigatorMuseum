@@ -2,11 +2,19 @@
 import os
 import json
 from datetime import datetime
+from urllib.parse import unquote
 
 
 def ensure_data_dir(data_dir):
     """Создать директорию если не существует"""
     os.makedirs(data_dir, exist_ok=True)
+
+
+def decode_url(url):
+    """Декодировать URL из %XX формата в читаемый вид"""
+    if url:
+        return unquote(url)
+    return url
 
 
 def load_json_file(file_path, default=None):
@@ -22,8 +30,26 @@ def load_json_file(file_path, default=None):
 def save_json_file(file_path, data):
     """Сохранить данные в JSON файл"""
     ensure_data_dir(os.path.dirname(file_path))
+    
+    # Декодируем URL и icon перед сохранением для читаемости
+    def decode_urls_in_data(obj):
+        if isinstance(obj, dict):
+            result = {}
+            for key, value in obj.items():
+                if key in ('url', 'icon') and isinstance(value, str):
+                    result[key] = decode_url(value)
+                else:
+                    result[key] = decode_urls_in_data(value)
+            return result
+        elif isinstance(obj, list):
+            return [decode_urls_in_data(item) for item in obj]
+        else:
+            return obj
+    
+    decoded_data = decode_urls_in_data(data)
+    
     with open(file_path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+        json.dump(decoded_data, f, ensure_ascii=False, indent=2)
 
 
 def get_current_timestamp():
