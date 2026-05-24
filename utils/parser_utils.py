@@ -6,7 +6,7 @@ import os
 import time
 from datetime import datetime
 from bs4 import BeautifulSoup
-from urllib.parse import unquote, urljoin
+from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Подавление SSL-предупреждений при использовании verify=False
@@ -183,23 +183,27 @@ def extract_items_from_html(html_content, base_url):
         print(f"[DEBUG extract_items] Элемент: name='{name_text}', href='{href}', is_folder={is_folder}")
         
         if is_folder:
-            # Проверяем, является ли папка пустой (нет детей и нет URL)
-            is_empty = True  # По умолчанию считаем папку пустой, будет перезаписано при рекурсивном парсинге
+            # Папка: считаем пустой по умолчанию (будет обновлено при рекурсивном парсинге)
+            is_empty = True
+            
             items.append({
-                'name': unquote(name_text.rstrip('/')),
+                'name': name_text.rstrip('/'),  # Убираем слэш в конце имени
                 'icon': 'page/logo.png',
                 'children': [],
-                'url': full_url,
+                'url': full_url,  # URL сохраняем как есть (декодируется при записи в JSON)
                 'modified': modified,
-                'isEmpty': is_empty  # Будет обновлено после рекурсивного парсинга
+                'isEmpty': is_empty
             })
             print(f"[DEBUG extract_items] Добавлена папка: {name_text}")
         else:
-            name_without_ext = unquote(name_text)
+            # Файл: убираем расширение из имени
+            name_without_ext = name_text
             if '.' in name_without_ext:
                 name_without_ext = name_without_ext.rsplit('.', 1)[0]
-            # Проверяем, является ли файл пустым (нет URL)
+            
+            # Проверяем, есть ли URL
             is_empty = not full_url or full_url.strip() == ''
+            
             items.append({
                 'name': name_without_ext,
                 'icon': 'page/logo.png',
