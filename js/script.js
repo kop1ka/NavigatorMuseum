@@ -187,7 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
             span.textContent = item.name;
 
             // Динамическая проверка: элемент пустой, если нет детей И нет URL
-            const isCurrentlyEmpty = (!item.children || item.children.length === 0) && !item.url;
+            // children может быть null или [] - оба случая означают отсутствие дочерних элементов
+            const hasChildren = Boolean(item.children && Array.isArray(item.children) && item.children.length > 0);
+            const isCurrentlyEmpty = !hasChildren && !item.url;
             
             // Если элемент пустой, добавляем сообщение
             if (isCurrentlyEmpty) {
@@ -266,7 +268,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!itemData) return;
 
         // Проверяем, является ли элемент пустым (динамически: нет детей И нет URL)
-        const isCurrentlyEmpty = (!itemData.children || itemData.children.length === 0) && !itemData.url;
+        // children может быть null или [] - оба случая означают отсутствие дочерних элементов
+        const hasChildren = Boolean(itemData.children && Array.isArray(itemData.children) && itemData.children.length > 0);
+        const isCurrentlyEmpty = !hasChildren && !itemData.url;
         
         if (isCurrentlyEmpty) {
             // Показываем сообщение о том, что элемент пустой
@@ -274,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (itemData.children && itemData.children.length > 0) {
+        if (hasChildren) {
             // Папка – углубляемся
             historyStack.push({
                 title: itemData.name,
@@ -514,9 +518,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemDiv = e.target.closest('.item');
         if (itemDiv && itemDiv._itemData) {
             const itemData = itemDiv._itemData;
+            const hasChildren = Boolean(itemData.children && Array.isArray(itemData.children) && itemData.children.length > 0);
             sendAuditEvent('web_resource_view', itemData.name, 'catalog_item', `Просмотр элемента каталога: ${itemData.name}`, {
                 url: itemData.url || null,
-                hasChildren: !!itemData.children
+                hasChildren: hasChildren
             });
         }
         handleItemClick(e);
