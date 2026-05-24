@@ -50,7 +50,8 @@ project_flask_info = {}
 # Импорт утилит для работы с данными, парсингом, аутентификацией и каталогом
 from utils.data_utils import (
     ensure_data_dir, load_json_file, save_json_file, get_current_timestamp, get_full_timestamp,
-    load_users, save_users, load_catalog, save_catalog, load_permanent_items, save_permanent_items
+    load_users, save_users, load_catalog, save_catalog, load_permanent_items, save_permanent_items,
+    normalize_url, replace_url_domain
 )
 from utils.parser_utils import extract_items_from_html, parse_folder, ERROR_LOG_FILE
 from utils.auth_utils import User, hash_password, verify_password, admin_required_decorator
@@ -111,45 +112,34 @@ URL_PREFIX = '/navigator'
 # Настройка APPLICATION_ROOT для корректной работы url_for с префиксом
 app.config['APPLICATION_ROOT'] = '/navigator'
 
-# Настройка CORS заголовков для всех ответов (необходимо для работы на render.com и других хостингах)
+# Настройка CORS заголовков для всех ответов
 @app.after_request
 def add_cors_headers(response):
-    """Добавляет CORS заголовки для поддержки跨源 запросов"""
-    # Разрешаем запросы с любых источников (можно ограничить при необходимости)
+    """Добавляет CORS заголовки и MIME-типы для статических файлов"""
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-CSRFToken'
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     
-    # Добавляем правильные MIME-типы для статических файлов
     if response.headers.get('Content-Type', '').startswith('text/plain') or not response.headers.get('Content-Type'):
-        if request.path.endswith('.css'):
-            response.headers['Content-Type'] = 'text/css; charset=utf-8'
-        elif request.path.endswith('.js'):
-            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-        elif request.path.endswith('.png'):
-            response.headers['Content-Type'] = 'image/png'
-        elif request.path.endswith('.jpg') or request.path.endswith('.jpeg'):
-            response.headers['Content-Type'] = 'image/jpeg'
-        elif request.path.endswith('.gif'):
-            response.headers['Content-Type'] = 'image/gif'
-        elif request.path.endswith('.webp'):
-            response.headers['Content-Type'] = 'image/webp'
-        elif request.path.endswith('.svg'):
-            response.headers['Content-Type'] = 'image/svg+xml'
-        elif request.path.endswith('.html'):
-            response.headers['Content-Type'] = 'text/html; charset=utf-8'
+        mime_map = {'.css': 'text/css; charset=utf-8', '.js': 'application/javascript; charset=utf-8',
+                    '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+                    '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.html': 'text/html; charset=utf-8'}
+        for ext, mime in mime_map.items():
+            if request.path.endswith(ext):
+                response.headers['Content-Type'] = mime
+                break
     
     return response
 
 # Инициализация расширений Flask
 csrf = CSRFProtect(app)  # Защита от CSRF атак
 
-# Отключаем rate limiting для статических файлов (изображения, CSS, JS) и API прокси
+# Отключаем rate limiting для статических файлов
 def limiter_enabled():
     """Проверка, включен ли rate limiting для текущего запроса"""
-    # Не применяем rate limiting к статическим файлам и proxy-image endpoint
-    if request.path.startswith('/page/') or request.path.startswith('/static/') or request.path.startswith('/projects/') or request.path.startswith('/css/') or request.path.startswith('/js/') or request.path == '/api/proxy-image':
+    static_paths = ('/page/', '/static/', '/projects/', '/css/', '/js/')
+    if request.path.startswith(static_paths) or request.path == '/api/proxy-image':
         return False
     return RATELIMIT_ENABLED
 
@@ -175,18 +165,10 @@ login_manager.session_protection = SESSION_PROTECTION  # Уровень защи
 # Переопределяем метод login_url для корректной работы с префиксом пути
 def custom_login_url(next=None):
     """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
-    # Явно добавляем префикс /navigator к URL входа
     base_url = URL_PREFIX + '/login'
-
     if next:
-        # Проверяем, содержит ли next уже префикс /navigator
         if not next.startswith(URL_PREFIX):
-            # Если next начинается с / но не содержит префикс, добавляем его
-            if next.startswith('/'):
-                next = URL_PREFIX + next
-            else:
-                # Если next относительный путь, добавляем префикс и слэш
-                next = URL_PREFIX + '/' + next.lstrip('/')
+            next = URL_PREFIX + next if next.startswith('/') else URL_PREFIX + '/' + next.lstrip('/')
         return base_url + '?next=' + next
     return base_url
 
@@ -197,14 +179,8 @@ def unauthorized():
     """Обработчик для неавторизованных пользователей с учётом префикса"""
     from flask import request, redirect
     from urllib.parse import urlparse
-    # Получаем текущий URL и извлекаем только path часть
-    parsed_url = urlparse(request.url)
-    current_path = parsed_url.path
-    
-    # Убеждаемся, что next содержит префикс
-    # Используем кастомный login_url для получения правильного URL
-    login_url = login_manager.login_url(current_path)
-    return redirect(login_url)
+    current_path = urlparse(request.url).path
+    return redirect(login_manager.login_url(current_path))
 
 # Глобальная переменная для хранения статуса парсера
 parser_status = {'running': False, 'last_run': None, 'message': 'Парсер не запущен', 'images': []}
@@ -312,18 +288,6 @@ def run_parser_task():
         if new_parser_images:
             log(f"Первые 5 изображений: {new_parser_images[:5]}")
         
-        # Заменить все ссылки с 192.168.3.78:8085 на vm-ftp.anosov.ru
-        def replace_url_domain(url):
-            """Заменить домен в URL с 192.168.3.78:8085 на vm-ftp.anosov.ru"""
-            return url.replace('192.168.3.78:8085', 'vm-ftp.anosov.ru')
-        
-        def normalize_url(url):
-            """Нормализовать URL: заменить http:// на https:// для единообразия"""
-            url = url.strip()
-            if url.startswith('http://'):
-                url = 'https://' + url[7:]
-            return url
-        
         # Применяем замену и нормализацию ко всем новым изображениям
         new_parser_images = [normalize_url(replace_url_domain(img)) for img in new_parser_images]
         
@@ -349,14 +313,11 @@ def run_parser_task():
         def replace_url_domain_recursive(items_list):
             """Рекурсивно заменить домен в URL всех элементов"""
             for item in items_list:
-                # Заменяем URL в текущем элементе
                 if 'url' in item and item['url']:
-                    item['url'] = item['url'].replace('192.168.3.78:8085', 'vm-ftp.anosov.ru')
-                # Рекурсивно обрабатываем дочерние элементы
+                    item['url'] = replace_url_domain(item['url'])
                 if item.get('children') and isinstance(item['children'], list):
                     replace_url_domain_recursive(item['children'])
         
-        # Применяем замену ко всем элементам каталога
         replace_url_domain_recursive(items)
         
         permanent_items = load_permanent_items(PERMANENT_FILE)
@@ -1269,26 +1230,15 @@ def get_images():
         Response: JSON массив объектов с информацией об изображениях в UTF-8
     """
     images = []
-    seen_paths = set()  # Для предотвращения дубликатов
+    seen_paths = set()
     
-    def normalize_url(url):
-        """Нормализовать URL: убрать пробелы по краям, заменить http:// на https://"""
-        url = url.strip()
-        if url.startswith('http://'):
-            url = 'https://' + url[7:]
-        return url
-    
-    # Загрузить изображения из парсера (сохранённые в файле)
     parser_images_data = load_json_file(PARSER_IMAGES_FILE, default={'images': []})
     parser_images = parser_images_data.get('images', [])
     
-    # Добавить изображения из парсера (с нормализацией URL для избежания дубликатов)
     for icon_url in parser_images:
         normalized_url = normalize_url(icon_url)
         if normalized_url and normalized_url not in seen_paths:
-            # Извлечь имя файла из URL и декодировать URL-кодирование для корректного отображения кириллицы
             try:
-                # Сначала декодируем весь URL, затем извлекаем имя файла
                 decoded_url = unquote(normalized_url)
                 filename = decoded_url.split('/')[-1]
             except:
@@ -1296,7 +1246,6 @@ def get_images():
             images.append({'name': filename, 'path': normalized_url})
             seen_paths.add(normalized_url)
     
-    # Также добавить изображения из текущего статуса парсера (если он активен)
     if parser_status.get('images'):
         for icon_url in parser_status['images']:
             normalized_url = normalize_url(icon_url)
@@ -1309,12 +1258,7 @@ def get_images():
                 images.append({'name': filename, 'path': normalized_url})
                 seen_paths.add(normalized_url)
     
-    # Создаем response с явным указанием кодировки UTF-8
-    response = Response(
-        json.dumps(images, ensure_ascii=False),
-        mimetype='application/json; charset=utf-8'
-    )
-    # Добавляем заголовки для предотвращения кэширования API ответов
+    response = Response(json.dumps(images, ensure_ascii=False), mimetype='application/json; charset=utf-8')
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
