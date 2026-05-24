@@ -1276,8 +1276,8 @@ def serve_page_image(filename):
     Returns:
         Response: Файл изображения
     """
-    # Аудит: чтение файла из файловой системы
-    audit_filesystem_read(f'page/{filename}', description=f'Чтение файла из page/: {filename}')
+    # Аудит отключён: чтение файла из файловой системы
+    # audit_filesystem_read(f'page/{filename}', description=f'Чтение файла из page/: {filename}')
     
     page_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'page')
     return send_from_directory(page_dir, filename, max_age=86400)  # Кэширование на 24 часа
