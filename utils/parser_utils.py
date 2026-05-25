@@ -169,8 +169,24 @@ def extract_items_from_html(html_content, base_url):
         
         href = link.get('href', '')
         print(f"[DEBUG extract_items] href: '{href}'")
-        modified = cells[2].get_text(strip=True) if cells[2] else None
-        print(f"[DEBUG extract_items] modified: '{modified}'")
+        modified_raw = cells[2].get_text(strip=True) if cells[2] else None
+        print(f"[DEBUG extract_items] modified: '{modified_raw}'")
+        
+        # Преобразуем дату в формат YYYYMMDDHHMMSS
+        modified = None
+        if modified_raw:
+            try:
+                # Пробуем распарсить дату в формате "ГГГГ-ММ-ДД ЧЧ:ММ" или similar
+                dt = datetime.strptime(modified_raw, '%Y-%m-%d %H:%M')
+                modified = dt.strftime('%Y%m%d%H%M%S')
+            except ValueError:
+                try:
+                    # Пробуем другие форматы
+                    dt = datetime.strptime(modified_raw, '%d.%m.%Y %H:%M:%S')
+                    modified = dt.strftime('%Y%m%d%H%M%S')
+                except ValueError:
+                    # Если не удалось распарсить, оставляем как есть
+                    modified = modified_raw
         
         img = cells[0].find('img')
         print(f"[DEBUG extract_items] img: {img}")

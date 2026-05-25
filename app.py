@@ -766,7 +766,7 @@ def get_catalog():
                 "icon": settings.get('icon', "page/logo.png"),
                 "children": None,
                 "url": f"{path_prefix}/projects/{project_name}/index.html",
-                "modified": datetime.fromtimestamp(os.path.getmtime(proj_info['index_html_path'])).strftime('%Y-%m-%d %H:%M'),
+                "modified": datetime.fromtimestamp(os.path.getmtime(proj_info['index_html_path'])).strftime('%Y%m%d%H%M%S'),
                 "permanent": True,
                 "has_flask": proj_info['has_flask']
             }

@@ -54,13 +54,13 @@ def save_json_file(file_path, data):
 
 
 def get_current_timestamp():
-    """Получить текущую дату и время в формате YYYY-MM-DD HH:MM"""
-    return datetime.now().strftime('%Y-%m-%d %H:%M')
+    """Получить текущую дату и время в формате YYYYMMDDHHMMSS"""
+    return datetime.now().strftime('%Y%m%d%H%M%S')
 
 
 def get_full_timestamp():
-    """Получить полную дату и время в формате YYYY-MM-DD HH:MM:SS"""
-    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    """Получить полную дату и время в формате YYYYMMDDHHMMSS"""
+    return datetime.now().strftime('%Y%m%d%H%M%S')
 
 
 def load_users(users_file, hash_password_func):
