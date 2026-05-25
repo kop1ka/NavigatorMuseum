@@ -11,7 +11,7 @@ USERS_FILE = os.path.join(DATA_DIR, 'users.json')
 PARSER_IMAGES_FILE = os.path.join(DATA_DIR, 'parser_images.json')
 
 # FTP парсер
-FTP_BASE_URL = 'http://192.168.3.78:8085/'
+FTP_BASE_URL = 'http://192.168.3.78:8085/vm/'
 PARSER_MAX_DEPTH = 10
 PARSER_TIMEOUT = 30
 
