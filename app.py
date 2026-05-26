@@ -834,7 +834,7 @@ def change_password():
             </ul>
         </div>
         
-        <form method="POST" action="{{ url_for('change_password', _external=False) }}">
+        <form method="POST" action="{{ url_for('change_password') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="form-group">
@@ -853,7 +853,7 @@ def change_password():
             </div>
             
             <button type="submit" class="btn-submit">Изменить пароль</button>
-            <a href="/navigator/admin" class="btn-secondary">Отмена</a>
+            <a href="{{ url_for('admin') }}" class="btn-secondary">Отмена</a>
         </form>
     </div>
 </body>
