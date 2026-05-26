@@ -506,15 +506,15 @@ def change_password():
         
         if not current_password or not new_password or not confirm_password:
             flash('Заполните все поля', 'error')
-            return redirect(url_for('change_password'))
+            return redirect(URL_PREFIX + '/change-password')
         
         if new_password != confirm_password:
             flash('Новые пароли не совпадают', 'error')
-            return redirect(url_for('change_password'))
+            return redirect(URL_PREFIX + '/change-password')
         
         if len(new_password) < 6:
             flash('Пароль должен быть не менее 6 символов', 'error')
-            return redirect(url_for('change_password'))
+            return redirect(URL_PREFIX + '/change-password')
         
         # Проверяем текущий пароль
         users_data = load_users(USERS_FILE, hash_password)
@@ -528,14 +528,14 @@ def change_password():
         
         if not user_found or not verify_password(current_password, user_found['password_hash']):
             flash('Текущий пароль неверен', 'error')
-            return redirect(url_for('change_password'))
+            return redirect(URL_PREFIX + '/change-password')
         
         # Обновляем пароль
         users_data['users'][user_index]['password_hash'] = hash_password(new_password)
         save_users(USERS_FILE, users_data)
         
         flash('Пароль успешно изменён', 'success')
-        return redirect(url_for('admin'))
+        return redirect(URL_PREFIX + '/admin')
     
     return render_template('change_password.html')
 
