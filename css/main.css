@@ -338,6 +338,15 @@ body {
     opacity: 0.8;
 }
 
+.item-empty-message {
+    display: block;
+    font-size: 12px;
+    color: #999;
+    font-weight: normal;
+    margin-top: 4px;
+    font-style: italic;
+}
+
 /* Оверлей (затемнение фона) */
 .overlay {
     position: fixed;
