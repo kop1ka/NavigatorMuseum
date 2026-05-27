@@ -22,7 +22,7 @@ import warnings
 import requests
 import urllib3
 from datetime import datetime, timedelta
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session, flash, Response, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf import CSRFProtect
@@ -165,6 +165,26 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = LOGIN_MESSAGE  # Сообщение при перенаправлении
 login_manager.session_protection = SESSION_PROTECTION  # Уровень защиты сессии
+
+# Переопределяем метод login_url для корректной работы с префиксом пути
+def custom_login_url(next=None):
+    """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
+    base_url = URL_PREFIX + '/login'
+    if next:
+        if not next.startswith(URL_PREFIX):
+            next = URL_PREFIX + next if next.startswith('/') else URL_PREFIX + '/' + next.lstrip('/')
+        return base_url + '?next=' + next
+    return base_url
+
+login_manager.login_url = custom_login_url
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    """Обработчик для неавторизованных пользователей с учётом префикса"""
+    from flask import request, redirect
+    from urllib.parse import urlparse
+    current_path = urlparse(request.url).path
+    return redirect(login_manager.login_url(current_path))
 
 # Глобальная переменная для хранения статуса парсера
 parser_status = {'running': False, 'last_run': None, 'message': 'Парсер не запущен', 'images': []}
@@ -389,27 +409,54 @@ def run_parser_task():
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit(RATELIMIT_LOGIN)  # Ограничение частоты запросов для защиты от брутфорса
 def login():
-    """Страница входа в систему."""
+    """
+    Страница входа в систему.
+    
+    Обрабатывает GET (отображение формы) и POST (аутентификация) запросы.
+    При успешном входе создаёт сессию пользователя через Flask-Login.
+    
+    Returns:
+        Response: HTML страница входа или редирект на главную/страницу назначения
+    """
+    # Если пользователь уже авторизован — перенаправляем на главную
     if current_user.is_authenticated:
-        return redirect(URL_PREFIX + '/admin')
+        return redirect(URL_PREFIX + '/')
     
     error = None
+    # Получаем next_page из URL (куда перенаправить после входа)
+    next_page = request.args.get('next')
     
+    # Обработка POST запроса (попытка входа)
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        remember = request.form.get('remember', False)
+        remember = request.form.get('remember', False)  # "Запомнить меня"
         
+        # Проверяем учётные данные и пытаемся войти
         user_obj = authenticate_user(username, password)
         
         if user_obj:
+            # Успешная аутентификация — создаём сессию
             login_user(user_obj, remember=remember)
             flash('Вы успешно вошли в систему', 'success')
-            return redirect(URL_PREFIX + '/admin')
+            
+            # Перенаправляем на нужную страницу
+            redirect_url = get_safe_redirect_url(next_page)
+            return redirect(redirect_url)
         else:
-            error = 'Введите имя пользователя и пароль' if not username or not password else 'Неверное имя пользователя или пароль'
+            # Неверные учётные данные или пустые поля
+            if not username or not password:
+                error = 'Введите имя пользователя и пароль'
+            else:
+                error = 'Неверное имя пользователя или пароль'
     
-    return render_template('login.html', error=error)
+    # Обработка GET запроса (отображение формы входа) или ошибка POST
+    return render_template(
+        'login.html', 
+        error=error, 
+        get_prefixed_login_url=lambda: URL_PREFIX + '/login',
+        next_page=next_page
+    )
 
 
 def authenticate_user(username, password):
@@ -446,6 +493,42 @@ def authenticate_user(username, password):
     
     # Пользователь не найден
     return None
+
+
+def get_safe_redirect_url(next_page):
+    """
+    Формирует безопасный URL для перенаправления после входа.
+    
+    Проверяет, что URL не ведёт на внешний сайт (защита от open redirect).
+    Добавляет префикс приложения если нужно.
+    
+    Args:
+        next_page (str): Исходный URL из параметра запроса
+        
+    Returns:
+        str: Безопасный URL с префиксом приложения
+    """
+    # Если next не указан — перенаправляем на панель администратора
+    if not next_page:
+        return URL_PREFIX + '/admin'
+    
+    # Защита от открытых перенаправлений (open redirect vulnerability)
+    # Проверяем, что URL начинается с нашего префикса или относительного пути
+    parsed_url = urlparse(next_page)
+    
+    # Если URL содержит схему (http://, https://) или домен — это опасно
+    if parsed_url.scheme or parsed_url.netloc:
+        # Небезопасный URL — перенаправляем на главную
+        return URL_PREFIX + '/'
+    
+    # Добавляем префикс к next_page если он отсутствует
+    if not next_page.startswith(URL_PREFIX):
+        if next_page.startswith('/'):
+            return URL_PREFIX + next_page
+        else:
+            return URL_PREFIX + '/' + next_page.lstrip('/')
+    
+    return next_page
 
 
 @app.route('/logout')
