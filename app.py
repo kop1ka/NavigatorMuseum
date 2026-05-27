@@ -514,7 +514,7 @@ def get_safe_redirect_url(next_page):
     
     # Добавляем префикс к next_page если он отсутствует
    if not next_page.startswith(URL_PREFIX):
-    return URL_PREFIX + '/' + next_page.lstrip('/')
+       return URL_PREFIX + '/' + next_page.lstrip('/')
     
     return next_page
 
