@@ -420,7 +420,7 @@ def login():
     """
     # Если пользователь уже авторизован — перенаправляем на главную
     if current_user.is_authenticated:
-        return redirect(URL_PREFIX + '/')
+        return redirect(URL_PREFIX + '/admin')
     
     error = None
     # Получаем next_page из URL (куда перенаправить после входа)
@@ -511,15 +511,6 @@ def get_safe_redirect_url(next_page):
     # Если next не указан — перенаправляем на панель администратора
     if not next_page:
         return URL_PREFIX + '/admin'
-    
-    # Защита от открытых перенаправлений (open redirect vulnerability)
-    # Проверяем, что URL начинается с нашего префикса или относительного пути
-    parsed_url = urlparse(next_page)
-    
-    # Если URL содержит схему (http://, https://) или домен — это опасно
-    if parsed_url.scheme or parsed_url.netloc:
-        # Небезопасный URL — перенаправляем на главную
-        return URL_PREFIX + '/'
     
     # Добавляем префикс к next_page если он отсутствует
     if not next_page.startswith(URL_PREFIX):
