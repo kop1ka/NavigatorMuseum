@@ -1,52 +1,49 @@
+/**
+ * Навигатор по каталогу
+ * Управление сайдбаром, поиск, история переходов и аудит действий
+ */
 document.addEventListener('DOMContentLoaded', () => {
-    // ----- Элементы DOM -----
-    const sidebar = document.getElementById('sidebarLeft');
-    const overlay = document.querySelector('.overlay');
-    const openBtn = document.getElementById('openCatalog');
-    const closeBtn = document.getElementById('closeSidebar');
-    const backBtn = document.getElementById('backBtn');
-    const catalogTitle = document.getElementById('catalogTitle');
-    const catalogGrid = document.getElementById('catalogGrid');
-    const searchInput = document.getElementById('searchInput');
-    const searchClearBtn = document.getElementById('searchClearBtn');
+    // ===== ЭЛЕМЕНТЫ ИНТЕРФЕЙСА =====
+    const el = {
+        sidebar: document.getElementById('sidebarLeft'),
+        overlay: document.querySelector('.overlay'),
+        openBtn: document.getElementById('openCatalog'),
+        closeBtn: document.getElementById('closeSidebar'),
+        backBtn: document.getElementById('backBtn'),
+        title: document.getElementById('catalogTitle'),
+        grid: document.getElementById('catalogGrid'),
+        searchInput: document.getElementById('searchInput'),
+        searchClearBtn: document.getElementById('searchClearBtn')
+    };
 
-    // ----- Состояние навигации (история) -----
-    let historyStack = [];
-    let catalogData = null; // будет загружен с сервера
-    let currentSearchQuery = ''; // текущий поисковый запрос
+    // ===== СОСТОЯНИЕ ПРИЛОЖЕНИЯ =====
+    let state = {
+        history: [],      // Стек навигации по папкам
+        catalog: null,    // Данные каталога с сервера
+        searchQuery: ''   // Текущий поисковый запрос
+    };
 
-    // ----- Функция отправки событий аудита -----
-    function sendAuditEvent(eventType, objectId, objectType, description, additionalData = {}) {
+    // ===== АУДИТ: ОТПРАВКА СОБЫТИЙ =====
+    function logEvent(type, id, objType, desc, data = {}) {
         fetch('/navigator/api/audit/logs', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                event_type: eventType,
-                object_id: objectId,
-                object_type: objectType,
-                description: description,
-                additional_data: additionalData
+                event_type: type,
+                object_id: id,
+                object_type: objType,
+                description: desc,
+                additional_data: data
             })
-        })
-        .then(response => {
-            if (!response.ok) {
-                console.warn('Не удалось отправить событие аудита:', response.status, response.statusText);
-            }
-        })
-        .catch(error => {
-            console.warn('Не удалось отправить событие аудита:', error);
-        });
+        }).catch(err => console.warn('Аудит не отправлен:', err));
     }
 
-    // ----- Функции для сохранения/восстановления состояния -----
+    // ===== СОХРАНЕНИЕ/ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ =====
     function saveState() {
-        const state = {
-            historyStack: historyStack,
-            sidebarActive: sidebar.classList.contains('active')
-        };
-        sessionStorage.setItem('catalogState', JSON.stringify(state));
+        sessionStorage.setItem('catalogState', JSON.stringify({
+            historyStack: state.history,
+            sidebarActive: el.sidebar.classList.contains('active')
+        }));
     }
 
     function restoreState() {
@@ -54,464 +51,319 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!saved) return;
 
         try {
-            const state = JSON.parse(saved);
-            if (state.historyStack && Array.isArray(state.historyStack) && state.historyStack.length > 0) {
-                historyStack = state.historyStack;
-                renderCurrentLevel();
-
-                if (state.sidebarActive) {
-                    sidebar.removeAttribute('hidden');
-                    overlay.removeAttribute('hidden');
-                    sidebar.classList.add('active');
-                    overlay.classList.add('active');
-                    openBtn.setAttribute('aria-expanded', 'true');
-                }
+            const data = JSON.parse(saved);
+            if (data.historyStack?.length > 0) {
+                state.history = data.historyStack;
+                render();
+                if (data.sidebarActive) showSidebar();
             }
         } catch (e) {
-            console.warn('Не удалось восстановить состояние каталога', e);
+            console.warn('Не удалось восстановить состояние', e);
         }
     }
 
-    // ----- Вспомогательные функции -----
+    // ===== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =====
+    
+    /** Получает путь к иконке, заменяя заглушки на логотип */
     function getIconPath(iconName) {
-        // URLs-заглушки, которые следует заменять на logo.png (с пробелом в конце для первого URL)
-        const placeholderUrls = [
+        const placeholders = [
             'https://vm-ftp.anosov.ru/icons/folder.gif ',
             'http://vm-ftp.anosov.ru/icons/folder.gif',
             'vm-ftp.anosov.ru/icons/folder.gif'
         ];
-        
-        // Если iconName пустой - возвращаем логотип по умолчанию
-        if (!iconName || iconName.trim() === '') {
-            return 'page/logo.png';
-        }
-        
-        // Проверяем, является ли iconName URL-заглушкой
-        for (const placeholderUrl of placeholderUrls) {
-            if (iconName.includes(placeholderUrl)) {
-                return 'page/logo.png';
-            }
-        }
-        
-        // Если iconName начинается с http:// или https:// – используем как есть
-        if (iconName.startsWith('http://') || iconName.startsWith('https://')) {
-            return iconName;
-        }
-        
-        // Иначе используем локальный путь из папки page/
+
+        if (!iconName?.trim()) return 'page/logo.png';
+        if (placeholders.some(p => iconName.includes(p))) return 'page/logo.png';
+        if (iconName.startsWith('http://') || iconName.startsWith('https://')) return iconName;
         return `page/${iconName}`;
     }
 
-    // Функция поиска по всем элементам каталога (рекурсивно)
-    function searchInCatalog(query, items = catalogData?.children || []) {
-        if (!query || query.trim() === '') {
-            return [];
-        }
-        
+    /** Рекурсивный поиск элементов по названию */
+    function searchCatalog(query, items = state.catalog?.children || []) {
+        if (!query?.trim()) return [];
+
         const results = [];
-        const lowerQuery = query.toLowerCase();
-        
-        function searchRecursive(itemsList, path = []) {
-            for (const item of itemsList) {
+        const q = query.toLowerCase();
+
+        function searchRecursive(list, path = []) {
+            for (const item of list) {
                 const currentPath = [...path, item.name];
-                
-                // Проверяем имя элемента
-                if (item.name.toLowerCase().includes(lowerQuery)) {
-                    results.push({
-                        ...item,
-                        searchPath: currentPath.join(' / ')
-                    });
+                if (item.name.toLowerCase().includes(q)) {
+                    results.push({ ...item, searchPath: currentPath.join(' / ') });
                 }
-                
-                // Рекурсивно ищем в дочерних элементах
-                // children может быть null или [] - оба случая означают отсутствие дочерних элементов
-                const hasChildren = Boolean(item.children && Array.isArray(item.children) && item.children.length > 0);
-                if (hasChildren) {
+                if (item.children?.length > 0) {
                     searchRecursive(item.children, currentPath);
                 }
             }
         }
-        
+
         searchRecursive(items);
         return results;
     }
 
-    function renderCurrentLevel() {
-        if (historyStack.length === 0) return;
-
-        const currentLevel = historyStack[historyStack.length - 1];
-        
-        // Если есть активный поисковый запрос, показываем результаты поиска
-        if (currentSearchQuery && currentSearchQuery.trim() !== '') {
-            catalogTitle.textContent = `Поиск: "${currentSearchQuery}"`;
-            const searchResults = searchInCatalog(currentSearchQuery);
-            renderItems(searchResults, true, '');
-        } else {
-            catalogTitle.textContent = currentLevel.title;
-            renderItems(currentLevel.items, false, '');
-        }
-        
-        updateBackButton();
-        saveState();
-    }
-
-    function renderItems(items, isSearchResults, parentPath = '') {
-        catalogGrid.innerHTML = '';
-
-        if (items.length === 0) {
-            const noResults = document.createElement('div');
-            noResults.className = 'item';
-            noResults.style.justifyContent = 'center';
-            noResults.style.alignItems = 'center';
-            noResults.style.color = '#999';
-            noResults.style.fontSize = '16px';
-            noResults.textContent = isSearchResults ? 'Ничего не найдено' : 'Пусто';
-            catalogGrid.appendChild(noResults);
-            return;
-        }
-
-        items.forEach(item => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'item';
-            itemDiv.setAttribute('role', 'button');
-            itemDiv.setAttribute('tabindex', '0');
-            itemDiv.dataset.name = item.name;
-
-            const img = document.createElement('img');
-            img.className = 'item-icon';
-            img.src = getIconPath(item.icon);
-            img.alt = item.name;
-            img.loading = 'lazy';
-            img.onerror = () => { img.src = 'page/logo.png'; };
-
-            const span = document.createElement('span');
-            span.className = 'item-name';
-            span.textContent = item.name;
-
-            // Динамическая проверка: элемент пустой, если нет детей И нет URL
-            // children может быть null или [] - оба случая означают отсутствие дочерних элементов
-            const hasChildren = Boolean(item.children && Array.isArray(item.children) && item.children.length > 0);
-            const isCurrentlyEmpty = !hasChildren && !item.url;
-            
-            // Если элемент пустой, добавляем сообщение
-            if (isCurrentlyEmpty) {
-                const emptySpan = document.createElement('span');
-                emptySpan.className = 'item-empty-message';
-                emptySpan.textContent = '(пустой)';
-                emptySpan.style.color = '#999';
-                emptySpan.style.fontSize = '12px';
-                emptySpan.style.marginTop = '4px';
-                span.appendChild(document.createElement('br'));
-                span.appendChild(emptySpan);
-                
-                // Делаем элемент визуально менее активным
-                itemDiv.style.opacity = '0.7';
-            }
-
-            // Если это результаты поиска, добавляем путь к элементу
-            if (isSearchResults && item.searchPath) {
-                const pathSpan = document.createElement('span');
-                pathSpan.className = 'item-search-path';
-                pathSpan.textContent = item.searchPath;
-                span.appendChild(document.createElement('br'));
-                span.appendChild(pathSpan);
-            }
-
-            itemDiv.appendChild(img);
-            itemDiv.appendChild(span);
-            // Сохраняем путь к родительской папке для формирования URL проектов
-            itemDiv._itemData = { ...item, parentPath: parentPath };
-
-            catalogGrid.appendChild(itemDiv);
-        });
-    }
-
-    function updateBackButton() {
-        backBtn.hidden = historyStack.length <= 1;
-    }
-
-    // ----- Функция: проверка, является ли файл видео -----
+    /** Проверяет, является ли URL видеофайлом */
     function isVideoFile(url) {
         if (!url) return false;
+        const cleanUrl = url.trim().replace(/(https?)\s*:/i, '$1:');
         try {
-            // 1. Обрезаем пробелы
-            let cleanUrl = url.trim();
-            // 2. Исправляем возможные разрывы в протоколе (https : -> https:)
-            cleanUrl = cleanUrl.replace(/(https?)\s*:/i, '$1:');
-            
-            // Пытаемся декодировать для проверки расширения, но игнорируем ошибки
-            try {
-                cleanUrl = decodeURIComponent(cleanUrl);
-            } catch (e) {
-                // Если декодирование не удалось, используем обрезанную версию
-            }
-            
-            const videoExtensions = /\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv|m4v)\s*$/i;
-            return videoExtensions.test(cleanUrl);
-        } catch (e) {
-            console.warn('Ошибка при проверке видео:', e);
+            return /\.(mp4|webm|ogg|mov|avi|mkv|flv|wmv|m4v)\s*$/i.test(
+                decodeURIComponent(cleanUrl)
+            );
+        } catch {
             return false;
         }
     }
 
-    // Функция для получения прокси-URL для видео
-    function getVideoProxyUrl(url) {
-        let cleanUrl = url.trim().replace(/(https?)\s*:/i, '$1:');
-        try { cleanUrl = decodeURIComponent(cleanUrl); } catch(e){}
+    // ===== ОТРИСОВКА ИНТЕРФЕЙСА =====
+    
+    /** Отрисовывает текущий уровень каталога */
+    function render() {
+        if (state.history.length === 0) return;
+
+        const current = state.history[state.history.length - 1];
         
-        return cleanUrl;
+        if (state.searchQuery) {
+            el.title.textContent = `Поиск: "${state.searchQuery}"`;
+            renderItems(searchCatalog(state.searchQuery), true);
+        } else {
+            el.title.textContent = current.title;
+            renderItems(current.items, false);
+        }
+        
+        el.backBtn.hidden = state.history.length <= 1;
+        saveState();
     }
 
-    function handleItemClick(event) {
-        const itemDiv = event.target.closest('.item');
-        if (!itemDiv) return;
+    /** Рендерит список элементов в сетке */
+    function renderItems(items, isSearch) {
+        el.grid.innerHTML = '';
 
-        const itemData = itemDiv._itemData;
-        if (!itemData) return;
-
-        // Проверяем, является ли элемент пустым (динамически: нет детей И нет URL)
-        // children может быть null или [] - оба случая означают отсутствие дочерних элементов
-        const hasChildren = Boolean(itemData.children && Array.isArray(itemData.children) && itemData.children.length > 0);
-        const isCurrentlyEmpty = !hasChildren && !itemData.url;
-        
-        if (isCurrentlyEmpty) {
-            // Показываем сообщение о том, что элемент пустой
-            alert(`Элемент "${itemData.name}" пустой: не содержит элементов и не имеет ссылки.`);
+        if (items.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'item';
+            empty.style.cssText = 'justify-content:center;align-items:center;color:#999;font-size:16px';
+            empty.textContent = isSearch ? 'Ничего не найдено' : 'Пусто';
+            el.grid.appendChild(empty);
             return;
         }
 
-        // Сначала проверяем, является ли элемент папкой (есть дети)
-        // Если да - переходим в папку и прорисовываем элементы
-        // Только если это не папка - переходим по ссылке
+        items.forEach(item => el.grid.appendChild(createItemElement(item, isSearch)));
+    }
+
+    /** Создаёт DOM-элемент для одного элемента каталога */
+    function createItemElement(item, isSearch) {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.setAttribute('role', 'button');
+        div.setAttribute('tabindex', '0');
+        div.dataset.name = item.name;
+
+        const img = document.createElement('img');
+        img.className = 'item-icon';
+        img.src = getIconPath(item.icon);
+        img.alt = item.name;
+        img.loading = 'lazy';
+        img.onerror = () => { img.src = 'page/logo.png'; };
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'item-name';
+        nameSpan.textContent = item.name;
+
+        // Проверяем, пустой ли элемент (нет детей и нет ссылки)
+        const hasChildren = item.children?.length > 0;
+        const isEmpty = !hasChildren && !item.url;
+        
+        if (isEmpty) {
+            const msg = document.createElement('span');
+            msg.className = 'item-empty-message';
+            msg.textContent = '(пустой)';
+            msg.style.cssText = 'color:#999;font-size:12px;margin-top:4px';
+            nameSpan.append(document.createElement('br'), msg);
+            div.style.opacity = '0.7';
+        }
+
+        // Для результатов поиска показываем полный путь
+        if (isSearch && item.searchPath) {
+            const pathSpan = document.createElement('span');
+            pathSpan.className = 'item-search-path';
+            pathSpan.textContent = item.searchPath;
+            nameSpan.append(document.createElement('br'), pathSpan);
+        }
+
+        div.append(img, nameSpan);
+        div._itemData = item;
+        return div;
+    }
+
+    // ===== НАВИГАЦИЯ =====
+
+    /** Сброс к корневому уровню */
+    function resetToRoot() {
+        if (!state.catalog) {
+            setTimeout(resetToRoot, 100);
+            return;
+        }
+        state.history = [{
+            title: state.catalog.name,
+            items: state.catalog.children
+        }];
+        render();
+    }
+
+    /** Обработка клика по элементу */
+    function handleItemClick(e) {
+        const itemDiv = e.target.closest('.item');
+        if (!itemDiv?._itemData) return;
+
+        const item = itemDiv._itemData;
+        const hasChildren = item.children?.length > 0;
+        const isEmpty = !hasChildren && !item.url;
+
+        if (isEmpty) {
+            alert(`Элемент "${item.name}" пустой.`);
+            return;
+        }
+
         if (hasChildren) {
-            // Это папка с детьми - переходим в неё и прорисовываем элементы
-            // При переходе в папку из поиска очищаем поисковый запрос
-            if (currentSearchQuery && currentSearchQuery.trim() !== '') {
-                clearSearch();
-            }
-            historyStack.push({
-                title: itemData.name,
-                items: itemData.children
-            });
-            renderCurrentLevel();
-        } else if (itemData.url && itemData.url.trim() !== '') {
-            // Элемент не папка, но имеет URL - переходим по нему
+            if (state.searchQuery) clearSearch();
+            state.history.push({ title: item.name, items: item.children });
+            render();
+        } else if (item.url?.trim()) {
             saveState();
+            const url = item.url.trim().replace(/(https?|ftp)\s*:/gi, '$1:');
+            
+            logEvent('link_click', item.name, 'catalog_item_link', 
+                `Переход по ссылке: ${item.name}`, { url, status: 'initiated' });
 
-            // === КРИТИЧЕСКИ ВАЖНАЯ ОБРАБОТКА URL ===
-            let targetUrl = itemData.url;
-            
-            // 1. Убираем пробелы по краям
-            targetUrl = targetUrl.trim();
-            
-            // 2. Исправляем "разорванный" протокол (частая проблема при копировании)
-            // Превращаем "https :" в "https:"
-            targetUrl = targetUrl.replace(/(https?|ftp)\s*:/gi, '$1:');
-            
-            console.log('Переход по ссылке:', { original: itemData.url, processed: targetUrl });
-
-            // Аудит: попытка перехода по ссылке
-            const linkType = isVideoFile(targetUrl) ? 'video_file' : 
-                             targetUrl.match(/^https?:\/\//i) ? 'external_link' : 'internal_link';
-            
-            sendAuditEvent('link_click', itemData.name, 'catalog_item_link', 
-                `Попытка перехода по ссылке: ${itemData.name}`, {
-                    url: targetUrl,
-                    link_type: linkType,
-                    status: 'initiated'
-                });
-
-            // Проверяем, является ли файл видео
-            if (isVideoFile(targetUrl)) {
-                const videoPlayerUrl = `/video-player?url=${encodeURIComponent(targetUrl)}&name=${encodeURIComponent(itemData.name)}`;
-                
-                // Аудит: переход к видео-плееру
-                sendAuditEvent('video_player_open', itemData.name, 'video_file', 
-                    `Открытие видео-плеера для: ${itemData.name}`, {
-                        url: targetUrl,
-                        player_url: videoPlayerUrl,
-                        status: 'success'
-                    });
-                
-                window.location.href = videoPlayerUrl;
+            if (isVideoFile(url)) {
+                const playerUrl = `/video-player?url=${encodeURIComponent(url)}&name=${encodeURIComponent(item.name)}`;
+                logEvent('video_player_open', item.name, 'video_file', 
+                    `Открытие видео: ${item.name}`, { url, player_url: playerUrl });
+                window.location.href = playerUrl;
             } else {
-                // === ИСПРАВЛЕНИЕ ПРОБЛЕМЫ ===
-                // Используем универсальный метод открытия ссылок
                 try {
-                    // Создаём временную ссылку и кликаем по ней
-                    const anchor = document.createElement('a');
-                    anchor.href = targetUrl;
-                    anchor.target = '_blank';
-                    anchor.rel = 'noopener noreferrer';
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.target = '_blank';
+                    a.rel = 'noopener noreferrer';
+                    document.body.append(a);
+                    a.click();
+                    a.remove();
                     
-                    document.body.appendChild(anchor);
-                    anchor.click();
-                    document.body.removeChild(anchor);
-                    
-                    // Аудит: результат попытки открытия ссылки
-                    sendAuditEvent('external_link_open', itemData.name, 'external_link', 
-                        `Внешняя ссылка открыта: ${itemData.name}`, {
-                            url: targetUrl,
-                            status: 'success'
-                        });
-                } catch (error) {
-                    sendAuditEvent('external_link_error', itemData.name, 'external_link', 
-                        `Ошибка при открытии внешней ссылки: ${itemData.name}`, {
-                            url: targetUrl,
-                            status: 'error',
-                            error_message: error.message
-                        });
+                    logEvent('external_link_open', item.name, 'external_link', 
+                        `Внешняя ссылка: ${item.name}`, { url, status: 'success' });
+                } catch (err) {
+                    logEvent('external_link_error', item.name, 'external_link', 
+                        `Ошибка ссылки: ${item.name}`, { url, error: err.message });
                 }
             }
-            
-            // После успешного перехода по URL из поиска очищаем поисковый запрос
-            if (currentSearchQuery && currentSearchQuery.trim() !== '') {
-                clearSearch();
-            }
-        } else {
-            // Нет ни URL, ни детей (но это уже проверено выше как isCurrentlyEmpty)
-            alert(`Вы выбрали: ${itemData.name}\n(URL не указан)`);
+
+            if (state.searchQuery) clearSearch();
         }
     }
 
+    /** Кнопка "Назад" */
     function goBack() {
-        if (historyStack.length > 1) {
-            historyStack.pop();
-            renderCurrentLevel();
-        } else if (currentSearchQuery) {
-            // Если активен поиск, очищаем его и возвращаемся к корневому уровню
+        if (state.history.length > 1) {
+            state.history.pop();
+            render();
+        } else if (state.searchQuery) {
             clearSearch();
         }
     }
 
+    /** Очистка поиска */
     function clearSearch() {
-        currentSearchQuery = '';
-        searchInput.value = '';
-        searchClearBtn.hidden = true;
+        state.searchQuery = '';
+        el.searchInput.value = '';
+        el.searchClearBtn.hidden = true;
         resetToRoot();
     }
 
-    function resetToRoot() {
-        if (!catalogData) {
-            setTimeout(resetToRoot, 100);
-            return;
-        }
-        historyStack = [{
-            title: catalogData.name,
-            items: catalogData.children
-        }];
-        renderCurrentLevel();
-    }
+    // ===== САЙДБАР =====
 
-    // ----- Открытие/закрытие сайдбара -----
-    function openSidebar() {
-        if (!catalogData) {
-            loadCatalog().then(() => openSidebar());
+    function showSidebar() {
+        if (!state.catalog) {
+            loadCatalog().then(showSidebar);
             return;
         }
-        if (sidebar.classList.contains('active')) return;
+        if (el.sidebar.classList.contains('active')) return;
 
         resetToRoot();
-
-        sidebar.removeAttribute('hidden');
-        overlay.removeAttribute('hidden');
-
-        void sidebar.offsetHeight; // reflow
-
-        sidebar.classList.add('active');
-        overlay.classList.add('active');
-        openBtn.setAttribute('aria-expanded', 'true');
-
+        el.sidebar.removeAttribute('hidden');
+        el.overlay.removeAttribute('hidden');
+        void el.sidebar.offsetHeight; // reflow
+        el.sidebar.classList.add('active');
+        el.overlay.classList.add('active');
+        el.openBtn.setAttribute('aria-expanded', 'true');
         saveState();
     }
 
-    function closeSidebar() {
-        if (!sidebar.classList.contains('active')) return;
+    function hideSidebar() {
+        if (!el.sidebar.classList.contains('active')) return;
 
-        sidebar.classList.remove('active');
-        overlay.classList.remove('active');
-        openBtn.setAttribute('aria-expanded', 'false');
+        el.sidebar.classList.remove('active');
+        el.overlay.classList.remove('active');
+        el.openBtn.setAttribute('aria-expanded', 'false');
 
-        let transitionEnded = false;
-        const onTransitionEnd = () => {
-            if (transitionEnded) return;
-            transitionEnded = true;
-
-            sidebar.setAttribute('hidden', '');
-            overlay.setAttribute('hidden', '');
-            sidebar.removeEventListener('transitionend', onTransitionEnd);
-            overlay.removeEventListener('transitionend', onTransitionEnd);
-            clearTimeout(fallbackTimer);
-
+        let done = false;
+        const onEnd = () => {
+            if (done) return;
+            done = true;
+            el.sidebar.setAttribute('hidden', '');
+            el.overlay.setAttribute('hidden', '');
+            clearTimeout(timer);
             saveState();
         };
 
-        const fallbackTimer = setTimeout(() => {
-            if (!transitionEnded) {
-                sidebar.removeEventListener('transitionend', onTransitionEnd);
-                overlay.removeEventListener('transitionend', onTransitionEnd);
-                sidebar.setAttribute('hidden', '');
-                overlay.setAttribute('hidden', '');
-                transitionEnded = true;
-                saveState();
-            }
-        }, 1500);
-
-        sidebar.addEventListener('transitionend', onTransitionEnd);
-        overlay.addEventListener('transitionend', onTransitionEnd);
+        const timer = setTimeout(onEnd, 1500);
+        el.sidebar.addEventListener('transitionend', onEnd);
+        el.overlay.addEventListener('transitionend', onEnd);
     }
 
-    // ----- Загрузка каталога с сервера -----
+    // ===== ЗАГРУЗКА ДАННЫХ =====
+
     async function loadCatalog() {
         try {
-            const response = await fetch('/navigator/api/catalog');
-            if (!response.ok) throw new Error('Ошибка загрузки');
-            catalogData = await response.json();
-            if (sidebar.classList.contains('active')) {
-                resetToRoot();
-            }
-            return catalogData;
+            const res = await fetch('/navigator/api/catalog');
+            if (!res.ok) throw new Error('Ошибка загрузки');
+            state.catalog = await res.json();
+            if (el.sidebar.classList.contains('active')) resetToRoot();
+            return state.catalog;
         } catch (e) {
             console.error('Не удалось загрузить каталог:', e);
-            catalogData = { name: 'Ошибка загрузки', children: [] };
+            state.catalog = { name: 'Ошибка загрузки', children: [] };
         }
     }
 
-    // Функция для обновления каталога при изменениях
     function refreshCatalog() {
         loadCatalog().then(() => {
-            if (historyStack.length > 0) {
-                renderCurrentLevel();
-            }
+            if (state.history.length > 0) render();
         });
     }
 
-    // ----- Обработчики событий -----
-    openBtn.addEventListener('click', () => {
-        // Аудит: открытие каталога с главной страницы
-        sendAuditEvent('web_resource_view', 'main_page_catalog', 'ui_element', 'Открытие каталога с главной страницы');
-        openSidebar();
-    });
-    
-    closeBtn.addEventListener('click', closeSidebar);
-    overlay.addEventListener('click', closeSidebar);
-    backBtn.addEventListener('click', goBack);
+    // ===== ОБРАБОТЧИКИ СОБЫТИЙ =====
 
-    catalogGrid.addEventListener('click', (e) => {
-        // Аудит: взаимодействие с элементами каталога
+    el.openBtn.addEventListener('click', () => {
+        logEvent('web_resource_view', 'main_page_catalog', 'ui_element', 'Открытие каталога');
+        showSidebar();
+    });
+
+    el.closeBtn.addEventListener('click', hideSidebar);
+    el.overlay.addEventListener('click', hideSidebar);
+    el.backBtn.addEventListener('click', goBack);
+
+    el.grid.addEventListener('click', e => {
         const itemDiv = e.target.closest('.item');
-        if (itemDiv && itemDiv._itemData) {
-            const itemData = itemDiv._itemData;
-            const hasChildren = Boolean(itemData.children && Array.isArray(itemData.children) && itemData.children.length > 0);
-            sendAuditEvent('web_resource_view', itemData.name, 'catalog_item', `Просмотр элемента каталога: ${itemData.name}`, {
-                url: itemData.url || null,
-                hasChildren: hasChildren
-            });
+        if (itemDiv?._itemData) {
+            const item = itemDiv._itemData;
+            logEvent('web_resource_view', item.name, 'catalog_item', 
+                `Просмотр: ${item.name}`, { hasChildren: item.children?.length > 0 });
         }
         handleItemClick(e);
     });
 
-    catalogGrid.addEventListener('keydown', (e) => {
+    el.grid.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') {
             const item = e.target.closest('.item');
             if (item) {
@@ -521,40 +373,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Обработчики для поиска
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim();
-        currentSearchQuery = query;
-        
-        // Показываем/скрываем кнопку очистки
-        searchClearBtn.hidden = query === '';
-        
-        // Обновляем отображение
-        renderCurrentLevel();
+    el.searchInput.addEventListener('input', e => {
+        state.searchQuery = e.target.value.trim();
+        el.searchClearBtn.hidden = state.searchQuery === '';
+        render();
     });
 
-    searchClearBtn.addEventListener('click', clearSearch);
+    el.searchClearBtn.addEventListener('click', clearSearch);
 
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && sidebar.classList.contains('active')) {
-            if (currentSearchQuery) {
-                clearSearch();
-            } else {
-                closeSidebar();
-            }
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && el.sidebar.classList.contains('active')) {
+            state.searchQuery ? clearSearch() : hideSidebar();
         }
     });
 
-    // ----- Запуск: загружаем данные и восстанавливаем состояние -----
+    // ===== ЗАПУСК =====
     (async () => {
         await loadCatalog();
         restoreState();
         
-        // Слушаем события обновления из других вкладок (админ-панели)
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'catalogUpdated') {
-                refreshCatalog();
-            }
+        window.addEventListener('storage', e => {
+            if (e.key === 'catalogUpdated') refreshCatalog();
         });
     })();
 });
