@@ -411,86 +411,90 @@ def run_parser_task():
 def login():
     """
     Страница входа в систему.
-    Если пользователь уже вошёл — сразу перебрасываем на главную,
-    иначе показываем форму (GET) или пытаемся авторизовать (POST).
+    
+    Обрабатывает GET (отображение формы) и POST (аутентификация) запросы.
+    При успешном входе создаёт сессию пользователя через Flask-Login.
+    
+    Returns:
+        Response: HTML страница входа или редирект на главную/страницу назначения
     """
-    # Уже авторизованных пользователей сразу отправляем на главную
+    # Если пользователь уже авторизован — перенаправляем на главную
     if current_user.is_authenticated:
         return redirect(URL_PREFIX + '/')
-
-    # Берём next_page из адресной строки (GET-параметр ?next=...)
-    # Он понадобится и в шаблоне, и при редиректе после успешного входа
-    next_page = request.args.get('next')
+    
     error = None
-
-    # Обработка отправки формы (метод POST)
+    # Получаем next_page один раз для обоих методов запроса
+    next_page = request.args.get('next')
+    
+    # Обработка POST запроса (попытка входа)
     if request.method == 'POST':
-        # Берём данные из формы и убираем лишние пробелы в имени
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        remember = request.form.get('remember', False)
-
-        # Простейшая валидация на пустые поля
+        remember = request.form.get('remember', False)  # "Запомнить меня"
+        
+        # Валидация входных данных
         if not username or not password:
             error = 'Введите имя пользователя и пароль'
         else:
-            # Загружаем всех пользователей из файла
+            # Загрузка данных пользователей из файла
             users_data = load_users(USERS_FILE, hash_password)
-
-            # Ищем пользователя с таким именем (останавливаемся на первом совпадении)
-            # next() с генератором позволяет сделать это без лишнего цикла и флагов
-            user_found = next(
-                (u for u in users_data.get('users', []) if u['username'] == username),
-                None
-            )
-
-            # Если пользователь найден и пароль совпадает — пускаем
+            
+            # Поиск пользователя по имени
+            user_found = None
+            for user in users_data.get('users', []):
+                if user['username'] == username:
+                    user_found = user
+                    break
+            
+            # Проверка пароля через bcrypt
             if user_found and verify_password(password, user_found['password_hash']):
-                # Создаём объект User, который нужен Flask-Login
+                # Создание объекта пользователя и вход в систему
                 user_obj = User(
-                    user_found['id'],
-                    user_found['username'],
-                    user_found.get('is_admin', False)  # по умолчанию обычный пользователь
+                    user_found['id'], 
+                    user_found['username'], 
+                    user_found.get('is_admin', False)
                 )
-
-                # Регистрируем вход (сессия, куки и т.д.)
                 login_user(user_obj, remember=remember)
+                
                 flash('Вы успешно вошли в систему', 'success')
-
-                # Вычисляем безопасный адрес для перенаправления и уходим туда
-                return redirect(_get_safe_redirect_url(next_page))
+                
+                # Формирование URL для перенаправления
+                redirect_url = _get_safe_redirect_url(next_page)
+                return redirect(redirect_url)
             else:
-                # Либо пользователя нет, либо пароль неправильный
+                # Неверные учётные данные
                 error = 'Неверное имя пользователя или пароль'
-
-    # GET-запрос или неудачная попытка входа — показываем форму
+    
+    # Обработка GET запроса (отображение формы входа) или ошибка POST
     return render_template(
-        'login.html',
-        error=error,
-        # Просто передаём готовый URL для формы, без лямбды — так проще
-        login_url=URL_PREFIX + '/login',
+        'login.html', 
+        error=error, 
+        get_prefixed_login_url=lambda: URL_PREFIX + '/login',
         next_page=next_page
     )
 
 
 def _get_safe_redirect_url(next_page):
     """
-    Делает безопасную ссылку для редиректа после входа.
-    Если next не указан — кидаем в админку.
-    Иначе добавляем префикс приложения, чтобы не вылететь за его пределы.
+    Формирует безопасный URL для перенаправления после входа.
+    
+    Args:
+        next_page (str): Исходный URL из параметра запроса
+        
+    Returns:
+        str: Безопасный URL с префиксом приложения
     """
-    # Если параметр не передан — открываем панель администратора по умолчанию
+    # Если next не указан — перенаправляем на панель администратора
     if not next_page:
         return URL_PREFIX + '/admin'
-
-    # Если в next_page ещё нет нашего префикса — аккуратно добавляем
+    
+    # Добавление префикса к next_page если он отсутствует
     if URL_PREFIX not in next_page:
-        # Убираем возможный слеш в начале, чтобы не склеить два слеша,
-        # и добавляем один слеш и префикс
-        next_page = '/' + next_page.lstrip('/')
-        return URL_PREFIX + next_page
-
-    # Если префикс уже есть — возвращаем как есть
+        if next_page.startswith('/'):
+            return URL_PREFIX + next_page
+        else:
+            return URL_PREFIX + '/' + next_page.lstrip('/')
+    
     return next_page
 
 
