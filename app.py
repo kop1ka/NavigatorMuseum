@@ -409,126 +409,40 @@ def run_parser_task():
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit(RATELIMIT_LOGIN)  # Ограничение частоты запросов для защиты от брутфорса
 def login():
-    """
-    Страница входа в систему.
-    
-    Обрабатывает GET (отображение формы) и POST (аутентификация) запросы.
-    При успешном входе создаёт сессию пользователя через Flask-Login.
-    
-    Returns:
-        Response: HTML страница входа или редирект на главную/страницу назначения
-    """
-    # Если пользователь уже авторизован — перенаправляем на главную
+    """Страница входа в систему с префиксом /navigator"""
     if current_user.is_authenticated:
         return redirect(URL_PREFIX + '/')
     
     error = None
-    # Получаем next_page из URL (куда перенаправить после входа)
     next_page = request.args.get('next')
     
-    # Обработка POST запроса (попытка входа)
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        remember = request.form.get('remember', False)  # "Запомнить меня"
+        remember = request.form.get('remember', False)
         
-        # Проверяем учётные данные и пытаемся войти
-        user_obj = authenticate_user(username, password)
+        # Аутентификация пользователя
+        user_obj = None
+        if username and password:
+            users_data = load_users(USERS_FILE, hash_password)
+            for user in users_data.get('users', []):
+                if user['username'] == username and verify_password(password, user['password_hash']):
+                    user_obj = User(user['id'], user['username'], user.get('is_admin', False))
+                    break
         
         if user_obj:
-            # Успешная аутентификация — создаём сессию
             login_user(user_obj, remember=remember)
             flash('Вы успешно вошли в систему', 'success')
-            
-            # Перенаправляем на нужную страницу
-            redirect_url = get_safe_redirect_url(next_page)
-            return redirect(redirect_url)
+            # Редирект на next_page или на /admin
+            if next_page:
+                if not next_page.startswith(URL_PREFIX):
+                    next_page = URL_PREFIX + ('/' if not next_page.startswith('/') else '') + next_page.lstrip('/')
+                return redirect(next_page)
+            return redirect(URL_PREFIX + '/admin')
         else:
-            # Неверные учётные данные или пустые поля
-            if not username or not password:
-                error = 'Введите имя пользователя и пароль'
-            else:
-                error = 'Неверное имя пользователя или пароль'
+            error = 'Введите имя пользователя и пароль' if not username or not password else 'Неверное имя пользователя или пароль'
     
-    # Обработка GET запроса (отображение формы входа) или ошибка POST
-    return render_template(
-        'login.html', 
-        error=error, 
-        get_prefixed_login_url=lambda: URL_PREFIX + '/login',
-        next_page=next_page
-    )
-
-
-def authenticate_user(username, password):
-    """
-    Проверяет учётные данные пользователя.
-    
-    Args:
-        username (str): Имя пользователя
-        password (str): Пароль
-        
-    Returns:
-        User or None: Объект пользователя при успехе, None при ошибке
-    """
-    # Проверяем, что данные не пустые
-    if not username or not password:
-        return None
-    
-    # Загружаем всех пользователей из файла
-    users_data = load_users(USERS_FILE, hash_password)
-    
-    # Ищем пользователя по имени
-    for user in users_data.get('users', []):
-        if user['username'] == username:
-            # Проверяем пароль через bcrypt
-            if verify_password(password, user['password_hash']):
-                # Возвращаем объект пользователя
-                return User(
-                    user['id'], 
-                    user['username'], 
-                    user.get('is_admin', False)
-                )
-            # Пароль неверный — выходим из функции
-            return None
-    
-    # Пользователь не найден
-    return None
-
-
-def get_safe_redirect_url(next_page):
-    """
-    Формирует безопасный URL для перенаправления после входа.
-    
-    Проверяет, что URL не ведёт на внешний сайт (защита от open redirect).
-    Добавляет префикс приложения если нужно.
-    
-    Args:
-        next_page (str): Исходный URL из параметра запроса
-        
-    Returns:
-        str: Безопасный URL с префиксом приложения
-    """
-    # Если next не указан — перенаправляем на панель администратора
-    if not next_page:
-        return URL_PREFIX + '/admin'
-    
-    # Защита от открытых перенаправлений (open redirect vulnerability)
-    # Проверяем, что URL начинается с нашего префикса или относительного пути
-    parsed_url = urlparse(next_page)
-    
-    # Если URL содержит схему (http://, https://) или домен — это опасно
-    if parsed_url.scheme or parsed_url.netloc:
-        # Небезопасный URL — перенаправляем на главную
-        return URL_PREFIX + '/'
-    
-    # Добавляем префикс к next_page если он отсутствует
-    if not next_page.startswith(URL_PREFIX):
-        if next_page.startswith('/'):
-            return URL_PREFIX + next_page
-        else:
-            return URL_PREFIX + '/' + next_page.lstrip('/')
-    
-    return next_page
+    return render_template('login.html', error=error, next_page=next_page)
 
 
 @app.route('/logout')
