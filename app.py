@@ -92,7 +92,7 @@ class PathPrefixMiddleware:
     """
     def __init__(self, app, prefix):
         self.app = app
-        self.prefix = prefix.rstrip("/admin")
+        self.prefix = prefix.rstrip("/")
 
     def __call__(self, environ, start_response):
         path = environ.get("PATH_INFO", "")
