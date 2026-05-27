@@ -1,1 +1,3 @@
-Nothing should be ignored based on the provided file changes. The only modified file is `auth_utils_flowchart.md`, which is a markdown source file and should not be ignored.
+(auth_flowchart.md is a markdown file, which is source content that should not be ignored)
+
+# No changes needed - auth_flowchart.md is a source file that should be tracked
