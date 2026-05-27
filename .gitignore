@@ -1,3 +1,1 @@
-# Documentation and source files only
-# No build artifacts, dependencies, or temp files detected
-# Keeping .gitignore empty as per guidelines
+Nothing should be ignored based on the provided file changes. The only modified file is `auth_utils_flowchart.md`, which is a markdown source file and should not be ignored.
