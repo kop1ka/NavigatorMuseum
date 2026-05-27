@@ -1,3 +1,1 @@
-(auth_flowchart.md is a markdown file, which is source content that should not be ignored)
-
-# No changes needed - auth_flowchart.md is a source file that should be tracked
+(auth_utils_flowchart.md is just a markdown file, no build artifacts, dependencies, or temp files in the changes)
