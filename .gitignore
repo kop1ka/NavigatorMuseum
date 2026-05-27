@@ -1,24 +1,6 @@
-```
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# Markdown files
+*.md
 
-# Logs and temp files
-*.log
-*.tmp
+Wait, that's not right - the markdown file was added, not built/generated. Since only source/config files were added without any build artifacts, dependencies, or temp files, the output should be empty.
 
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
-.vscode/
-.idea/
-
-# Dependencies
-.venv/
-venv/
-```
+(login_flowchart.md is a source file being tracked in version control)
