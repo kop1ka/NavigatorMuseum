@@ -40,8 +40,7 @@ flowchart TD
     LogComplete --> End[Конец потока]
     
     CallParseFolder --> ParseError[Ошибка парсинга]
-    ParseError --> LogError[Логирование ошибки<br/>с traceback]
-    LogError --> UpdateStatusError[Обновление parser_status:<br/>running=false, message=ошибка]
+    ParseError --> UpdateStatusError[Обновление parser_status:<br/>running=false, message=ошибка]
     UpdateStatusError --> End
 ```
 
@@ -59,20 +58,14 @@ flowchart TD
     Sleep --> HTTPRequest[requests.get url,<br/>timeout, verify=False]
     
     HTTPRequest --> HTTPError{HTTP ошибка?}
-    HTTPError -->|Timeout| LogTimeout[Лог timeout ошибки]
-    LogTimeout --> RaiseError1[raise Exception]
-    HTTPError -->|ConnectionError| LogConn[Лог connection ошибки]
-    LogConn --> RaiseError2[raise Exception]
-    HTTPError -->|HTTP Status != 200| LogHTTP[Лог HTTP ошибки<br/>status, headers, body]
-    LogHTTP --> ContinueParse[Продолжить парсинг]
+    HTTPError -->|Timeout| RaiseError1[raise Exception]
+    HTTPError -->|ConnectionError| RaiseError2[raise Exception]
     HTTPError -->|OK status 200| ContinueParse
     
-    RaiseError1 --> ErrorHandler[Обработчик ошибок<br/>логирование в error_log.json]
-    RaiseError2 --> ErrorHandler
-    ErrorHandler --> ReturnEmpty3[Возврат []]
+    RaiseError1 --> ReturnEmpty3[Возврат []]
+    RaiseError2 --> ReturnEmpty3
     
-    ContinueParse --> LogResponse[Логирование ответа<br/>в parser_debug_log.json]
-    LogResponse --> ExtractItems[extract_items_from_html<br/>response.text, url]
+    ContinueParse --> ExtractItems[extract_items_from_html<br/>response.text, url]
     
     ExtractItems --> FindFolders[Фильтрация папок<br/>для рекурсии]
     FindFolders --> HasFolders{Есть папки<br/>и depth < max_depth?}
@@ -101,8 +94,7 @@ flowchart TD
 flowchart TD
     Start[extract_items_from_html<br/>html_content, base_url] --> CreateSoup[BeautifulSoup<br/>html.parser]
     CreateSoup --> FindTable{Найти table?}
-    FindTable -->|Нет| LogWarning[Лог: таблица не найдена<br/>вывод HTML preview]
-    LogWarning --> ReturnEmpty[Возврат []]
+    FindTable -->|Нет| ReturnEmpty[Возврат []]
     
     FindTable -->|Да| FindRows[find_all tr]
     FindRows --> IterateRows[Цикл по строкам]
@@ -212,21 +204,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Error[Ошибка в parse_folder] --> CheckType{Тип ошибки}
-    
-    CheckType -->|Timeout| LogTimeout[log_error_to_json<br/>error_type=timeout]
-    CheckType -->|ConnectionError| LogConn[log_error_to_json<br/>error_type=connection_error]
-    CheckType -->|HTTPError| LogHTTP[log_error_to_json<br/>error_type=http_error]
-    CheckType -->|RequestException| LogReq[log_error_to_json<br/>error_type=request_exception]
-    CheckType -->|ParseError| LogParse[log_error_to_json<br/>error_type=parse_error]
-    
-    LogTimeout --> SaveError[Сохранение в<br/>error_log.json]
-    LogConn --> SaveError
-    LogHTTP --> SaveError
-    LogReq --> SaveError
-    LogParse --> SaveError
-    
-    SaveError --> ReturnEmpty[Возврат пустого списка]
+    Error[Ошибка в parse_folder] --> ReturnEmpty[Возврат пустого списка]
     ReturnEmpty --> Continue[Продолжение работы<br/>других потоков]
 ```
 
@@ -240,8 +218,6 @@ flowchart TD
 | max_workers | 5 | Количество потоков для папок |
 | verify | False | SSL верификация отключена |
 
-## Файлы логов
+## Файлы данных
 
-- `error_log.json` - журнал ошибок парсинга
-- `parser_debug_log.json` - детальное логирование ответов сервера
 - `parser_images.json` - сохранённый список найденных изображений
