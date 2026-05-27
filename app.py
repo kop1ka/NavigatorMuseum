@@ -423,6 +423,8 @@ def login():
         return redirect(URL_PREFIX + '/')
     
     error = None
+    # Получаем next_page один раз для обоих методов запроса
+    next_page = request.args.get('next')
     
     # Обработка POST запроса (попытка входа)
     if request.method == 'POST':
@@ -454,39 +456,46 @@ def login():
                 )
                 login_user(user_obj, remember=remember)
                 
-                # Получение URL для перенаправления после входа
-                next_page = request.args.get('next')
                 flash('Вы успешно вошли в систему', 'success')
                 
-                # Если next не указан — перенаправляем на панель администратора
-                if not next_page:
-                    return redirect(URL_PREFIX + '/admin')
-                
-                # Добавление префикса к next_page если он отсутствует
-                if URL_PREFIX not in next_page:
-                    if next_page.startswith('/'):
-                        next_page = URL_PREFIX + next_page
-                    else:
-                        next_page = URL_PREFIX + '/' + next_page.lstrip('/')
-                
-                return redirect(next_page)
+                # Формирование URL для перенаправления
+                redirect_url = _get_safe_redirect_url(next_page)
+                return redirect(redirect_url)
             else:
                 # Неверные учётные данные
                 error = 'Неверное имя пользователя или пароль'
     
-    # Обработка GET запроса (отображение формы входа)
-    next_page = request.args.get('next')
-    
-    def get_prefixed_login_url():
-        """Возвращает URL страницы входа с учётом префикса приложения."""
-        return URL_PREFIX + '/login'
-    
+    # Обработка GET запроса (отображение формы входа) или ошибка POST
     return render_template(
         'login.html', 
         error=error, 
-        get_prefixed_login_url=get_prefixed_login_url,
+        get_prefixed_login_url=lambda: URL_PREFIX + '/login',
         next_page=next_page
     )
+
+
+def _get_safe_redirect_url(next_page):
+    """
+    Формирует безопасный URL для перенаправления после входа.
+    
+    Args:
+        next_page (str): Исходный URL из параметра запроса
+        
+    Returns:
+        str: Безопасный URL с префиксом приложения
+    """
+    # Если next не указан — перенаправляем на панель администратора
+    if not next_page:
+        return URL_PREFIX + '/admin'
+    
+    # Добавление префикса к next_page если он отсутствует
+    if URL_PREFIX not in next_page:
+        if next_page.startswith('/'):
+            return URL_PREFIX + next_page
+        else:
+            return URL_PREFIX + '/' + next_page.lstrip('/')
+    
+    return next_page
 
 
 @app.route('/logout')
