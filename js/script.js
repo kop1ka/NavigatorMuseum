@@ -104,36 +104,25 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Рекурсивный поиск элементов по названию во всём дереве каталога
      * @param {string} query - Поисковый запрос
-     * @param {Array} items - Массив элементов для поиска (по умолчанию — корневые элементы)
+     * @param {Array} items - Массив элементов для поиска
      * @returns {Array} - Найденные элементы с полным путём
      */
     function searchCatalog(query, items = state.catalog?.children || []) {
-        if (!query?.trim()) return []; // Пустой запрос → ничего не ищем
-
-        const results = [];
+        if (!query?.trim()) return [];
+        
         const q = query.toLowerCase();
-
-        /**
-         * Рекурсивно обходит дерево каталога
-         * @param {Array} list - Текущий список элементов
-         * @param {Array} path - Путь к текущему элементу (для отображения)
-         */
+        
         function searchRecursive(list, path = []) {
-            for (const item of list) {
+            return list.flatMap(item => {
                 const currentPath = [...path, item.name];
-                // Если название содержит запрос — добавляем в результаты
-                if (item.name.toLowerCase().includes(q)) {
-                    results.push({ ...item, searchPath: currentPath.join(' / ') });
-                }
-                // Если есть дочерние элементы — идём глубже
-                if (item.children?.length > 0) {
-                    searchRecursive(item.children, currentPath);
-                }
-            }
+                const found = item.name.toLowerCase().includes(q) 
+                    ? [{ ...item, searchPath: currentPath.join(' / ') }] 
+                    : [];
+                return [...found, ...(item.children?.length ? searchRecursive(item.children, currentPath) : [])];
+            });
         }
-
-        searchRecursive(items);
-        return results;
+        
+        return searchRecursive(items);
     }
 
     /**
@@ -166,15 +155,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const current = state.history[state.history.length - 1]; // Берём верхушку стека
         
-        if (state.searchQuery) {
-            // Режим поиска: показываем запрос и найденные элементы
-            el.title.textContent = `Поиск: "${state.searchQuery}"`;
-            renderItems(searchCatalog(state.searchQuery), true);
-        } else {
-            // Обычный режим: показываем содержимое текущей папки
-            el.title.textContent = current.title;
-            renderItems(current.items, false);
-        }
+        // Определяем режим: поиск или обычная навигация
+        const isSearchMode = !!state.searchQuery;
+        // Получаем элементы для отображения: результаты поиска или содержимое папки
+        const itemsToShow = isSearchMode ? searchCatalog(state.searchQuery) : current.items;
+        
+        // Обновляем заголовок в зависимости от режима
+        el.title.textContent = isSearchMode 
+            ? `Поиск: "${state.searchQuery}"` 
+            : current.title;
+        
+        // Рендерим элементы и передаём флаг режима
+        renderItems(itemsToShow, isSearchMode);
         
         // Кнопка "Назад" нужна только если мы не в корневой папке
         el.backBtn.hidden = state.history.length <= 1;
