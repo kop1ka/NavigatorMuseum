@@ -409,6 +409,15 @@ def run_parser_task():
 @app.route('/login', methods=['GET', 'POST'])
 @limiter.limit(RATELIMIT_LOGIN)  # Ограничение частоты запросов для защиты от брутфорса
 def login():
+    """
+    Страница входа в систему.
+    
+    Обрабатывает GET (отображение формы) и POST (аутентификация) запросы.
+    При успешном входе создаёт сессию пользователя через Flask-Login.
+    
+    Returns:
+        Response: HTML страница входа или редирект на главную/страницу назначения
+    """
     # Если пользователь уже авторизован — перенаправляем на главную
     if current_user.is_authenticated:
         return redirect(URL_PREFIX + '/')
@@ -450,7 +459,17 @@ def login():
     )
 
 
-def authenticate_user(username, password)
+def authenticate_user(username, password):
+    """
+    Проверяет учётные данные пользователя.
+    
+    Args:
+        username (str): Имя пользователя
+        password (str): Пароль
+        
+    Returns:
+        User or None: Объект пользователя при успехе, None при ошибке
+    """
     # Проверяем, что данные не пустые
     if not username or not password:
         return None
@@ -477,9 +496,30 @@ def authenticate_user(username, password)
 
 
 def get_safe_redirect_url(next_page):
+    """
+    Формирует безопасный URL для перенаправления после входа.
+    
+    Проверяет, что URL не ведёт на внешний сайт (защита от open redirect).
+    Добавляет префикс приложения если нужно.
+    
+    Args:
+        next_page (str): Исходный URL из параметра запроса
+        
+    Returns:
+        str: Безопасный URL с префиксом приложения
+    """
     # Если next не указан — перенаправляем на панель администратора
     if not next_page:
         return URL_PREFIX + '/admin'
+    
+    # Защита от открытых перенаправлений (open redirect vulnerability)
+    # Проверяем, что URL начинается с нашего префикса или относительного пути
+    parsed_url = urlparse(next_page)
+    
+    # Если URL содержит схему (http://, https://) или домен — это опасно
+    if parsed_url.scheme or parsed_url.netloc:
+        # Небезопасный URL — перенаправляем на главную
+        return URL_PREFIX + '/'
     
     # Добавляем префикс к next_page если он отсутствует
     if not next_page.startswith(URL_PREFIX):
