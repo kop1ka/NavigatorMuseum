@@ -33,6 +33,9 @@ RATELIMIT_DEFAULT = ["1000 per hour", "100 per minute"]
 RATELIMIT_LOGIN = "10 per minute"
 RATELIMIT_ENABLED = True
 
+# Конфигурация ERROR_LOG_FILE для логов ошибок парсера
+ERROR_LOG_FILE = os.path.join(DATA_DIR, 'parser_errors.log')
+
 # Flask-Login
 LOGIN_VIEW = 'login'  # Имя маршрута для перенаправления неавторизованных пользователей
 # При использовании ProxyFix и PathPrefixMiddleware Flask автоматически добавит префикс /navigator

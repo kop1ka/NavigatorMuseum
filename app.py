@@ -35,7 +35,7 @@ warnings.filterwarnings('ignore', category=urllib3.exceptions.InsecureRequestWar
 
 # Импорт конфигурации из модуля settings
 from config.settings import (
-    DATA_DIR, CATALOG_FILE, PERMANENT_FILE, USERS_FILE, PARSER_IMAGES_FILE, SECRET_KEY,
+    DATA_DIR, CATALOG_FILE, PERMANENT_FILE, USERS_FILE, PARSER_IMAGES_FILE, ERROR_LOG_FILE, SECRET_KEY,
     FTP_BASE_URL, PARSER_MAX_DEPTH, PARSER_TIMEOUT,
     RATELIMIT_STORAGE_URI, RATELIMIT_DEFAULT, RATELIMIT_LOGIN, RATELIMIT_ENABLED,
     LOGIN_VIEW, LOGIN_MESSAGE, SESSION_PROTECTION
@@ -53,7 +53,7 @@ from utils.data_utils import (
     load_users, save_users, load_catalog, save_catalog, load_permanent_items, save_permanent_items,
     normalize_url, replace_url_domain
 )
-from utils.parser_utils import extract_items_from_html, parse_folder, ERROR_LOG_FILE
+from utils.parser_utils import extract_items_from_html, parse_folder
 from utils.auth_utils import User, hash_password, verify_password, admin_required_decorator
 from utils.catalog_utils import (
     get_item_path, mark_permanent_recursive, merge_with_permanent,
@@ -410,66 +410,83 @@ def run_parser_task():
 @limiter.limit(RATELIMIT_LOGIN)  # Ограничение частоты запросов для защиты от брутфорса
 def login():
     """
-    Страница входа в систему
+    Страница входа в систему.
     
     Обрабатывает GET (отображение формы) и POST (аутентификация) запросы.
+    При успешном входе создаёт сессию пользователя через Flask-Login.
     
     Returns:
-        Response: HTML страница входа или редирект на главную
+        Response: HTML страница входа или редирект на главную/страницу назначения
     """
+    # Если пользователь уже авторизован — перенаправляем на главную
     if current_user.is_authenticated:
         return redirect(URL_PREFIX + '/')
     
     error = None
+    
+    # Обработка POST запроса (попытка входа)
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
-        remember = request.form.get('remember', False)
+        remember = request.form.get('remember', False)  # "Запомнить меня"
         
+        # Валидация входных данных
         if not username or not password:
             error = 'Введите имя пользователя и пароль'
         else:
+            # Загрузка данных пользователей из файла
             users_data = load_users(USERS_FILE, hash_password)
+            
+            # Поиск пользователя по имени
             user_found = None
             for user in users_data.get('users', []):
                 if user['username'] == username:
                     user_found = user
                     break
             
+            # Проверка пароля через bcrypt
             if user_found and verify_password(password, user_found['password_hash']):
-                user_obj = User(user_found['id'], user_found['username'], user_found.get('is_admin', False))
+                # Создание объекта пользователя и вход в систему
+                user_obj = User(
+                    user_found['id'], 
+                    user_found['username'], 
+                    user_found.get('is_admin', False)
+                )
                 login_user(user_obj, remember=remember)
+                
+                # Получение URL для перенаправления после входа
                 next_page = request.args.get('next')
                 flash('Вы успешно вошли в систему', 'success')
                 
-                # Если next_page не указан, перенаправляем на /navigator/admin
+                # Если next не указан — перенаправляем на панель администратора
                 if not next_page:
                     return redirect(URL_PREFIX + '/admin')
                 
-                # Проверяем, если next_page содержит '/admin' но не содержит префикс
-                # Добавляем префикс к next_page
-                if URL_PREFIX not in next_page and next_page.startswith('/'):
-                    next_page = URL_PREFIX + next_page
-                elif URL_PREFIX not in next_page:
-                    # Если next_page относительный (например, 'admin'), добавляем префикс
-                    next_page = URL_PREFIX + '/' + next_page.lstrip('/')
-                    
+                # Добавление префикса к next_page если он отсутствует
+                if URL_PREFIX not in next_page:
+                    if next_page.startswith('/'):
+                        next_page = URL_PREFIX + next_page
+                    else:
+                        next_page = URL_PREFIX + '/' + next_page.lstrip('/')
+                
                 return redirect(next_page)
             else:
+                # Неверные учётные данные
                 error = 'Неверное имя пользователя или пароль'
     
-    # Получаем параметр next из query string для формы
+    # Обработка GET запроса (отображение формы входа)
     next_page = request.args.get('next')
     
-    # -------------------------------------------------------------------
-    # ИСПРАВЛЕНИЕ 2: Создаём функцию для получения URL входа с префиксом
-    # и передаём её в шаблон для использования в action формы.
-    # -------------------------------------------------------------------
     def get_prefixed_login_url():
-        """Возвращает URL страницы входа с учётом префикса (SCRIPT_NAME)."""
+        """Возвращает URL страницы входа с учётом префикса приложения."""
         return URL_PREFIX + '/login'
     
-    return render_template('login.html', error=error, get_prefixed_login_url=get_prefixed_login_url)  # Передаём функцию в контекст
+    return render_template(
+        'login.html', 
+        error=error, 
+        get_prefixed_login_url=get_prefixed_login_url,
+        next_page=next_page
+    )
 
 
 @app.route('/logout')
