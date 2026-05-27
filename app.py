@@ -423,7 +423,7 @@ def login():
         return redirect(URL_PREFIX + '/')
     
     error = None
-    # Получаем next_page один раз для обоих методов запроса
+    # Получаем next_page из URL (куда перенаправить после входа)
     next_page = request.args.get('next')
     
     # Обработка POST запроса (попытка входа)
@@ -432,37 +432,22 @@ def login():
         password = request.form.get('password', '')
         remember = request.form.get('remember', False)  # "Запомнить меня"
         
-        # Валидация входных данных
-        if not username or not password:
-            error = 'Введите имя пользователя и пароль'
+        # Проверяем учётные данные и пытаемся войти
+        user_obj = authenticate_user(username, password)
+        
+        if user_obj:
+            # Успешная аутентификация — создаём сессию
+            login_user(user_obj, remember=remember)
+            flash('Вы успешно вошли в систему', 'success')
+            
+            # Перенаправляем на нужную страницу
+            redirect_url = get_safe_redirect_url(next_page)
+            return redirect(redirect_url)
         else:
-            # Загрузка данных пользователей из файла
-            users_data = load_users(USERS_FILE, hash_password)
-            
-            # Поиск пользователя по имени
-            user_found = None
-            for user in users_data.get('users', []):
-                if user['username'] == username:
-                    user_found = user
-                    break
-            
-            # Проверка пароля через bcrypt
-            if user_found and verify_password(password, user_found['password_hash']):
-                # Создание объекта пользователя и вход в систему
-                user_obj = User(
-                    user_found['id'], 
-                    user_found['username'], 
-                    user_found.get('is_admin', False)
-                )
-                login_user(user_obj, remember=remember)
-                
-                flash('Вы успешно вошли в систему', 'success')
-                
-                # Формирование URL для перенаправления
-                redirect_url = _get_safe_redirect_url(next_page)
-                return redirect(redirect_url)
+            # Неверные учётные данные или пустые поля
+            if not username or not password:
+                error = 'Введите имя пользователя и пароль'
             else:
-                # Неверные учётные данные
                 error = 'Неверное имя пользователя или пароль'
     
     # Обработка GET запроса (отображение формы входа) или ошибка POST
@@ -474,9 +459,48 @@ def login():
     )
 
 
-def _get_safe_redirect_url(next_page):
+def authenticate_user(username, password):
+    """
+    Проверяет учётные данные пользователя.
+    
+    Args:
+        username (str): Имя пользователя
+        password (str): Пароль
+        
+    Returns:
+        User or None: Объект пользователя при успехе, None при ошибке
+    """
+    # Проверяем, что данные не пустые
+    if not username or not password:
+        return None
+    
+    # Загружаем всех пользователей из файла
+    users_data = load_users(USERS_FILE, hash_password)
+    
+    # Ищем пользователя по имени
+    for user in users_data.get('users', []):
+        if user['username'] == username:
+            # Проверяем пароль через bcrypt
+            if verify_password(password, user['password_hash']):
+                # Возвращаем объект пользователя
+                return User(
+                    user['id'], 
+                    user['username'], 
+                    user.get('is_admin', False)
+                )
+            # Пароль неверный — выходим из функции
+            return None
+    
+    # Пользователь не найден
+    return None
+
+
+def get_safe_redirect_url(next_page):
     """
     Формирует безопасный URL для перенаправления после входа.
+    
+    Проверяет, что URL не ведёт на внешний сайт (защита от open redirect).
+    Добавляет префикс приложения если нужно.
     
     Args:
         next_page (str): Исходный URL из параметра запроса
@@ -488,8 +512,17 @@ def _get_safe_redirect_url(next_page):
     if not next_page:
         return URL_PREFIX + '/admin'
     
-    # Добавление префикса к next_page если он отсутствует
-    if URL_PREFIX not in next_page:
+    # Защита от открытых перенаправлений (open redirect vulnerability)
+    # Проверяем, что URL начинается с нашего префикса или относительного пути
+    parsed_url = urlparse(next_page)
+    
+    # Если URL содержит схему (http://, https://) или домен — это опасно
+    if parsed_url.scheme or parsed_url.netloc:
+        # Небезопасный URL — перенаправляем на главную
+        return URL_PREFIX + '/'
+    
+    # Добавляем префикс к next_page если он отсутствует
+    if not next_page.startswith(URL_PREFIX):
         if next_page.startswith('/'):
             return URL_PREFIX + next_page
         else:
