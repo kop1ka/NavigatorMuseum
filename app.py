@@ -23,7 +23,7 @@ import requests
 import urllib3
 from datetime import datetime, timedelta
 from urllib.parse import unquote
-from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session, flash, Response, make_response, g
+from flask import Flask, render_template, request, jsonify, send_from_directory, redirect, url_for, session, flash, Response, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf import CSRFProtect
 from flask_limiter import Limiter
@@ -561,12 +561,19 @@ def admin():
     """
     # Фиксируем открытие панели администратора
     try:
+        ip_address = request.remote_addr or '127.0.0.1'
+        user_id = getattr(g, 'user_id', None)
+        username = getattr(g, 'username', 'anonymous')
+        
         audit_catalog_item_open(
             item_path='/admin',
             item_name='Панель администратора',
             status_code=200,
             item_type='admin_page',
-            description='Открытие панели администратора'
+            description='Открытие панели администратора',
+            ip_address=ip_address,
+            user_id=user_id,
+            username=username
         )
     except Exception as e:
         # Если аудит не удался, просто логируем ошибку, но не прерываем работу

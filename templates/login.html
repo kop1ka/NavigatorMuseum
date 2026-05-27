@@ -137,8 +137,8 @@
             <div class="error-message">{{ error }}</div>
         {% endif %}
         
-        <!-- Форма отправляет данные на тот же URL (относительный путь) -->
-        <form method="POST" action="">
+        <!-- ИСПРАВЛЕНИЕ 3: action формы теперь использует функцию с префиксом -->
+        <form method="POST" action="{{ get_prefixed_login_url() }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
             <div class="form-group">
