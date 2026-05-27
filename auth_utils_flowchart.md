@@ -41,15 +41,15 @@ flowchart TD
     subgraph "admin_required_decorator - Декоратор администратора"
         A1[("Начало: admin_required_decorator(f)")] --> A2["Обернуть функцию f"]
         A2 --> A3[("decorated_function(*args, **kwargs)")]
-        A3 --> A4{"current_user.is_authenticated<br/>AND<br/>current_user.is_admin?"}
-        A4 -->|Да (авторизован)| A5["Вызвать f(*args, **kwargs)"]
+        A3 --> A4{"current_user.is_authenticated AND current_user.is_admin?"}
+        A4 -->|Да| A5["Вызвать f(*args, **kwargs)"]
         A5 --> A15["Вернуть результат f"]
         A15 --> A16[("Конец")]
-        A4 -->|Нет (не авторизован)| A6{"request.path<br/>startswith('/api/')?"}
-        A6 -->|Да (API запрос)| A7["Импортировать jsonify"]
-        A7 --> A8["Вернуть JSON 401:<br/>{error: 'Требуется авторизация администратора',<br/>status: 'unauthorized'}"]
+        A4 -->|Нет| A6{"request.path startswith '/api/'?"}
+        A6 -->|Да| A7["Импортировать jsonify"]
+        A7 --> A8["Вернуть JSON 401: error='Требуется авторизация администратора'"]
         A8 --> A16
-        A6 -->|Нет (веб запрос)| A9["flash('Требуется права администратора', 'error')"]
+        A6 -->|Нет| A9["flash('Требуется права администратора', 'error')"]
         A9 --> A10["Получить SCRIPT_NAME из environ"]
         A10 --> A11{"SCRIPT_NAME пустой?"}
         A11 -->|Да| A12["script_name = '/navigator'"]
