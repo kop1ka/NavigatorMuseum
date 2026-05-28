@@ -35,6 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {Object} data - Дополнительные данные события
      */
     function logEvent(type, id, objType, desc, data = {}) {
+        // Извлекаем status из additional_data если он там есть
+        const status = data.status || null;
+        
         fetch('/navigator/api/audit/logs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -43,6 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 object_id: id,
                 object_type: objType,
                 description: desc,
+                status: status,
                 additional_data: data
             })
         }).catch(err => console.warn('Аудит не отправлен:', err)); 
