@@ -107,32 +107,43 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {Array} items - Массив элементов для поиска (по умолчанию - корневые элементы)
      * @returns {Array} - Найденные элементы с полным путём в свойстве searchPath
      */
+   // Функция поиска по каталогу: возвращает массив узлов, имя которых содержит query
     function searchCatalog(query, items = state.catalog?.children || []) {
+        // Если запрос пустой или состоит из пробелов — не ищем ничего
         if (!query?.trim()) return [];
         
+        // Приводим поисковую строку к нижнему регистру и обрезаем пробелы один раз
         const searchQuery = query.toLowerCase().trim();
         
+        // Рекурсивный обход дерева каталогов
+        // nodeList - массив узлов на текущем уровне, currentPath - путь от корня до этих узлов
         function findMatchesInTree(nodeList, currentPath = []) {
-            const results = [];
+            const results = []; // накапливаем найденные узлы
             
             for (const node of nodeList) {
+                // Формируем путь к текущему узлу: старый путь + имя узла
                 const newPath = [...currentPath, node.name];
                 
+                // Если имя узла (без учёта регистра) содержит искомую подстроку
                 if (node.name.toLowerCase().includes(searchQuery)) {
+                    // Добавляем узел в результат, дополняя его полем searchPath (склеенный путь через " / ")
                     results.push({
                         ...node,
                         searchPath: newPath.join(' / ')
                     });
                 }
                 
+                // Если у узла есть дочерние элементы — рекурсивно ищем в них,
+                // передавая обновлённый путь
                 if (node.children?.length > 0) {
                     results.push(...findMatchesInTree(node.children, newPath));
                 }
             }
             
-            return results;
+            return results; // возвращаем все найденные узлы на текущей и вложенных ветках
         }
         
+        // Запускаем рекурсию с корневыми элементами каталога
         return findMatchesInTree(items);
     }
 
