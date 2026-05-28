@@ -115,7 +115,7 @@ def get_yekaterinburg_time():
 
 
 def log_audit_event(event_type, object_id, object_type=None, description=None, 
-                    additional_data=None, username=None):
+                    additional_data=None, username=None, status=None):
     """
     Записать событие в журнал аудита
     
@@ -126,6 +126,7 @@ def log_audit_event(event_type, object_id, object_type=None, description=None,
         description (str, optional): Описание события
         additional_data (dict, optional): Дополнительные данные
         username (str, optional): Имя пользователя
+        status (str|int, optional): Статус события (success, error, initiated, или HTTP статус код)
     
     Returns:
         dict: Созданная запись аудита
@@ -142,6 +143,7 @@ def log_audit_event(event_type, object_id, object_type=None, description=None,
         'ip_address': get_client_ip(),
         'username': username,
         'description': description,
+        'status': status,
         'additional_data': additional_data or {}
     }
     
@@ -189,7 +191,7 @@ def save_audit_entry(entry):
         json.dump(logs, f, indent=2, ensure_ascii=False)
 
 
-def audit_error(error_type, object_id, description=None, exception=None, additional_data=None):
+def audit_error(error_type, object_id, description=None, exception=None, additional_data=None, status=None):
     """
     Зафиксировать ошибку в журнале аудита
     
@@ -199,6 +201,7 @@ def audit_error(error_type, object_id, description=None, exception=None, additio
         description (str, optional): Описание ошибки
         exception (Exception, optional): Объект исключения
         additional_data (dict, optional): Дополнительные данные
+        status (str|int, optional): Статус события
     
     Returns:
         dict: Запись аудита
@@ -218,7 +221,8 @@ def audit_error(error_type, object_id, description=None, exception=None, additio
         object_type='error',
         description=description or f'Ошибка: {error_type}',
         additional_data=data,
-        username=username
+        username=username,
+        status=status or 'error'
     )
 
 
@@ -245,7 +249,7 @@ def _get_current_user_info():
         return None
 
 
-def audit_upload_success(object_id, object_type='item', description=None, additional_data=None):
+def audit_upload_success(object_id, object_type='item', description=None, additional_data=None, status=None):
     """
     Зафиксировать успешную загрузку элемента
     
@@ -254,6 +258,7 @@ def audit_upload_success(object_id, object_type='item', description=None, additi
         object_type (str, optional): Тип элемента
         description (str, optional): Описание
         additional_data (dict, optional): Дополнительные данные
+        status (str|int, optional): Статус события
     
     Returns:
         dict: Запись аудита
@@ -266,11 +271,12 @@ def audit_upload_success(object_id, object_type='item', description=None, additi
         object_type=object_type,
         description=description or f'Успешная загрузка: {object_id}',
         additional_data=additional_data or {},
-        username=username
+        username=username,
+        status=status or 'success'
     )
 
 
-def audit_web_resource(event_type, object_id, object_type='resource', description=None, additional_data=None):
+def audit_web_resource(event_type, object_id, object_type='resource', description=None, additional_data=None, status=None):
     """
     Зафиксировать событие с веб-ресурсом
     
@@ -280,6 +286,7 @@ def audit_web_resource(event_type, object_id, object_type='resource', descriptio
         object_type (str, optional): Тип ресурса
         description (str, optional): Описание
         additional_data (dict, optional): Дополнительные данные
+        status (str|int, optional): Статус события
     
     Returns:
         dict: Запись аудита
@@ -303,11 +310,12 @@ def audit_web_resource(event_type, object_id, object_type='resource', descriptio
         object_type=object_type,
         description=description or f'Операция с ресурсом: {event_type}',
         additional_data=additional_data or {},
-        username=username
+        username=username,
+        status=status
     )
 
 
-def audit_filesystem_read(file_path, description=None, additional_data=None):
+def audit_filesystem_read(file_path, description=None, additional_data=None, status=None):
     """
     Зафиксировать чтение файла из файловой системы
     
@@ -315,6 +323,7 @@ def audit_filesystem_read(file_path, description=None, additional_data=None):
         file_path (str): Путь к прочитанному файлу
         description (str, optional): Описание
         additional_data (dict, optional): Дополнительные данные
+        status (str|int, optional): Статус события
     
     Returns:
         dict: Запись аудита
@@ -330,7 +339,8 @@ def audit_filesystem_read(file_path, description=None, additional_data=None):
             'file_path': file_path,
             **(additional_data or {})
         },
-        username=username
+        username=username,
+        status=status
     )
 
 
@@ -368,7 +378,8 @@ def audit_catalog_item_open(item_path, item_name, status_code, item_type='item',
         object_type=item_type,
         description=description or f'Открытие элемента каталога: {item_name} (статус: {status_code})',
         additional_data=data,
-        username=username
+        username=username,
+        status=status_text
     )
 
 

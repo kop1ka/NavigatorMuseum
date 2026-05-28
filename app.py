@@ -947,6 +947,7 @@ def handle_audit_logs():
             object_type = data.get('object_type', 'web_event')
             description = data.get('description', '')
             additional_data = data.get('additional_data', {})
+            status = data.get('status')
             
             # Получаем имя пользователя если доступна авторизация
             username = current_user.username if hasattr(current_user, 'username') and current_user.is_authenticated else None
@@ -959,7 +960,8 @@ def handle_audit_logs():
                 object_type=object_type,
                 description=description,
                 additional_data=additional_data,
-                username=username
+                username=username,
+                status=status
             )
             
             return jsonify({
