@@ -1032,131 +1032,73 @@ def permanent_api():
 @app.route('/api/items', methods=['POST', 'PUT', 'DELETE'])
 @login_required
 @admin_required_decorator
-@csrf.exempt  # Освободить от CSRF защиты
+@csrf.exempt
 def items_api():
-    """
-    API endpoint для CRUD операций с элементами каталога
-    
-    Методы:
-        POST: Создать новую папку
-        PUT: Обновить существующий элемент
-        DELETE: Удалить элемент
-    
-    Request Body:
-        path: Путь элемента
-        name: Имя элемента (для POST)
-        parent_path: Путь родительской папки (для POST)
-        updates: Словарь обновлений (для PUT)
-    
-    Returns:
-        Response: JSON объект со статусом операции
-    """
+    """API для управления элементами каталога (Create/Update/Delete)"""
     catalog = load_catalog(CATALOG_FILE)
-    data = request.json
-    path = data.get('path', '')
-    
-    if request.method == 'POST':
-        name = data.get('name')
-        parent_path = data.get('parent_path', '')
-        icon = data.get('icon', 'folder.png')
-        url = data.get('url')
-        
-        # Определить целевой список для добавления
+    data = request.json or {}
+    path = data.get('path', '').strip('/')
+
+    def get_target_list(parent_path):
+        """Находит список children родителя или возвращает корень каталога."""
         if not parent_path:
-            target_list = catalog['children']
-        else:
-            parent_item = find_item_by_path(catalog['children'], parent_path)
-            if parent_item and 'children' in parent_item:
-                target_list = parent_item['children']
-            else:
-                return jsonify({'error': 'Parent not found'}), 404
-        
-        # Создать новый элемент
-        new_item = {'name': name, 'icon': icon, 'children': []}
-        if url:
-            new_item['url'] = url
-        target_list.append(new_item)
+            return catalog['children']
+        parent = find_item_by_path(catalog['children'], parent_path)
+        return parent.get('children') if parent else None
+
+    def save_and_audit(action, item_name, status_msg='success', status_code=200):
+        """Сохраняет каталог, пишет в аудит с указанием статуса и отдаёт ответ."""
         save_catalog(CATALOG_FILE, catalog)
-        
-        # Аудит: добавление ресурса
-        audit_web_resource('add', path or name, description=f'Добавлен новый элемент: {name}')
-        
-        response = jsonify({'status': 'success'})
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        return response
-    
-    elif request.method == 'DELETE':
-        if delete_item_by_path(catalog['children'], path):
-            save_catalog(CATALOG_FILE, catalog)
-            
-            # Аудит: удаление ресурса
-            audit_web_resource('delete', path, description=f'Удален элемент: {path}')
-            
-            response = jsonify({'status': 'success'})
-            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-            return response
-        return jsonify({'error': 'Not found'}), 404
-    
+        # Статус передаётся в аудит для отслеживания результатов в логах
+        audit_web_resource(
+            action,
+            path or item_name,
+            description=f'{action.capitalize()} элемента: {item_name}',
+            status=status_msg
+        )
+        resp = jsonify({'status': status_msg})
+        resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        return resp, status_code
+
+    # 📥 POST: Создание нового элемента
+    if request.method == 'POST':
+        target = get_target_list(data.get('parent_path', ''))
+        if target is None:
+            return jsonify({'error': 'Parent folder not found'}), 404
+
+        new_item = {'name': data.get('name'), 'icon': data.get('icon', 'folder.png'), 'children': []}
+        if data.get('url'): new_item['url'] = data['url']
+        target.append(new_item)
+        return save_and_audit('add', new_item['name'], status_msg='success')
+
+    #  PUT: Обновление существующего или создание нового (fallback)
     elif request.method == 'PUT':
         updates = data.get('updates', {})
-        
-        # Если в обновлениях есть icon, нужно также установить permanent=True
-        if 'icon' in updates and updates['icon']:
-            updates['permanent'] = True
-        
-        # Попытаться обновить существующий элемент
-        if update_item_by_path(catalog['children'], path, updates):
-            save_catalog(CATALOG_FILE, catalog)
-            
-            # Аудит: изменение ресурса
-            audit_web_resource('change', path, description=f'Обновлен элемент: {path}')
-            
-            response = jsonify({'status': 'success'})
-            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-            return response
-        
-        # Элемент не найден - создать его автоматически
-        # Разбить путь на части для определения родительской папки
-        path_parts = path.split('/')
-        if len(path_parts) > 1:
-            parent_path = '/'.join(path_parts[:-1])
-            item_name = path_parts[-1]
-        else:
-            parent_path = ''
-            item_name = path
-        
-        # Определить целевой список для добавления
-        if not parent_path:
-            target_list = catalog['children']
-        else:
-            parent_item = find_item_by_path(catalog['children'], parent_path)
-            if parent_item and 'children' in parent_item:
-                target_list = parent_item['children']
-            else:
-                # Родительская папка не найдена - создать её рекурсивно
-                # Для простоты создаём в корне
-                target_list = catalog['children']
-                parent_path = ''
-        
-        # Создать новый элемент с данными из updates
-        new_item = {
-            'name': updates.get('name', item_name.upper()),
-            'icon': updates.get('icon', 'folder.png'),
-            'children': []
-        }
-        if 'url' in updates:
-            new_item['url'] = updates['url']
-        if updates.get('permanent'):
-            new_item['permanent'] = True
-        
-        target_list.append(new_item)
-        save_catalog(CATALOG_FILE, catalog)
-        response = jsonify({'status': 'created'})
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        return response
-    
-    return jsonify({'error': 'Invalid method'}), 400
+        if updates.get('icon'): updates['permanent'] = True
 
+        # 1. Попытка обновить существующий элемент
+        if update_item_by_path(catalog['children'], path, updates):
+            return save_and_audit('change', path, status_msg='success')
+
+        # 2. Fallback: элемента нет → создаём автоматически по пути
+        parts = path.split('/')
+        item_name = parts[-1]
+        target = get_target_list('/'.join(parts[:-1])) or catalog['children']
+
+        new_item = {'name': updates.get('name', item_name), 'icon': updates.get('icon', 'folder.png'), 'children': []}
+        if 'url' in updates: new_item['url'] = updates['url']
+        if updates.get('permanent'): new_item['permanent'] = True
+        
+        target.append(new_item)
+        return save_and_audit('add', item_name, status_msg='created')
+
+    # DELETE: Удаление элемента по пути
+    elif request.method == 'DELETE':
+        if delete_item_by_path(catalog['children'], path):
+            return save_and_audit('delete', path, status_msg='success')
+        return jsonify({'error': 'Item not found'}), 404
+
+    return jsonify({'error': 'Invalid method'}), 400
 
 @app.route('/api/images')
 def get_images():
