@@ -41,12 +41,6 @@ from config.settings import (
     LOGIN_VIEW, LOGIN_MESSAGE, SESSION_PROTECTION
 )
 
-# Директория для проектов
-PROJECTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'projects')
-
-# Словарь для хранения информации о проектах Flask
-project_flask_info = {}
-
 # Импорт утилит для работы с данными, парсингом, аутентификацией и каталогом
 from utils.data_utils import (
     ensure_data_dir, load_json_file, save_json_file, get_current_timestamp, get_full_timestamp,
@@ -88,7 +82,7 @@ class PathPrefixMiddleware:
     
     ВАЖНО: Этот middleware удаляет префикс /navigator из PATH_INFO, поэтому
     маршруты в Flask должны быть объявлены БЕЗ префикса /navigator.
-    Например: @app.route('/projects/...'), а НЕ @app.route('/navigator/projects/...')
+    Например: @app.route('/login'), а НЕ @app.route('/navigator/login')
     """
     def __init__(self, app, prefix):
         self.app = app
@@ -142,7 +136,7 @@ csrf = CSRFProtect(app)  # Защита от CSRF атак
 # Отключаем rate limiting для статических файлов
 def limiter_enabled():
     """Проверка, включен ли rate limiting для текущего запроса"""
-    static_paths = ('/page/', '/static/', '/projects/', '/css/', '/js/')
+    static_paths = ('/page/', '/static/', '/css/', '/js/')
     if request.path.startswith(static_paths):
         return False
     return RATELIMIT_ENABLED
@@ -696,8 +690,6 @@ def video_player():
     return response
 
 
-
-
 @app.route('/api/catalog')
 def get_catalog():
     """
@@ -715,109 +707,6 @@ def get_catalog():
     permanent_items = load_permanent_items(PERMANENT_FILE)
     permanent_paths = set(permanent_items.get('permanent_items', []))
     mark_permanent_recursive(catalog.get('children', []), permanent_paths)
-    
-    # Добавляем проекты из папки projects напрямую в каталог (без создания папки projects)
-    if os.path.exists(PROJECTS_DIR):
-        # Собираем все проекты из файловой системы
-        project_items = []
-        for project_name in os.listdir(PROJECTS_DIR):
-            project_path = os.path.join(PROJECTS_DIR, project_name)
-            if os.path.isdir(project_path):
-                # Ищем index.html в нескольких возможных местах
-                possible_index_paths = [
-                    os.path.join(project_path, 'index.html'),
-                    os.path.join(project_path, 'templates', 'index.html'),
-                    os.path.join(project_path, 'app', 'index.html')
-                ]
-                
-                index_html_path = None
-                for possible_path in possible_index_paths:
-                    if os.path.exists(possible_path):
-                        index_html_path = possible_path
-                        break
-                
-                if index_html_path is None:
-                    # Если нет index.html, но есть app.py (Flask проект), всё равно добавляем проект
-                    flask_app_path = os.path.join(project_path, 'app.py')
-                    if not os.path.exists(flask_app_path):
-                        continue
-                    # Используем app.py для определения времени модификации
-                    index_html_path = flask_app_path
-                
-                # Проверяем, есть ли Flask приложение в проекте
-                flask_app_path = os.path.join(project_path, 'app.py')
-                has_flask = os.path.exists(flask_app_path)
-                
-                # Если это Flask приложение, сохраняем информацию о нём
-                if has_flask:
-                    project_flask_info[project_name] = {
-                        'app_path': flask_app_path,
-                        'loaded': False,
-                        'error': None,
-                        'is_blueprint': True  # Флаг для Blueprint проектов
-                    }
-                
-                project_items.append({
-                    'name': project_name,
-                    'path': project_path,
-                    'index_html_path': index_html_path,
-                    'has_flask': has_flask
-                })
-        
-        # Создаём словарь существующих проектов для быстрого поиска
-        existing_project_indices = {}
-        children = catalog.get('children') or []
-        for idx, item in enumerate(children):
-            if item and isinstance(item, dict):
-                url_val = item.get('url')
-                if url_val and str(url_val).startswith('/projects/'):
-                    project_name_from_url = url_val.split('/')[2]
-                    existing_project_indices[project_name_from_url.lower()] = idx
-        
-        # Сначала удаляем все существующие проекты из каталога (сохраняя их настройки)
-        saved_project_settings = {}
-        for proj_info in project_items:
-            project_name = proj_info['name']
-            existing_idx = existing_project_indices.get(project_name.lower())
-            if existing_idx is not None:
-                existing_project = children[existing_idx]
-                # Сохраняем пользовательские настройки (иконку, имя)
-                icon_to_use = "page/logo.png"
-                if existing_project.get('icon'):
-                    existing_icon = existing_project.get('icon', '')
-                    if existing_icon and existing_icon.strip() != '' and existing_icon != 'page/logo.png':
-                        icon_to_use = existing_icon
-                
-                saved_project_settings[project_name.lower()] = {
-                    'icon': icon_to_use,
-                    'name': existing_project.get('name', project_name)
-                }
-        
-        # Удаляем старые записи проектов из каталога (начиная с конца, чтобы индексы не сдвигались)
-        for project_name in sorted(existing_project_indices.keys(), key=lambda k: existing_project_indices[k], reverse=True):
-            idx = existing_project_indices[project_name]
-            children.pop(idx)
-        
-        # Добавляем все проекты в начало каталога в алфавитном порядке
-        # Получаем префикс пути из SCRIPT_NAME для корректной работы в подкаталоге (например, /navigator)
-        path_prefix = request.environ.get('SCRIPT_NAME', '').rstrip('/')
-        # Если path_prefix пустой, используем глобальный URL_PREFIX
-        if not path_prefix:
-            path_prefix = URL_PREFIX
-        for proj_info in sorted(project_items, key=lambda x: x['name']):
-            project_name = proj_info['name']
-            settings = saved_project_settings.get(project_name.lower(), {})
-            
-            project_item = {
-                "name": settings.get('name', project_name),
-                "icon": settings.get('icon', "page/logo.png"),
-                "children": None,
-                "url": f"{path_prefix}/projects/{project_name}/index.html",
-                "modified": datetime.fromtimestamp(os.path.getmtime(proj_info['index_html_path'])).strftime('%Y-%m-%d %H:%M'),
-                "permanent": True,
-                "has_flask": proj_info['has_flask']
-            }
-            catalog["children"].insert(0, project_item)
     
     response = jsonify(catalog)
     # Добавляем заголовки для предотвращения кэширования API ответов
@@ -871,8 +760,6 @@ def start_parser():
         thread.start()
         return jsonify({'status': 'started'})
     return jsonify({'status': 'already_running'})
-
-
 
 
 @app.route('/api/parser/reset', methods=['POST'])
@@ -1374,210 +1261,6 @@ def serve_js(filename):
     response = send_from_directory(js_dir, filename, max_age=86400)
     response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
     return response
-
-
-
-# -------------------------------------------------------------------
-# Маршруты для проектов (с учётом префикса /navigator)
-# -------------------------------------------------------------------
-# Примечание: Middleware PathPrefixMiddleware автоматически удаляет префикс
-# /navigator из PATH_INFO, поэтому маршруты объявляются БЕЗ префикса.
-# Пользователь обращается по адресу /navigator/projects/..., но Flask
-# получает запрос как /projects/...
-
-@app.route('/projects/<project_name>/static/<path:filename>')
-def serve_project_static(project_name, filename):
-    """
-    API endpoint для раздачи статических файлов проектов из папки projects/<project>/static/
-    
-    Этот маршрут должен быть объявлен ДО общего маршрута /projects/<path:filename>,
-    чтобы перехватывать запросы к статике до того, как они попадут в общий обработчик.
-    Поддерживает оба варианта: с префиксом /navigator и без него.
-
-    Args:
-        project_name: Имя проекта
-        filename: Путь к файлу относительно папки static проекта
-
-    Returns:
-        Response: Статический файл проекта (css, js, images, etc.)
-    """
-    project_path = os.path.join(PROJECTS_DIR, project_name)
-    static_folder = os.path.join(project_path, 'static')
-    
-    # Проверяем существование проекта и папки static
-    if not os.path.exists(static_folder) or not os.path.isdir(static_folder):
-        return jsonify({'error': f'Статика не найдена для проекта: {project_name}'}), 404
-    
-    return send_from_directory(static_folder, filename, max_age=86400)
-
-
-@app.route('/projects/<path:remaining_path>', methods=['GET', 'HEAD', 'OPTIONS'])
-def serve_project_file_with_path(remaining_path):
-    """
-    API endpoint для раздачи файлов проектов с явным указанием пути
-    Обработчик для запросов вида /projects/<project_name>/<остальной_путь>
-    
-    Args:
-        remaining_path: Полный путь включая имя проекта и остальной путь
-    
-    Returns:
-        Response: Файл проекта или ответ от Flask приложения проекта
-    """
-    # Декодируем URL на случай кириллических символов
-    remaining_path = unquote(remaining_path)
-    
-    # Разделяем путь на имя проекта и остальной путь
-    parts = remaining_path.split('/', 1)
-    if len(parts) < 1 or not parts[0]:
-        return jsonify({'error': 'Некорректный путь к проекту'}), 400
-    
-    project_name = parts[0]
-    file_path_suffix = parts[1] if len(parts) > 1 else ''
-    
-    project_path = os.path.join(PROJECTS_DIR, project_name)
-    
-    # Аудит: открытие элемента каталога (проекта)
-    audit_catalog_item_open(
-        item_path=f'/projects/{project_name}/{file_path_suffix}' if file_path_suffix else f'/projects/{project_name}',
-        item_name=project_name,
-        status_code=200,  # Будет обновлен ниже при ошибках
-        item_type='project'
-    )
-    
-    # Проверяем существование проекта
-    if not os.path.exists(project_path) or not os.path.isdir(project_path):
-        # Обновляем аудит с ошибкой 404
-        audit_catalog_item_open(
-            item_path=f'/projects/{project_name}',
-            item_name=project_name,
-            status_code=404,
-            item_type='project',
-            description=f'Проект не найден: {project_name}'
-        )
-        return jsonify({'error': f'Проект не найден: {project_name}'}), 404
-    
-    # Проверяем, есть ли у этого проекта Flask приложение
-    if project_name in project_flask_info:
-        flask_info = project_flask_info[project_name]
-        
-        # Загружаем Flask приложение при первом запросе, если ещё не загружено
-        if not flask_info.get('loaded') and flask_info.get('app_path'):
-            try:
-                import importlib.util
-                import sys
-                
-                # Добавляем директорию проекта в sys.path для корректных импортов
-                project_dir = os.path.dirname(flask_info['app_path'])
-                if project_dir not in sys.path:
-                    sys.path.insert(0, project_dir)
-                
-                spec = importlib.util.spec_from_file_location(f"{project_name}_app", flask_info['app_path'])
-                if spec and spec.loader:
-                    project_module = importlib.util.module_from_spec(spec)
-                    # Добавляем проект в sys.modules для корректной работы импортов
-                    sys.modules[f"{project_name}_app"] = project_module
-                    spec.loader.exec_module(project_module)
-                    
-                    # Проверяем, является ли проект Blueprint
-                    if flask_info.get('is_blueprint') and hasattr(project_module, 'parad_zvezd_bp'):
-                        # Это Blueprint - сохраняем его для последующей регистрации
-                        blueprint = project_module.parad_zvezd_bp
-                        project_flask_info[project_name]['blueprint'] = blueprint
-                        project_flask_info[project_name]['loaded'] = True
-                        print(f"Blueprint '{project_name}' загружен (статика: {blueprint.static_url_path})")
-                    elif hasattr(project_module, 'app'):
-                        # Это обычное Flask приложение
-                        flask_app = project_module.app
-                        project_flask_info[project_name]['app'] = flask_app
-                        project_flask_info[project_name]['loaded'] = True
-                        print(f"Flask приложение '{project_name}' успешно загружено")
-            except Exception as e:
-                error_msg = f"Ошибка загрузки Flask приложения '{project_name}': {e}"
-                print(error_msg)
-                import traceback
-                traceback.print_exc()
-                project_flask_info[project_name]['error'] = error_msg
-                pass
-        
-        # Если Flask приложение загружено, пробуем обработать запрос через него
-        if flask_info.get('loaded') and 'app' in flask_info and not flask_info.get('is_blueprint'):
-            flask_app = flask_info['app']
-            try:
-                environ = request.environ.copy()
-                environ['PATH_INFO'] = '/' + file_path_suffix
-                environ['SCRIPT_NAME'] = f'/projects/{project_name}'
-                
-                response_iter = flask_app(environ, lambda status, headers: None)
-                
-                if response_iter:
-                    from flask import Response
-                    if isinstance(response_iter, Response):
-                        return response_iter
-                    body = b''.join(response_iter)
-                    return Response(body, status='200 OK', content_type='text/html; charset=utf-8')
-            except Exception as e:
-                print(f"Ошибка обработки запроса Flask приложением '{project_name}': {e}")
-                import traceback
-                traceback.print_exc()
-    
-    # Стандартная обработка - пробуем найти файл
-    if file_path_suffix:
-        file_path = os.path.join(project_path, file_path_suffix)
-        if os.path.exists(file_path) and os.path.isfile(file_path):
-            # Аудит: успешное открытие файла проекта
-            audit_catalog_item_open(
-                item_path=f'/projects/{project_name}/{file_path_suffix}',
-                item_name=file_path_suffix,
-                status_code=200,
-                item_type='file'
-            )
-            return send_from_directory(project_path, file_path_suffix, max_age=86400)
-        
-        # Для проектов с шаблонами в templates/
-        templates_path = os.path.join(project_path, 'templates', file_path_suffix)
-        if os.path.exists(templates_path) and os.path.isfile(templates_path):
-            # Аудит: успешное открытие файла из templates
-            audit_catalog_item_open(
-                item_path=f'/projects/{project_name}/templates/{file_path_suffix}',
-                item_name=file_path_suffix,
-                status_code=200,
-                item_type='template'
-            )
-            return send_from_directory(os.path.join(project_path, 'templates'), file_path_suffix, max_age=86400)
-        
-        # Для статических файлов в static/
-        static_path = os.path.join(project_path, 'static', file_path_suffix)
-        if os.path.exists(static_path) and os.path.isfile(static_path):
-            # Аудит: успешное открытие файла из static
-            audit_catalog_item_open(
-                item_path=f'/projects/{project_name}/static/{file_path_suffix}',
-                item_name=file_path_suffix,
-                status_code=200,
-                item_type='static'
-            )
-            return send_from_directory(os.path.join(project_path, 'static'), file_path_suffix, max_age=86400)
-    else:
-        # Если file_path_suffix пустой, отдаём index.html
-        index_path = os.path.join(project_path, 'index.html')
-        if os.path.exists(index_path) and os.path.isfile(index_path):
-            # Аудит: успешное открытие index.html проекта
-            audit_catalog_item_open(
-                item_path=f'/projects/{project_name}/index.html',
-                item_name='index.html',
-                status_code=200,
-                item_type='index'
-            )
-            return send_from_directory(project_path, 'index.html', max_age=86400)
-    
-    # Аудит: файл не найден (404)
-    audit_catalog_item_open(
-        item_path=f'/projects/{project_name}/{file_path_suffix}' if file_path_suffix else f'/projects/{project_name}',
-        item_name=file_path_suffix or 'index.html',
-        status_code=404,
-        item_type='file',
-        description=f'Файл не найден: {file_path_suffix}'
-    )
-    return jsonify({'error': f'Файл не найден: {file_path_suffix}'}), 404
 
 
 @app.route('/api/video-proxy')
