@@ -1,379 +1,1109 @@
+ // Глобальные переменные
+        let catalogData = null;
+        let permanentItems = [];
+        let availableImages = [];
+        let selectedElement = null;
+        let selectedImage = null;
+        let filteredImages = [];
+        let parserCheckTimeout = null; // Флаг для отслеживания таймера проверки парсера
 
-const state = {
-  catalog: null,
-  permanent: [],
-  images: [],
-  filteredImages: [],
-  selected: null,
-  selectedImage: null
-};
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadCatalog();
+            await loadPermanentItems();
+            await loadImages();
+            await loadParserStatus();
+            setupTabs();
+            setupForms();
+            setupSearch();
+            renderParentList();
+            renderImportParentList();
+            
+            // Слушаем события обновления из других вкладок
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'catalogUpdated') {
+                    // Обновить данные при изменении в другой вкладке
+                    loadCatalog();
+                    loadImages();
+                    loadPermanentItems();
+                    showStatus('Данные обновлены после завершения парсинга', 'success');
+                }
+            });
+        });
 
+        // Загрузка каталога
+        async function loadCatalog() {
+            try {
+                const response = await fetch('/navigator/api/catalog', { credentials: 'include' });
+                catalogData = await response.json();
+                renderCatalogTree();
+                renderParentList();
+                renderImportParentList();
+            } catch (error) {
+                showStatus('Ошибка загрузки каталога: ' + error.message, 'error');
+            }
+        }
 
-// Утилиты
+        // Загрузка постоянных элементов
+        async function loadPermanentItems() {
+            try {
+                const response = await fetch('/navigator/api/permanent', { credentials: 'include' });
+                const data = await response.json();
+                permanentItems = data.permanent_items || [];
+            } catch (error) {
+                console.error('Ошибка загрузки постоянных элементов:', error);
+            }
+        }
 
-/**
- * парсит JSON, выбрасывает осмысленную ошибку при HTTP 4xx/5xx.
- */
-const api = async (url, opts = {}) => {
-  const res = await fetch(`/navigator/api/${url}`, { credentials: 'include', ...opts });
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
-  return res.json();
-};
+        // Загрузка доступных изображений
+        async function loadImages() {
+            try {
+                const response = await fetch('/navigator/api/images', { credentials: 'include' });
+                availableImages = await response.json();
+                filteredImages = [...availableImages];
+                populateImageSelects();
+                renderImagesGrids();
+            } catch (error) {
+                console.error('Ошибка загрузки изображений:', error);
+            }
+        }
 
-const cleanIcon = url => isPlaceholder(url) ? '' : (url ?? '');
+        // Рендеринг дерева каталога с возможностью сворачивания/разворачивания
+        function renderCatalogTree(items = catalogData.children, parentPath = '', container = null, isRoot = true) {
+            if (!container) {
+                container = document.getElementById('catalogTree');
+                container.innerHTML = '';
+            }
 
-// Показывает тост-уведомление. Автоматически скрывается через 5 сек.
-const showStatus = (msg, type = 'info') => {
-  const el = document.getElementById('statusMessage');
-  el.textContent = msg;
-  el.className = `status-message status-${type}`;
-  el.classList.remove('hidden');
-  setTimeout(() => el.classList.add('hidden'), 5000);
-};
+            items.forEach(item => {
+                const currentPath = parentPath ? `${parentPath}/${item.name}` : item.name;
+                const isPermanent = permanentItems.includes(currentPath);
+                const hasChildren = item.children && item.children.length > 0;
 
-// Браузерное уведомление. Аккуратно обрабатывает отсутствие разрешений.
-const notify = (title, body) => {
-  if (!('Notification' in window)) return;
-  const send = () => new Notification(title, { body, icon: './page/logo.png', tag: 'parser-done' });
-  Notification.permission === 'granted' ? send() : Notification.permission !== 'denied' && Notification.requestPermission().then(p => p === 'granted' && send());
-};
+                const treeItem = document.createElement('div');
+                treeItem.className = `tree-item${isPermanent ? ' permanent' : ''}`;
+                treeItem.dataset.path = currentPath;
+                
+                const toggleIcon = hasChildren ? '<span class="tree-toggle expanded"></span>' : '<span class="tree-toggle" style="visibility:hidden"></span>';
+                
+                // Определяем иконку для элемента
+                let itemIcon = '📁';
+                if (!hasChildren) {
+                    if (item.icon) {
+                        // Проверяем, является ли иконка URL-заглушкой
+                        const placeholderUrls = [
+                            'https://vm-ftp.anosov.ru/icons/folder.gif',
+                            'http://vm-ftp.anosov.ru/icons/folder.gif',
+                            'vm-ftp.anosov.ru/icons/folder.gif'
+                        ];
+                        
+                        let isPlaceholder = false;
+                        for (const placeholderUrl of placeholderUrls) {
+                            if (item.icon.includes(placeholderUrl)) {
+                                isPlaceholder = true;
+                                break;
+                            }
+                        }
+                        
+                        // Если иконка не пустая и не заглушка - используем 📄
+                        if (!isPlaceholder && item.icon.trim() !== '') {
+                            itemIcon = '📄';
+                        } else {
+                            itemIcon = '📁';
+                        }
+                    } else {
+                        itemIcon = '📁';
+                    }
+                }
+                
+                treeItem.innerHTML = `
+                    ${toggleIcon}
+                    <span>${itemIcon}</span>
+                    <span>${item.name.toUpperCase()}</span>
+                `;
 
-// Загрузка данных
+                // Обработчик клика для выбора элемента
+                treeItem.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('tree-toggle')) {
+                        toggleTreeChildren(treeItem, currentPath);
+                    } else {
+                        selectTreeItem(treeItem, currentPath, item);
+                    }
+                });
 
-// Выгружаем всё начальное состояние и сразу рендерим UI. Вызывается при старте и после любых изменений.
-const loadData = async () => {
-  state.catalog = await api('catalog');
-  state.permanent = (await api('permanent')).permanent_items ?? [];
-  state.images = await api('images');
-  state.filteredImages = [...state.images];
-  renderTree();
-  renderParents('parentList', 'addParentPath');
-  renderParents('importParentList', 'importParentPath');
-  populateSelects();
-  renderImageGrids();
-  await updateParserStatus();
-};
+                container.appendChild(treeItem);
 
-// Рендер дерева каталога
+                if (hasChildren) {
+                    const childrenContainer = document.createElement('div');
+                    childrenContainer.className = 'tree-children';
+                    childrenContainer.dataset.parentPath = currentPath;
+                    renderCatalogTree(item.children, currentPath, childrenContainer, false);
+                    container.appendChild(childrenContainer);
+                }
+            });
+        }
 
-/**
- * Рекурсивно строит DOM-дерево. 
- * Используем data-path для привязки узлов, а не индексы массива → это спасает от багов при удалении/перемещении.
- */
-const renderTree = (items = state.catalog?.children ?? [], path = '', container = document.getElementById('catalogTree'), isRoot = true) => {
-  if (isRoot) container.innerHTML = '';
-  items.forEach(item => {
-    const cur = path ? `${path}/${item.name}` : item.name;
-    const isPerm = state.permanent.includes(cur);
-    const hasKids = item.children?.length > 0;
-    // Иконка: если нет детей и есть валидная картинка → 📄, иначе 📁
-    const icon = !hasKids ? (item.icon && !isPlaceholder(item.icon) ? '📄' : '📁') : '📁';
-    
-    const div = document.createElement('div');
-    div.className = `tree-item${isPerm ? ' permanent' : ''}`;
-    div.dataset.path = cur;
-    div.innerHTML = `<span class="tree-toggle ${hasKids ? 'expanded' : ''}" style="${hasKids ? '' : 'visibility:hidden'}"></span><span>${icon}</span><span>${item.name.toUpperCase()}</span>`;
-    div.onclick = e => e.target.classList.contains('tree-toggle') ? toggleTree(div, cur) : selectTree(div, cur, item);
-    container.appendChild(div);
-    
-    if (hasKids) {
-      const child = document.createElement('div');
-      child.className = 'tree-children hidden';
-      child.dataset.parentPath = cur;
-      renderTree(item.children, cur, child, false);
-      container.appendChild(child);
-    }
-  });
-};
+        // Сворачивание/разворачивание детей
+        function toggleTreeChildren(treeItem, path) {
+            const toggle = treeItem.querySelector('.tree-toggle');
+            const childrenContainer = document.querySelector(`.tree-children[data-parent-path="${path}"]`);
+            
+            if (childrenContainer) {
+                const isHidden = childrenContainer.classList.contains('hidden');
+                if (isHidden) {
+                    childrenContainer.classList.remove('hidden');
+                    toggle.classList.remove('collapsed');
+                    toggle.classList.add('expanded');
+                } else {
+                    childrenContainer.classList.add('hidden');
+                    toggle.classList.remove('expanded');
+                    toggle.classList.add('collapsed');
+                }
+            }
+        }
 
-// Сворачивает/разворачивает вложенные узлы и крутит стрелочку.
-const toggleTree = (el, path) => {
-  const child = document.querySelector(`.tree-children[data-parent-path="${path}"]`);
-  if (!child) return;
-  const toggle = el.querySelector('.tree-toggle');
-  const isHidden = child.classList.toggle('hidden');
-  toggle.classList.toggle('collapsed', isHidden);
-  toggle.classList.toggle('expanded', !isHidden);
-};
+        // Поиск по дереву
+        function searchInTree(query) {
+            const treeItems = document.querySelectorAll('.tree-item');
+            query = query.toLowerCase().trim();
+            
+            treeItems.forEach(item => {
+                const nameSpan = item.querySelector('span:last-child');
+                const displayName = nameSpan ? nameSpan.textContent.toLowerCase() : '';
+                if (query === '' || displayName.includes(query)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
 
-// При клике на элемент: подсвечиваем его в дереве, заполняем форму редактирования, обновляем иконку.
-const selectTree = (el, path, data) => {
-  document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('selected'));
-  el.classList.add('selected');
-  state.selected = { path, ...data };
-  state.selectedImage = data.icon || '';
-  
-  document.getElementById('editPath').value = path;
-  document.getElementById('editName').value = data.name.toUpperCase();
-  document.getElementById('editIcon').value = cleanIcon(data.icon);
-  document.getElementById('editUrl').value = data.url || '';
-  document.getElementById('editPermanent').checked = state.permanent.includes(path);
-  document.getElementById('editForm').classList.remove('hidden');
-  
-  highlightImage(data.icon, 'editImagesGrid');
-  updateTreeIcon(path, data.icon);
-};
+        // Выбор элемента в дереве
+        function selectTreeItem(element, path, itemData) {
+            // Снять выделение со всех элементов
+            document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
 
-// Обновляет только иконку в дереве без полного перерисовывания (оптимизация DOM-операций).
-const updateTreeIcon = (path, icon) => {
-  const el = document.querySelector(`.tree-item[data-path="${path}"] span:nth-child(2)`);
-  if (el) el.textContent = icon && !isPlaceholder(icon) ? '📄' : '📁';
-};
+            selectedElement = { path, ...itemData };
+            
+            // Сохраняем текущую иконку в selectedImage при выборе элемента
+            selectedImage = itemData.icon || '';
 
-// Работа с изображениями
+            // Заполнить форму редактирования
+            document.getElementById('editForm').classList.remove('hidden');
+            document.getElementById('editPath').value = path;
+            document.getElementById('editName').value = itemData.name.toUpperCase();
+            document.getElementById('editIcon').value = itemData.icon || '';
+            document.getElementById('editUrl').value = itemData.url || '';
+            document.getElementById('editPermanent').checked = permanentItems.includes(path);
 
-// Заполняем выпадающие списки доступными картинками.
-const populateSelects = () => ['editIcon', 'addIcon'].forEach(id => {
-  document.getElementById(id).innerHTML = '<option value="">-- Выберите иконку --</option>' +
-    state.images.map(i => `<option value="${i.path}">${i.name}</option>`).join('');
-});
+            // Выделить текущую иконку в сетке
+            highlightSelectedImage(itemData.icon, 'editImagesGrid');
+            
+            // Обновить отображение иконки в дереве (если это файл с изображением)
+            const treeItem = document.querySelector(`.tree-item[data-path="${path}"]`);
+            if (treeItem && itemData.icon) {
+                const iconSpan = treeItem.querySelector('span:nth-child(2)');
+                if (iconSpan) {
+                    // Проверяем, является ли иконка URL-заглушкой
+                    const placeholderUrls = [
+                        'https://vm-ftp.anosov.ru/icons/folder.gif',
+                        'http://vm-ftp.anosov.ru/icons/folder.gif',
+                        'vm-ftp.anosov.ru/icons/folder.gif'
+                    ];
+                    
+                    let isPlaceholder = false;
+                    for (const placeholderUrl of placeholderUrls) {
+                        if (itemData.icon.includes(placeholderUrl)) {
+                            isPlaceholder = true;
+                            break;
+                        }
+                    }
+                    
+                    // Если иконка не пустая и не заглушка - используем 📄, иначе 📁
+                    if (!isPlaceholder && itemData.icon.trim() !== '') {
+                        iconSpan.textContent = '📄';
+                    } else {
+                        iconSpan.textContent = '📁';
+                    }
+                }
+            }
+        }
 
-// Отрисовка обеих сеток (для редактирования и добавления).
-const renderImageGrids = () => {
-  ['editImagesGrid', 'addImagesGrid'].forEach((id, i) => renderGrid(id, i ? 'addIcon' : 'editIcon', state.filteredImages));
-};
+        // Populate image selects
+        function populateImageSelects() {
+            const editSelect = document.getElementById('editIcon');
+            const addSelect = document.getElementById('addIcon');
 
-/**
- * Рендерит кликабельную сетку изображений.
- * Поддерживает внешние URL, ленивую загрузку и скрытие битых картинок.
- */
-const renderGrid = (containerId, selectId, images) => {
-  const c = document.getElementById(containerId);
-  if (!c) return;
-  c.innerHTML = images.map(img => {
-    const src = img.path.startsWith('http') ? img.path : `/${img.path}`;
-    return `<div class="image-item" data-src="${src}"><img src="${src}" alt="${img.name}" loading="lazy" onerror="this.style.display='none'"></div>`;
-  }).join('');
-  
-  c.querySelectorAll('.image-item').forEach(div => {
-    div.onclick = () => {
-      c.querySelectorAll('.image-item').forEach(i => i.classList.remove('selected'));
-      div.classList.add('selected');
-      const src = div.dataset.src;
-      document.getElementById(selectId).value = src;
-      state.selectedImage = src;
-      // Если меняем иконку в режиме редактирования → сразу обновляем превью в дереве.
-      if (selectId === 'editIcon' && state.selected) updateTreeIcon(state.selected.path, src);
-    };
-  });
-};
+            [editSelect, addSelect].forEach(select => {
+                select.innerHTML = '<option value="">-- Выберите иконку --</option>';
+                availableImages.forEach(img => {
+                    const option = document.createElement('option');
+                    option.value = img.path;
+                    option.textContent = img.name;
+                    select.appendChild(option);
+                });
+            });
+        }
 
-// Подсвечивает выбранную картинку в сетке (сравнивает src, а не value, чтобы избежать расхождений из-за относительных путей).
-const highlightImage = (icon, gridId) => {
-  document.getElementById(gridId)?.querySelectorAll('.image-item').forEach(el => {
-    el.classList.toggle('selected', el.querySelector('img')?.src === icon);
-  });
-};
+        // Render images grids
+        function renderImagesGrids() {
+            renderImagesGrid('editImagesGrid', 'editIcon');
+            renderImagesGrid('addImagesGrid', 'addIcon');
+        }
 
-// Списки родителей (для форм добавления и импорта)
+        function renderImagesGrid(containerId, selectId, images = availableImages) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
 
-// Универсальный рендер списка папок. Принимает ID контейнера и целевого инпута, чтобы не дублировать логику.
-const renderParents = (containerId, targetId) => {
-  const c = document.getElementById(containerId);
-  if (!c) return;
-  c.innerHTML = `<div class="parent-item" data-path=""><span>📁</span><span>Корневая папка</span></div>`;
-  const build = (items, path) => items.forEach(item => {
-    if (item.children !== null) {
-      const p = path ? `${path}/${item.name}` : item.name;
-      const div = document.createElement('div');
-      div.className = 'parent-item';
-      div.dataset.path = p;
-      div.innerHTML = `<span>📁</span><span>${p}</span>`;
-      div.onclick = () => {
-        document.querySelectorAll(`#${containerId} .parent-item`).forEach(i => i.classList.remove('selected'));
-        div.classList.add('selected');
-        document.getElementById(targetId).value = p;
-      };
-      c.appendChild(div);
-      if (item.children?.length) build(item.children, p);
-    }
-  });
-  build(state.catalog?.children ?? [], '');
-};
+            images.forEach(img => {
+                const imageItem = document.createElement('div');
+                imageItem.className = 'image-item';
+                
+                // Используем прямую ссылку для всех изображений
+                let imgSrc = img.path;
+                
+                // Если это внешний URL, используем его напрямую
+                if (img.path.startsWith('http://') || img.path.startsWith('https://')) {
+                    imgSrc = img.path;
+                } else if (!img.path.startsWith('/')) {
+                    // Для относительных путей добавляем базовый путь
+                    imgSrc = '/' + img.path;
+                }
+                
+                imageItem.innerHTML = `
+                    <img src="${imgSrc}" alt="${img.name}" loading="lazy" onerror="this.style.display='none'">
+                `;
 
-// Поиск
+                imageItem.addEventListener('click', () => {
+                    // Снять выделение со всех
+                    container.querySelectorAll('.image-item').forEach(el => el.classList.remove('selected'));
+                    imageItem.classList.add('selected');
 
-// Навешиваем обработчики на все поисковые поля. Фильтруем либо DOM-элементы, либо массив в состоянии.
-const setupSearch = () => {
-  document.getElementById('treeSearch')?.addEventListener('input', e => {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('.tree-item').forEach(i => i.style.display = !q || i.querySelector('span:last-child').textContent.toLowerCase().includes(q) ? 'flex' : 'none');
-  });
-  document.getElementById('imageSearch')?.addEventListener('input', e => {
-    state.filteredImages = state.images.filter(i => i.name.toLowerCase().includes(e.target.value.toLowerCase()));
-    renderGrid('addImagesGrid', 'addIcon', state.filteredImages);
-  });
-  ['parentSearch', 'importParentSearch'].forEach(id => {
-    document.getElementById(id)?.addEventListener('input', e => {
-      const q = e.target.value.toLowerCase();
-      const target = id.includes('import') ? 'importParentList' : 'parentList';
-      document.querySelectorAll(`#${target} .parent-item`).forEach(i => i.style.display = !q || i.querySelector('span:last-child').textContent.toLowerCase().includes(q) ? 'flex' : 'none');
-    });
-  });
-};
+                    // Выбрать в селекте
+                    const select = document.getElementById(selectId);
+                    select.value = imgSrc;
+                    selectedImage = imgSrc;
+                    
+                    // Обновить предпросмотр иконки у выбранного элемента в дереве
+                    if (selectId === 'editIcon' && selectedElement) {
+                        const treeItem = document.querySelector(`.tree-item[data-path="${selectedElement.path}"]`);
+                        if (treeItem) {
+                            const iconSpan = treeItem.querySelector('span:nth-child(2)');
+                            if (iconSpan) {
+                                // Проверяем, является ли выбранная иконка URL-заглушкой
+                                const placeholderUrls = [
+                                    'https://vm-ftp.anosov.ru/icons/folder.gif',
+                                    'http://vm-ftp.anosov.ru/icons/folder.gif',
+                                    'vm-ftp.anosov.ru/icons/folder.gif'
+                                ];
+                                
+                                let isPlaceholder = false;
+                                for (const placeholderUrl of placeholderUrls) {
+                                    if (imgSrc.includes(placeholderUrl)) {
+                                        isPlaceholder = true;
+                                        break;
+                                    }
+                                }
+                                
+                                // Если иконка не пустая и не заглушка - используем 📄, иначе 📁
+                                if (!isPlaceholder && imgSrc.trim() !== '') {
+                                    iconSpan.textContent = '📄';
+                                } else {
+                                    iconSpan.textContent = '📁';
+                                }
+                            }
+                        }
+                    }
+                });
 
-// CRUD операции
+                container.appendChild(imageItem);
+            });
+        }
 
-// Обновление существующего элемента. Собирает данные формы, чистит иконку, шлёт PUT и POST/DELETE для permanent.
-const updateItem = async e => {
-  e.preventDefault();
-  const path = document.getElementById('editPath').value;
-  const icon = cleanIcon(state.selectedImage || document.getElementById('editIcon').value);
-  const updates = { name: document.getElementById('editName').value.toUpperCase(), icon };
-  const url = document.getElementById('editUrl').value;
-  if (url) updates.url = url;
-  try {
-    await api('items', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ path, updates }) });
-    await api('permanent', { method: document.getElementById('editPermanent').checked ? 'POST' : 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ path }) });
-    showStatus('Элемент обновлён', 'success');
-    state.selectedImage = null;
-    await loadData();
-    localStorage.setItem('catalogUpdated', Date.now()); // Триггер для других вкладок
-  } catch (err) { showStatus('Ошибка: ' + err.message, 'error'); }
-};
+        function highlightSelectedImage(iconPath, gridId) {
+            const container = document.getElementById(gridId);
+            container.querySelectorAll('.image-item').forEach(el => {
+                const img = el.querySelector('img');
+                const isSelected = img && img.src === iconPath;
+                el.classList.toggle('selected', isSelected);
+            });
+        }
 
-// Создание нового элемента. Аналогично обновлению, но метод POST и сброс формы.
-const addItem = async e => {
-  e.preventDefault();
-  const parent = document.getElementById('addParentPath').value;
-  const name = document.getElementById('addName').value.toUpperCase();
-  const icon = cleanIcon(state.selectedImage || document.getElementById('addIcon').value || 'folder.png');
-  const url = document.getElementById('addUrl').value;
-  const perm = document.getElementById('addPermanent').checked;
-  const body = { parent_path: parent, name, icon };
-  if (url) body.url = url;
-  try {
-    await api('items', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    if (perm) await api('permanent', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ path: parent ? `${parent}/${name}` : name }) });
-    showStatus('Элемент добавлен', 'success');
-    e.target.reset();
-    state.selectedImage = null;
-    await loadData();
-    localStorage.setItem('catalogUpdated', Date.now());
-  } catch (err) { showStatus('Ошибка: ' + err.message, 'error'); }
-};
+        // Setup tabs
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    tab.classList.add('active');
+                    document.getElementById(`${tab.dataset.tab}Tab`).classList.add('active');
+                });
+            });
+        }
 
-// Удаление. Выносим в window.*, так как вызывается через onclick в HTML.
-window.deleteCurrentItem = async () => {
-  if (!state.selected || !confirm(`Удалить "${state.selected.name}"?`)) return;
-  try {
-    await api('items', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ path: state.selected.path }) });
-    await api('permanent', { method: 'DELETE', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ path: state.selected.path }) });
-    showStatus('Удалено', 'success');
-    document.getElementById('editForm').classList.add('hidden');
-    state.selected = state.selectedImage = null;
-    await loadData();
-  } catch (err) { showStatus('Ошибка: ' + err.message, 'error'); }
-};
+        // Setup forms
+        function setupForms() {
+            // Edit form
+            document.getElementById('editForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await updateItem();
+            });
 
-// Парсер
+            // Add form
+            document.getElementById('addForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await addItem();
+            });
+        }
 
-// Запуск парсера. Блокируем кнопки, шлём запрос, если ок → начинаем поллинг статуса.
-window.startParser = async () => {
-  const btns = document.querySelectorAll('button[onclick="startParser()"]');
-  btns.forEach(b => { b.disabled = true; b.textContent = 'Парсинг...'; });
-  try {
-    const res = await api('parser/start', { method: 'POST' });
-    if (res.status === 'started') { showStatus('Парсер запущен...', 'success'); checkParserStatus(); }
-    else throw new Error('Парсер уже запущен');
-  } catch (err) {
-    showStatus('Ошибка: ' + err.message, 'error');
-    btns.forEach(b => { b.disabled = false; b.textContent = 'Парсер'; });
-  }
-};
+        // Setup search handlers
+        function setupSearch() {
+            // Tree search
+            document.getElementById('treeSearch').addEventListener('input', (e) => {
+                searchInTree(e.target.value);
+            });
 
-/**
- * Универсальный опрос статуса. Заменяет дублирующиеся loadParserStatus и checkParserStatus.
- * @param isInitial - если true, не выполняем логику завершения (нужно только при первой загрузке страницы)
- */
-const updateParserStatus = async (isInitial = false) => {
-  try {
-    const s = await api('parser/status');
-    document.getElementById('parserStatusText').textContent = s.message;
-    document.getElementById('parserLastRun').textContent = s.last_run || '-';
-    document.getElementById('parserStatus').className = `parser-status ${s.running ? 'running' : 'completed'}`;
-    
-    if (s.running) {
-      setTimeout(checkParserStatus, 2000); // Продолжаем опрос
-    } else if (!isInitial) {
-      // Парсер закончил работу: разблокируем кнопки, помечаем всё как permanent, обновляем UI.
-      document.querySelectorAll('button[onclick="startParser()"]').forEach(b => { b.disabled = false; b.textContent = 'Парсер'; });
-      await makeAllPermanent();
-      await loadData();
-      showStatus('Парсинг завершён!', 'success');
-      localStorage.setItem('catalogUpdated', Date.now());
-      notify('Парсер завершил работу', 'Все элементы сохранены.');
-    }
-  } catch (err) {
-    console.error(err);
-    document.querySelectorAll('button[onclick="startParser()"]').forEach(b => { b.disabled = false; b.textContent = 'Парсер'; });
-  }
-};
+            // Image search
+            document.getElementById('imageSearch').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                filteredImages = availableImages.filter(img => img.name.toLowerCase().includes(query));
+                renderImagesGrid('addImagesGrid', 'addIcon', filteredImages);
+            });
 
-const checkParserStatus = () => updateParserStatus(false);
+            // Parent folder search
+            document.getElementById('parentSearch').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                filterParentList(query);
+            });
+        }
 
-/**
- * После работы парсера сервер может создать новые узлы без флага permanent.
- * Эта функция проходит по всему дереву и ставит флаг, чтобы при обновлении страницы ничего не потерялось.
- */
-const makeAllPermanent = async () => {
-  const getPaths = (items = state.catalog?.children ?? [], path = '') =>
-    items.flatMap(item => [path ? `${path}/${item.name}` : item.name, ...(item.children?.length ? getPaths(item.children, path ? `${path}/${item.name}` : item.name) : [])]);
-  const newPaths = getPaths().filter(p => !state.permanent.includes(p));
-  for (const p of newPaths) await api('permanent', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ path: p }) });
-  state.permanent = (await api('permanent')).permanent_items ?? [];
-};
+        // Фильтрация списка родителей по поиску
+        function filterParentList(query) {
+            const parentItems = document.querySelectorAll('#parentList .parent-item');
+            parentItems.forEach(item => {
+                const pathSpan = item.querySelector('span:last-child');
+                const pathText = pathSpan ? pathSpan.textContent.toLowerCase() : '';
+                if (query === '' || pathText.includes(query)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
 
-// Импорт/Экспорт
+        // Render parent list for adding new items
+        function renderParentList() {
+            const container = document.getElementById('parentList');
+            container.innerHTML = '';
 
-// Импорт JSON из textarea. Валидирует ввод, шлёт на сервер, перезагружает данные.
-const importJson = async e => {
-  e.preventDefault();
-  const data = document.getElementById('importJsonData').value.trim();
-  if (!data) return showStatus('Введите JSON', 'error');
-  try {
-    const res = await api('import/json', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ json_data: data, parent_path: document.getElementById('importParentPath').value }) });
-    showStatus(res.message || 'Импорт успешен', 'success');
-    e.target.reset();
-    await loadData();
-  } catch (err) { showStatus('Ошибка: ' + err.message, 'error'); }
-};
+            // Add root as an option
+            const rootItem = document.createElement('div');
+            rootItem.className = 'parent-item';
+            rootItem.dataset.path = '';
+            rootItem.innerHTML = `
+                <span>📁</span>
+                <span>Корневая папка</span>
+            `;
+            rootItem.addEventListener('click', () => selectParent(rootItem, ''));
+            container.appendChild(rootItem);
 
-// Экспорт каталога в плоский JSON-файл для бэкапа или миграции.
-window.exportJson = async () => {
-  try {
-    const data = await api('catalog');
-    const collect = (items, cat) => items.flatMap(i => [{ name: i.name, icon: i.icon, url: i.url || null, modified: i.modified, catalog: cat }, ...(i.children?.length ? collect(i.children, i.name) : [])]);
-    const all = data.children.flatMap(c => collect(c.children || [], c.name));
-    const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `catalog_export_${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    showStatus('JSON выгружен', 'success');
-  } catch (err) { showStatus('Ошибка: ' + err.message, 'error'); }
-};
+            // Add all folders from catalog
+            if (catalogData && catalogData.children) {
+                renderParentListRecursive(catalogData.children, '', container);
+            }
+        }
 
-// Инициализация
+        function renderParentListRecursive(items, parentPath, container) {
+            items.forEach(item => {
+                const currentPath = parentPath ? `${parentPath}/${item.name}` : item.name;
+                
+                if (item.children !== null) {  // Это папка
+                    const parentItem = document.createElement('div');
+                    parentItem.className = 'parent-item';
+                    parentItem.dataset.path = currentPath;
+                    parentItem.innerHTML = `
+                        <span>📁</span>
+                        <span>${currentPath}</span>
+                    `;
+                    parentItem.addEventListener('click', () => selectParent(parentItem, currentPath));
+                    container.appendChild(parentItem);
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadData();
-  // Переключение вкладок
-  document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => {
-    document.querySelectorAll('.tab, .tab-content').forEach(el => el.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById(`${tab.dataset.tab}Tab`).classList.add('active');
-  });
-  setupSearch();
-  document.getElementById('editForm').addEventListener('submit', updateItem);
-  document.getElementById('addForm').addEventListener('submit', addItem);
-  document.getElementById('importForm')?.addEventListener('submit', importJson);
-  
-  // Кросс-таб синхронизация: если в другой вкладке завершился парсер → обновляем данные здесь.
-  window.addEventListener('storage', e => e.key === 'catalogUpdated' && loadData().then(() => showStatus('Данные обновлены', 'success')));
-});
+                    if (item.children && item.children.length > 0) {
+                        renderParentListRecursive(item.children, currentPath, container);
+                    }
+                }
+            });
+        }
 
-// Глобальные хелперы для вызова из HTML-атрибутов onclick
-window.logout = () => location.href = '/navigator/logout';
-window.changePassword = () => location.href = '/navigator/change-password';
+        function selectParent(element, path) {
+            document.querySelectorAll('.parent-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('addParentPath').value = path;
+        }
+
+        // Update item
+        async function updateItem() {
+            const path = document.getElementById('editPath').value;
+            
+            // Используем selectedImage если он выбран, иначе берём из селекта
+            let iconValue = selectedImage || document.getElementById('editIcon').value;
+            
+            // Проверяем, является ли иконка URL-заглушкой, и если да - заменяем на пустую строку
+            const placeholderUrls = [
+                'https://vm-ftp.anosov.ru/icons/folder.gif',
+                'http://vm-ftp.anosov.ru/icons/folder.gif',
+                'vm-ftp.anosov.ru/icons/folder.gif'
+            ];
+            
+            let isPlaceholder = false;
+            for (const placeholderUrl of placeholderUrls) {
+                if (iconValue && iconValue.includes(placeholderUrl)) {
+                    isPlaceholder = true;
+                    break;
+                }
+            }
+            
+            if (isPlaceholder) {
+                iconValue = '';
+            }
+            
+            const updates = {
+                name: document.getElementById('editName').value.toUpperCase(),
+                icon: iconValue
+            };
+
+            const url = document.getElementById('editUrl').value;
+            if (url) updates.url = url;
+
+            try {
+                const response = await fetch('/navigator/api/items', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path, updates }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    // Обновить постоянный статус
+                    const isPermanent = document.getElementById('editPermanent').checked;
+                    await togglePermanent(path, isPermanent);
+
+                    showStatus('Элемент успешно обновлён', 'success');
+                    selectedImage = null; // Сбросить выбранное изображение после обновления
+                    await loadCatalog();
+                    await loadPermanentItems();
+                    
+                    // Отправить событие обновления для других вкладок
+                    localStorage.setItem('catalogUpdated', Date.now());
+                } else {
+                    const errorData = await response.json();
+                    showStatus('Ошибка обновления элемента: ' + (errorData.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showStatus('Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        // Add item
+        async function addItem() {
+            const parentPath = document.getElementById('addParentPath').value;
+            const name = document.getElementById('addName').value.toUpperCase();
+            
+            // Используем selectedImage если он выбран, иначе берём из селекта
+            let iconValue = selectedImage || document.getElementById('addIcon').value || 'folder.png';
+            
+            // Проверяем, является ли иконка URL-заглушкой, и если да - заменяем на пустую строку
+            const placeholderUrls = [
+                'https://vm-ftp.anosov.ru/icons/folder.gif',
+                'http://vm-ftp.anosov.ru/icons/folder.gif',
+                'vm-ftp.anosov.ru/icons/folder.gif'
+            ];
+            
+            let isPlaceholder = false;
+            for (const placeholderUrl of placeholderUrls) {
+                if (iconValue && iconValue.includes(placeholderUrl)) {
+                    isPlaceholder = true;
+                    break;
+                }
+            }
+            
+            if (isPlaceholder) {
+                iconValue = '';
+            }
+            
+            const isPermanent = document.getElementById('addPermanent').checked;
+            const url = document.getElementById('addUrl').value;
+
+            try {
+                const requestBody = { parent_path: parentPath, name, icon: iconValue };
+                if (url) requestBody.url = url;
+
+                const response = await fetch('/navigator/api/items', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    // Сделать постоянным если нужно
+                    if (isPermanent) {
+                        const newPath = parentPath ? `${parentPath}/${name}` : name;
+                        await togglePermanent(newPath, true);
+                    }
+
+                    showStatus('Элемент успешно добавлен', 'success');
+                    document.getElementById('addForm').reset();
+                    document.getElementById('addParentPath').value = '';
+                    selectedImage = null; // Сбросить выбранное изображение
+                    await loadCatalog();
+                    await loadPermanentItems();
+                    
+                    // Отправить событие обновления для других вкладок
+                    localStorage.setItem('catalogUpdated', Date.now());
+                } else {
+                    const errorData = await response.json();
+                    showStatus('Ошибка добавления элемента: ' + (errorData.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showStatus('Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        // Delete item
+        async function deleteCurrentItem() {
+            if (!selectedElement) return;
+
+            if (!confirm(`Вы уверены, что хотите удалить "${selectedElement.name}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/navigator/api/items', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: selectedElement.path }),
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    // Удалить из постоянных если был там
+                    await togglePermanent(selectedElement.path, false);
+
+                    showStatus('Элемент успешно удалён', 'success');
+                    document.getElementById('editForm').classList.add('hidden');
+                    selectedElement = null;
+                    selectedImage = null; // Сбросить выбранное изображение при удалении
+                    await loadCatalog();
+                    await loadPermanentItems();
+                } else {
+                    const errorData = await response.json();
+                    showStatus('Ошибка удаления элемента: ' + (errorData.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showStatus('Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        // Toggle permanent status
+        async function togglePermanent(path, makePermanent) {
+            try {
+                await fetch('/navigator/api/permanent', {
+                    method: makePermanent ? 'POST' : 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path }),
+                    credentials: 'include'
+                });
+            } catch (error) {
+                console.error('Ошибка обновления постоянного статуса:', error);
+            }
+        }
+
+        // Получить все пути элементов в каталоге (рекурсивно)
+        function getAllPaths(items = null, parentPath = '') {
+            let paths = [];
+            // Если items не передан, используем catalogData
+            if (items === null) {
+                if (!catalogData || !catalogData.children) return paths;
+                items = catalogData.children;
+            }
+            if (!items) return paths;
+            
+            items.forEach(item => {
+                const currentPath = parentPath ? `${parentPath}/${item.name}` : item.name;
+                paths.push(currentPath);
+                
+                if (item.children && item.children.length > 0) {
+                    paths = paths.concat(getAllPaths(item.children, currentPath));
+                }
+            });
+            return paths;
+        }
+
+        // Сделать все элементы постоянными
+        async function makeAllItemsPermanent() {
+            try {
+                // Сначала загружаем актуальный каталог для получения всех путей
+                const catalogResponse = await fetch('/navigator/api/catalog');
+                const catalog = await catalogResponse.json();
+                
+                const allPaths = getAllPaths(catalog.children);
+                for (const path of allPaths) {
+                    if (!permanentItems.includes(path)) {
+                        await togglePermanent(path, true);
+                    }
+                }
+                // Обновить список постоянных элементов
+                await loadPermanentItems();
+            } catch (error) {
+                console.error('Ошибка при установке постоянных элементов:', error);
+            }
+        }
+
+        // Start parser
+        async function startParser() {
+            const parserBtns = document.querySelectorAll('button[onclick="startParser()"]');
+            
+            // Блокируем все кнопки парсера
+            parserBtns.forEach(btn => {
+                btn.disabled = true;
+                btn.textContent = 'Парсинг...';
+            });
+            
+            try {
+                const response = await fetch('/navigator/api/parser/start', { 
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                // Проверяем, успешен ли ответ
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Требуется авторизация администратора');
+                    }
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                }
+                
+                const data = await response.json();
+
+                if (data.status === 'started') {
+                    showStatus('Парсер запущен. Пожалуйста, дождитесь завершения...', 'success');
+                    checkParserStatus();
+                } else {
+                    showStatus('Парсер уже запущен', 'error');
+                    parserBtns.forEach(btn => {
+                        btn.disabled = false;
+                        btn.textContent = 'Парсер';
+                    });
+                }
+            } catch (error) {
+                showStatus('Ошибка запуска парсера: ' + error.message, 'error');
+                parserBtns.forEach(btn => {
+                    btn.disabled = false;
+                    btn.textContent = 'Парсер';
+                });
+            }
+        }
+
+        // Import JSON data
+        async function importJsonData() {
+            const jsonData = document.getElementById('importJsonData').value;
+            const parentPath = document.getElementById('importParentPath').value;
+
+            if (!jsonData.trim()) {
+                showStatus('Введите JSON данные', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/navigator/api/import/json', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ json_data: jsonData, parent_path: parentPath })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showStatus(result.message || 'JSON успешно импортирован', 'success');
+                    document.getElementById('importJsonData').value = '';
+                    document.getElementById('importParentPath').value = '';
+                    await loadCatalog();
+                    await loadPermanentItems();
+                } else {
+                    showStatus('Ошибка импорта JSON: ' + (result.error || 'Неизвестная ошибка'), 'error');
+                }
+            } catch (error) {
+                showStatus('Ошибка: ' + error.message, 'error');
+            }
+        }
+
+        // Render parent list for import
+        function renderImportParentList() {
+            const container = document.getElementById('importParentList');
+            if (!container) return;
+            container.innerHTML = '';
+
+            // Add root as an option
+            const rootItem = document.createElement('div');
+            rootItem.className = 'parent-item';
+            rootItem.dataset.path = '';
+            rootItem.innerHTML = `
+                <span>📁</span>
+                <span>Корневая папка</span>
+            `;
+            rootItem.addEventListener('click', () => selectImportParent(rootItem, ''));
+            container.appendChild(rootItem);
+
+            // Add all folders from catalog
+            if (catalogData && catalogData.children) {
+                renderParentListRecursive(catalogData.children, '', container);
+            }
+        }
+
+        function selectImportParent(element, path) {
+            document.querySelectorAll('#importParentList .parent-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            document.getElementById('importParentPath').value = path;
+        }
+
+        // Поиск папок для импорта JSON
+        document.addEventListener('DOMContentLoaded', () => {
+            const importParentSearchInput = document.getElementById('importParentSearch');
+            if (importParentSearchInput) {
+                importParentSearchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.toLowerCase().trim();
+                    filterImportParentList(query);
+                });
+            }
+        });
+
+        // Фильтрация списка родителей для импорта
+        function filterImportParentList(query) {
+            const parentItems = document.querySelectorAll('#importParentList .parent-item');
+            parentItems.forEach(item => {
+                const pathSpan = item.querySelector('span:last-child');
+                const pathText = pathSpan ? pathSpan.textContent.toLowerCase() : '';
+                if (query === '' || pathText.includes(query)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Check parser status
+        async function checkParserStatus() {
+            try {
+                const response = await fetch('/navigator/api/parser/status', { credentials: 'include' });
+                
+                // Проверяем, успешен ли ответ
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Требуется авторизация администратора');
+                    }
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                }
+                
+                const status = await response.json();
+
+                const statusDiv = document.getElementById('parserStatus');
+                const statusText = document.getElementById('parserStatusText');
+                const lastRun = document.getElementById('parserLastRun');
+
+                statusText.textContent = status.message;
+                lastRun.textContent = status.last_run || '-';
+
+                // Выводим логи парсера в консоль браузера
+                if (status.logs && status.logs.length > 0) {
+                    console.groupCollapsed('[PARSER LOGS] - ' + new Date().toLocaleTimeString());
+                    status.logs.forEach((logEntry, index) => {
+                        // Поддерживаем старый формат (строка) и новый формат (объект)
+                        let logMsg, logType = 'log', errorDetails = null;
+                        
+                        if (typeof logEntry === 'object' && logEntry !== null) {
+                            // Новый формат: объект с полями timestamp, message, type, error_details
+                            logMsg = `[${logEntry.timestamp || 'N/A'}] ${logEntry.message || ''}`;
+                            logType = logEntry.type || 'log';
+                            errorDetails = logEntry.error_details;
+                        } else {
+                            // Старый формат: просто строка
+                            logMsg = String(logEntry);
+                            // Определяем тип лога по содержанию
+                            if (logMsg.includes('ERROR') || logMsg.includes('Ошибка') || logMsg.includes('WARNING')) {
+                                logType = 'error';
+                            } else if (logMsg.includes('Успешно') || logMsg.includes('завершён успешно')) {
+                                logType = 'info';
+                            }
+                        }
+                        
+                        // Вывод в консоль в зависимости от типа
+                        if (logType === 'error') {
+                            console.error(`[${index}] ${logMsg}`);
+                            // Если есть детали ошибки, выводим их отдельно
+                            if (errorDetails) {
+                                console.groupCollapsed(`🔴 Детали ошибки #${index}`);
+                                console.log('Тип ошибки:', errorDetails.type);
+                                console.log('Сообщение:', errorDetails.message);
+                                console.log('URL подключения:', errorDetails.url || 'N/A');
+                                console.log('Timeout:', errorDetails.timeout || 'N/A');
+                                console.log('HTTP статус:', errorDetails.http_status || 'N/A');
+                                console.log('Заголовки ответа:', errorDetails.response_headers || 'N/A');
+                                console.log('Тело ответа:', errorDetails.response_body || 'N/A');
+                                console.log('Причина ошибки:', errorDetails.reason || 'N/A');
+                                console.log('Полный traceback:');
+                                console.error(errorDetails.traceback || 'Traceback недоступен');
+                                console.groupEnd();
+                            }
+                        } else if (logType === 'info') {
+                            console.info(`[${index}] ${logMsg}`);
+                        } else {
+                            console.log(`[${index}] ${logMsg}`);
+                        }
+                    });
+                    console.groupEnd();
+                }
+
+                statusDiv.className = 'parser-status';
+                if (status.running) {
+                    statusDiv.classList.add('running');
+                    setTimeout(checkParserStatus, 2000);
+                } else {
+                    statusDiv.classList.add('completed');
+                    // Re-enable parser buttons
+                    document.querySelectorAll('button[onclick="startParser()"]').forEach(btn => {
+                        btn.disabled = false;
+                        btn.textContent = 'Парсер';
+                    });
+                    // Обновить изображения после завершения парсера
+                    await loadImages();
+                    
+                    // Сначала сделать все элементы постоянными ПЕРЕД обновлением каталога
+                    await makeAllItemsPermanent();
+                    
+                    // Обновить каталог (теперь он загрузится с учётом всех постоянных элементов)
+                    await loadCatalog();
+                    await loadPermanentItems();
+                    
+                    // Показать уведомление о завершении
+                    showStatus('Парсинг завершён успешно! Все элементы сделаны постоянными.', 'success');
+                    
+                    // Отправить событие обновления для других вкладок
+                    localStorage.setItem('catalogUpdated', Date.now());
+                    
+                    // Показать браузерное уведомление по окончании работы
+                    showBrowserNotification('Парсер завершил работу', 'Парсинг завершён успешно! Все элементы сохранены.');
+                }
+            } catch (error) {
+                console.error('Ошибка получения статуса парсера:', error);
+                // Re-enable parser buttons on error
+                document.querySelectorAll('button[onclick="startParser()"]').forEach(btn => {
+                    btn.disabled = false;
+                    btn.textContent = 'Парсер';
+                });
+            }
+        }
+
+        // Load initial parser status on page load
+        async function loadParserStatus() {
+            try {
+                const response = await fetch('/navigator/api/parser/status', { credentials: 'include' });
+                
+                // Проверяем, успешен ли ответ
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        throw new Error('Требуется авторизация администратора');
+                    }
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || `Ошибка сервера: ${response.status}`);
+                }
+                
+                const status = await response.json();
+                
+                const statusDiv = document.getElementById('parserStatus');
+                const statusText = document.getElementById('parserStatusText');
+                const lastRun = document.getElementById('parserLastRun');
+
+                statusText.textContent = status.message;
+                lastRun.textContent = status.last_run || '-';
+
+                // Выводим логи парсера в консоль браузера при загрузке
+                if (status.logs && status.logs.length > 0) {
+                    console.groupCollapsed('[PARSER LOGS - Initial] - ' + new Date().toLocaleTimeString());
+                    status.logs.forEach((logEntry, index) => {
+                        // Поддерживаем старый формат (строка) и новый формат (объект)
+                        let logMsg, logType = 'log', errorDetails = null;
+                        
+                        if (typeof logEntry === 'object' && logEntry !== null) {
+                            // Новый формат: объект с полями timestamp, message, type, error_details
+                            logMsg = `[${logEntry.timestamp || 'N/A'}] ${logEntry.message || ''}`;
+                            logType = logEntry.type || 'log';
+                            errorDetails = logEntry.error_details;
+                        } else {
+                            // Старый формат: просто строка
+                            logMsg = String(logEntry);
+                            // Определяем тип лога по содержанию
+                            if (logMsg.includes('ERROR') || logMsg.includes('Ошибка') || logMsg.includes('WARNING')) {
+                                logType = 'error';
+                            } else if (logMsg.includes('Успешно') || logMsg.includes('завершён успешно')) {
+                                logType = 'info';
+                            }
+                        }
+                        
+                        // Вывод в консоль в зависимости от типа
+                        if (logType === 'error') {
+                            console.error(`[${index}] ${logMsg}`);
+                            // Если есть детали ошибки, выводим их отдельно
+                            if (errorDetails) {
+                                console.groupCollapsed(`🔴 Детали ошибки #${index}`);
+                                console.log('Тип ошибки:', errorDetails.type);
+                                console.log('Сообщение:', errorDetails.message);
+                                console.log('URL подключения:', errorDetails.url || 'N/A');
+                                console.log('Timeout:', errorDetails.timeout || 'N/A');
+                                console.log('HTTP статус:', errorDetails.http_status || 'N/A');
+                                console.log('Заголовки ответа:', errorDetails.response_headers || 'N/A');
+                                console.log('Тело ответа:', errorDetails.response_body || 'N/A');
+                                console.log('Причина ошибки:', errorDetails.reason || 'N/A');
+                                console.log('Полный traceback:');
+                                console.error(errorDetails.traceback || 'Traceback недоступен');
+                                console.groupEnd();
+                            }
+                        } else if (logType === 'info') {
+                            console.info(`[${index}] ${logMsg}`);
+                        } else {
+                            console.log(`[${index}] ${logMsg}`);
+                        }
+                    });
+                    console.groupEnd();
+                }
+
+                statusDiv.className = 'parser-status';
+                if (status.running) {
+                    statusDiv.classList.add('running');
+                    setTimeout(checkParserStatus, 2000);
+                } else {
+                    statusDiv.classList.add('completed');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки статуса парсера:', error);
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.classList.remove('hidden');
+
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Browser notification
+        function showBrowserNotification(title, body) {
+            // Запросить разрешение на уведомления, если ещё не получено
+            if (!('Notification' in window)) {
+                console.log('Браузер не поддерживает уведомления');
+                return;
+            }
+            
+            if (Notification.permission === 'granted') {
+                new Notification(title, {
+                    body: body,
+                    icon: './page/logo.png',
+                    tag: 'parser-completed',
+                    requireInteraction: false
+                });
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        new Notification(title, {
+                            body: body,
+                            icon: './page/logo.png',
+                            tag: 'parser-completed',
+                            requireInteraction: false
+                        });
+                    }
+                });
+            }
+        }
+
+        // Logout
+        function logout() {
+            window.location.href = '/navigator/logout';
+        }
+
+        // Change password
+        function changePassword() {
+            window.location.href = '/navigator/change-password';
+        }
+
+        // Export JSON
+        function exportJson() {
+            fetch('/navigator/api/catalog')
+                .then(response => response.json())
+                .then(data => {
+                    // Функция для сбора всех элементов с указанием родительского каталога
+                    function collectItems(items, parentCatalogName) {
+                        let result = [];
+                        
+                        if (!items || !Array.isArray(items)) return result;
+                        
+                        for (const item of items) {
+                            if (!item) continue;
+                            
+                            const cleaned = {
+                                name: item.name,
+                                icon: item.icon,
+                                url: item.url || null,
+                                modified: item.modified,
+                                catalog: parentCatalogName
+                            };
+                            
+                            result.push(cleaned);
+                            
+                            // Рекурсивно обрабатываем дочерние элементы
+                            if (item.children && Array.isArray(item.children)) {
+                                const childItems = collectItems(item.children, item.name);
+                                result = result.concat(childItems);
+                            }
+                        }
+                        
+                        return result;
+                    }
+                    
+                    // Собираем все элементы из всех каталогов
+                    // Пропускаем главный каталог, обходим его дочерние категории
+                    let allItems = [];
+                    if (data.children && Array.isArray(data.children)) {
+                        for (const catalog of data.children) {
+                            const catalogName = catalog.name || 'Без названия';
+                            // Собираем элементы внутри категории (catalog.children)
+                            const items = collectItems(catalog.children, catalogName);
+                            allItems = allItems.concat(items);
+                        }
+                    }
+                    
+                    const jsonStr = JSON.stringify(allItems, null, 2);
+                    const blob = new Blob([jsonStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'catalog_export_' + new Date().toISOString().slice(0, 10) + '.json';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showStatus('JSON файл успешно выгружен', 'success');
+                })
+                .catch(error => {
+                    showStatus('Ошибка выгрузки JSON: ' + error.message, 'error');
+                });
+        }
