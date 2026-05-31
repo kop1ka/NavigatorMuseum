@@ -1080,18 +1080,6 @@ def items_api():
         if update_item_by_path(catalog['children'], path, updates):
             return save_and_audit('change', path, status_msg='success')
 
-        # 2. Fallback: элемента нет → создаём автоматически по пути
-        parts = path.split('/')
-        item_name = parts[-1]
-        target = get_target_list('/'.join(parts[:-1])) or catalog['children']
-
-        new_item = {'name': updates.get('name', item_name), 'icon': updates.get('icon', 'folder.png'), 'children': []}
-        if 'url' in updates: new_item['url'] = updates['url']
-        if updates.get('permanent'): new_item['permanent'] = True
-        
-        target.append(new_item)
-        return save_and_audit('add', item_name, status_msg='created')
-
     # DELETE: Удаление элемента по пути
     elif request.method == 'DELETE':
         if delete_item_by_path(catalog['children'], path):
