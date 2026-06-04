@@ -1060,7 +1060,7 @@ def items_api():
         resp.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         return resp, status_code
 
-    # 📥 POST: Создание нового элемента
+    # POST: Создание нового элемента
     if request.method == 'POST':
         target = get_target_list(data.get('parent_path', ''))
         if target is None:
