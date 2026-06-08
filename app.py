@@ -1342,4 +1342,4 @@ if __name__ == '__main__':
     load_users(USERS_FILE, hash_password)
     
     print("🚀 Запуск сервера...")
-    app.run(debug=True, host='0.0.0.0', port=4843)
+    app.run(debug=True, host='0.0.0.0', port=5000)
