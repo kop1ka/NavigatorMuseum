@@ -24,7 +24,7 @@ COPY . .
 RUN mkdir -p /app/data
 
 # Открываем порт 5000
-EXPOSE 4843
+EXPOSE 5000
 
 # Запускаем приложение через gunicorn для production
-CMD ["gunicorn", "--bind", "0.0.0.0:4843", "--workers", "4", "--threads", "2", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "app:app"]
