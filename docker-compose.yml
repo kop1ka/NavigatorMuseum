@@ -1,6 +1,6 @@
 services:
   web:
-    image: python:3.12-slim
+    image: python:3.11-slim
     container_name: navigator-museum
     working_dir: /app
 
