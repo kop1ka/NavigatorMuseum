@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>НашиПроекты</title>
+    <link rel="shortcut icon" type="image/png" href="img/ZlatIK.png" />
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/jquery-3.4.1.js"></script>
+    <!-- <script src="js/bootstrap.js"></script> -->
+    <script src="js/popper.min.js"></script>
+    <!-- <script src="js/page-flip.browser.js"></script> -->
+    <script src="js/page-flip.module.js"></script><style>
+        button {
+            font: bold 10px sans-serif;
+            padding: 3px;
+            border-radius: 10px;
+            cursor: pointer;
+            background-color: rgba(0,0,0,0);
+            color: rgba(0,0,0,0) 
+        }
+</style>
+</head>
+<body>
+    <div id="sidebar" class="sidebar">
+        <button id="closeSidebar" class="btn btn-danger">Закрыть</button>
+        <h2>Содержание книги</h2>
+        <ul>
+            <li>Страница 1</li>
+            <li>Страница 2</li>
+            <li>Страница 3</li>
+            <li>Страница 4</li>
+            <li>Страница 5</li>
+            <li>Страница 6</li>
+            <li>Страница 7</li>
+            <li>Страница 8</li>
+            <li>Страница 9</li>
+            <li>Страница 10</li>
+            <li>Страница 11</li>
+            <li>Страница 12</li>
+            <li>Страница 13</li>
+            <li>Страница 14</li>
+            <li>Страница 15</li>
+            <li>Страница 16</li>
+            <li>Страница 17</li>
+            <li>Страница 18</li>
+        </ul>
+    </div>
+    
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Введите номер страницы..." />
+        <button type="button" id="searchButton">Искать</button>
+    </div>  
+    <button id="toggleSidebar" class="btn btn-primary" style="position: absolute; top: 10px; left: 10px;">☰</button>  
+<div class="container">
+    <div class="flip-book" id="demoBookExample">
+        <div class="page page-cover page-cover-top" data-density="hard">
+        </div>
+        <!-- PAGES ....--> 
+		
+    <div class="page">
+        <div class="page-content">
+            <!-- <h2 class="page-header">Откликной Гребень</h2>
+    <img class="page-image" src="img/01.pdf"/>-->
+            <img class="page-image" src="img/001.jpg" />
+            <!-- <div class="page-text"></div>-->
+            <div class="page-content" style="overflow: hidden; position: relative;">
+                <img class="page-image" src="img/001.jpg" />
+            </div>
+        </div>
+        </div>
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/002.jpg"/>
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">3</div> 
+            </div>
+        </div>
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/003.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">4</div> 
+            </div>
+        </div>
+		
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/004.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">5</div> 
+            </div>
+        </div>	
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/005.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">6</div> 
+            </div>
+        </div>
+		
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/006.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">7</div> 
+            </div>
+        </div>	
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/007.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">8</div> 
+            </div>
+        </div>
+		
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/008.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">9</div> 
+            </div>
+        </div>	
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/009.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">10</div> 
+            </div>
+        </div>
+		
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/010.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">11</div> 
+            </div>
+        </div>	
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/011.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">12</div> 
+            </div>
+        </div>
+		
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/012.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">13</div> 
+            </div>
+        </div>
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/013.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">14</div> 
+            </div>
+        </div>
+		
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/014.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">15</div> 
+            </div>
+        </div>
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/015.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">16</div> 
+            </div>
+        </div>
+		
+    <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/016.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">17</div> 
+            </div>
+        </div>
+
+        <div class="page">
+            <div class="page-content">
+                <!-- <h2 class="page-header">Откликной Гребень</h2> 
+                <img class="page-image" src="img/01.pdf"/>-->
+				<img class="page-image"  src="img/017.jpg" class="page-image"/> 
+                <!-- <div class="page-text"></div>-->
+                <div class="page-footer">18</div> 
+            </div>
+        </div>
+		
+</div>
+
+<div style="display: flex; justify-content: center; margin-top: 10px;">
+    <button type="button" id="toggleZoom" class="btn btn-secondary">Включить режим масштабирования</button>
+    <button type="button" id="zoomIn" class="btn btn-secondary">Увеличить</button>
+    <button type="button" id="zoomOut" class="btn btn-secondary">Уменьшить</button>
+</div>
+<div class="container">
+    <div style="display: flex;justify-content: space-between">
+        <button type="button" class="btn btn-secondary btn-prev"><<</button>
+        <div>[<span class=" page-current">1</span> of <span class="page-total">-</span>]</div>
+        <button type="button" class="btn btn-secondary btn-next">>></button>
+    </div>
+
+     <div style="display:none">
+        State: <i class="page-state">read</i>, orientation: <i class="page-orientation">landscape</i>
+    </div> <!---->
+		
+</div>
+</div>
+</body>
+</html>
+	<script src="js/StPageFlip.js"></script>
+    <script src="js/searchPage.js"></script>
+    <script src="js/Zoom.js"></script>
+    <script src="js/Sidebar.js"></script>

@@ -1,55 +1,1665 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Златоустовский индустриальный колледж!</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <base href="/navigator/">
-    <link rel="stylesheet" href="css/main.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>НашиПроекты</title>
+    <link rel="shortcut icon" type="image/png" href="img/ZlatIK.png" />
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/jquery-3.4.1.js"></script>
+    <script src="js/popper.min.js"></script>
+    <script src="js/page-flip.module.js"></script>
+    <style>
+        button {
+            font: bold 10px sans-serif;
+            padding: 3px;
+            border-radius: 10px;
+            cursor: pointer;
+            background-color: rgba(0,0,0,0);
+            color: rgba(0,0,0,0);
+        }
+    </style>
+  
 </head>
 <body>
+    <script>
 
-    <img src="page/logo.png" alt="Логотип" class="logo">
-    <span class="nad3">Златоустовский индустриальный колледж</span>
-
-    <img src="page/muze.png" alt="Надпись" class="center-img">
-
-    <!-- Кнопка для открытия каталога -->
-    <button class="button-catalog" id="openCatalog" aria-expanded="false">Открыть каталог</button>
+        // Функция для загрузки данных страниц из localStorage
     
-    <!-- Элементы главной страницы для аудита -->
-    <div class="main-page-elements" style="display:none;">
-        <span data-element="logo" data-action="view">Логотип</span>
-        <span data-element="title" data-action="view">Заголовок</span>
-        <span data-element="center_image" data-action="view">Центральное изображение</span>
-        <span data-element="catalog_button" data-action="click">Кнопка каталога</span>
+        function loadPageData() {
+    
+            for (let i = 1; i <= 249; i++) { // Предполагаем, что у вас 249 страниц
+    
+                const pageData = localStorage.getItem(`page-${i}`);
+    
+                if (pageData) {
+    
+                    const { title, image } = JSON.parse(pageData);
+    
+                    const pageElement = document.getElementById(`page-${i}`);
+    
+                    if (pageElement) {
+    
+                        const pageContent = pageElement.querySelector('.page-content');
+    
+                        pageContent.innerHTML = `
+    
+                            <img class="page-image" src="${image}" />
+    
+                            <div class="page-footer">${title}</div>
+    
+                        `;
+    
+                    }
+    
+                }
+    
+            }
+    
+        }
+    
+    
+        // Загружаем данные при загрузке страницы
+    
+        window.onload = loadPageData;
+    
+    </script>
+
+<script>
+    // Добавляем обработчик события для кнопки "Аудит"
+    document.getElementById('auditButton').addEventListener('click', function() {
+        window.location.href = 'tracker.html'; // Путь к файлу audit/index.html
+    });
+</script>
+    <div id="sidebar" class="overflow">
+        <button id="closeSidebar" class="btn btn-danger">Закрыть</button>
+        <h2>Содержание книги</h2>
+        <ul>
+            <li><a href="#" data-page="2"> 2016 год: Реберг С.В. стр 2</a></li>
+            <li><a href="#" data-page="6">Ступников А.В. стр 6</a></li>
+            <li><a href="#" data-page="11">Сурков В.А. стр 11</a></li>
+            <li><a href="#" data-page="14">Шарипова А.Л. стр 14</a></li>
+            <li><a href="#" data-page="18">2019 год: Зеленцов Д.В. стр 18</a></li>
+            <li><a href="#" data-page="21">Кочубей В.С. стр 21</a></li>
+            <li><a href="#" data-page="25">Малышев Л.С. стр 25</a></li>
+            <li><a href="#" data-page="30">Передернин А.Д. стр 30</a></li>
+            <li><a href="#" data-page="34">Богданов М.С., Зубов А.А. стр 34</a></li>
+            <li><a href="#" data-page="41">Григорьев Л.А. стр 41</a></li>
+            <li><a href="#" data-page="46">Домрачев Д.А. стр 46</a></li>
+            <li><a href="#" data-page="49">Максимов С.В. стр 49</a></li>
+            <li><a href="#" data-page="54">Мухомедьянова Э.А. стр 54</a></li>
+            <li><a href="#" data-page="59">Кузнецов В.И. стр 59</a></li>
+            <li><a href="#" data-page="62">Романов В.С. стр 62</a></li>
+            <li><a href="#" data-page="67">Мешев В., Воденников Н. стр 67</a></li>
+            <li><a href="#" data-page="72">Несин А.И. стр 72</a></li>
+            <li><a href="#" data-page="77">Базарнов С. стр 77 </a></li>
+            <li><a href="#" data-page="81">Черняев С. стр 81 </a></li>
+            <li><a href="#" data-page="85">Загребина Д.А. стр 85 </a></li>
+            <li><a href="#" data-page="90">Мамаев С. стр 90 </a></li>
+            <li><a href="#" data-page="94">Метыш С. стр 94 </a></li>
+            <li><a href="#" data-page="97">Гриер Е.А. стр 97 </a></li>
+            <li><a href="#" data-page="101">Кочеткова К.А. стр 101 </a></li>
+            <li><a href="#" data-page="107">Яннуров А.Р., Ахметшин Д.А. стр 107 </a></li>
+            <li><a href="#" data-page="111">Ермаков Д.С., Целуйко Т.Н. стр 111 </a></li>
+            <li><a href="#" data-page="116">Ломакин Д.О. стр 116 </a></li>
+            <li><a href="#" data-page="120">Орлов А.А. стр 120 </a></li>
+            <li><a href="#" data-page="125">Маршалова Е.М. стр 125 </a></li>
+            <li><a href="#" data-page="131">Власов Т.В., Глухих К.П. стр 131 </a></li>
+            <li><a href="#" data-page="137">Ширягин В.В., Ролдугин Д.О. стр 137 </a></li>
+            <li><a href="#" data-page="142">Куликова А.С. стр 142 </a></li>
+            <li><a href="#" data-page="147">Ломакин Д.О. стр 147 </a></li>
+            <li><a href="#" data-page="152">Орлов А.С. стр 152 </a></li>
+            <li><a href="#" data-page="157">Талыпов В.В. стр 157 </a></li>
+            <li><a href="#" data-page="161">Костиков А. стр 161 </a></li>
+            <li><a href="#" data-page="165">Бусыгина П.М. стр 165 </a></li>
+            <li><a href="#" data-page="169">Патраков К.Ю. стр 169 </a></li>
+            <li><a href="#" data-page="175">Акимов А.С. стр 175 </a></li>
+            <li><a href="#" data-page="181">Муратова В.К., Жилкин А.А. стр 181 </a></li>
+            <li><a href="#" data-page="186">Терехов Е.В. стр 186 </a></li>
+            <li><a href="#" data-page="191">Обухов Н.О. стр 191 </a></li>
+            <li><a href="#" data-page="196">Пьячев М.П., Заостровская У.А. стр 196 </a></li>
+            <li><a href="#" data-page="201">Глущенко В.А., Сайфуллин Д.В. стр 201 </a></li>
+            <li><a href="#" data-page="205">Заостровская У.А. стр 205 </a></li>
+            <li><a href="#" data-page="211">Цуканов Н.В. стр 211 </a></li>
+            <li><a href="#" data-page="216">Максимов М.М. стр.216 </a></li>
+            <li><a href="#" data-page="220">Попков А.Р, Мурхаламова Е.А. стр 220 </a></li>
+            <li><a href="#" data-page="225">Бояршинова К.С., Цахклорян М.Т. стр 225 </a></li>
+            <li><a href="#" data-page="230">Смольникова Д.И., Чинченкова М.В. стр 230 </a></li>
+            <li><a href="#" data-page="237">Исинькин-Кузнецов Б.С. стр 237 </a></li>
+            <li><a href="#" data-page="241">Сухорукова А.Г. стр 241 </a></li>
+            <li><a href="#" data-page="245">Арзамасцева Е.Н., Колесникова Д.С. стр 245 </a></li>
+        </ul>
+    </div>
+    
+    <div class="search-container">
+         
+    </div>  
+    <button id="toggleSidebar" class="btn btn-primary" style="position: absolute; top: 10px; left: 10px;">☰</button>  
+    <button id="authButton" class="btn btn-secondary" style="position: absolute; top: 10px; right: 10px;">Включить режим редактирования</button>
+    
+    <div class="container">
+        <div class="flip-book" id="demoBookExample">
+            <div class="page page-cover page-cover-top" data-density="hard"></div>
+            <!-- PAGES ....-->
+            <div class="page" id="page-1">
+                <div class="page-content">
+                    <img class="page-image" src="img/001.jpg" />
+                    <div class="page-footer">2</div>
+
+                </div>
+            </div>
+            <div class="page" id="page-2">
+                <div class="page-content">
+                    <img class="page-image" src="img/002.jpg" />
+                    <div class="page-footer">3</div>
+                </div>
+            </div>
+            <div class="page" id="page-3">
+                <div class="page-content">
+                    <img class="page-image" src="img/003.jpg" />
+                    <div class="page-footer">4</div>
+                </div>
+            </div>
+            <div class="page" id="page-4">
+                <div class="page-content">
+                    <img class="page-image" src="img/004.jpg" />
+                    <div class="page-footer">5</div>
+                </div>
+            </div>
+            <div class="page" id="page-5">
+                <div class="page-content">
+                    <img class="page-image" src="img/005.jpg" />
+                    <div class="page-footer">6</div>
+                </div>
+            </div>
+            <div class="page" id="page-6">
+                <div class="page-content">
+                    <img class="page-image" src="img/006.jpg" />
+                    <div class="page-footer">7</div>
+                </div>
+            </div>
+            <div class="page" id="page-7">
+                <div class="page-content">
+                    <img class="page-image" src="img/007.jpg" />
+                    <div class="page-footer">8</div>
+                </div>
+            </div>
+            <div class="page" id="page-8">
+                <div class="page-content">
+                    <img class="page-image" src="img/008.jpg" />
+                    <div class="page-footer">9</div>
+                </div>
+            </div>
+            <div class="page" id="page-9">
+                <div class="page-content">
+                    <img class="page-image" src="img/009.jpg" />
+                    <div class="page-footer">10</div>
+                </div>
+            </div>
+            <div class="page" id="page-10">
+                <div class="page-content">
+                    <img class="page-image" src="img/010.jpg" />
+                    <div class="page-footer">11</div>
+                </div>
+            </div>
+            <div class="page" id="page-11">
+                <div class="page-content">
+                    <img class="page-image" src="img/011.jpg" />
+                    <div class="page-footer">12</div>
+                </div>
+            </div>
+            <div class="page" id="page-12">
+                <div class="page-content">
+                    <img class="page-image" src="img/012.jpg" />
+                    <div class="page-footer">13</div>
+                </div>
+            </div>
+            <div class="page" id="page-13">
+                <div class="page-content">
+                    <img class="page-image" src="img/013.jpg" />
+                    <div class="page-footer">14</div>
+                </div>
+            </div>
+            <div class="page" id="page-14">
+                <div class="page-content">
+                    <img class="page-image" src="img/014.jpg" />
+                    <div class="page-footer">15</div>
+                </div>
+            </div>
+            <div class="page" id="page-15">
+                <div class="page-content">
+                    <img class="page-image" src="img/015.jpg" />
+                    <div class="page-footer">16</div>
+                </div>
+            </div>
+            <div class="page" id="page-16">
+                <div class="page-content">
+                    <img class="page-image" src="img/016.jpg" />
+                    <div class="page-footer">17</div>
+                </div>
+            </div>
+            <div class="page" id="page-17">
+                <div class="page-content">
+                    <img class="page-image" src="img/017_2019.jpg" />
+                    <div class="page-footer">18</div>
+                </div>
+            </div>
+            <div class="page" id="page-18">
+                <div class="page-content">
+                    <img class="page-image" src="img/018.jpg" />
+                    <div class="page-footer">19</div>
+                </div>
+            </div>
+            <div class="page" id="page-19">
+                <div class="page-content">
+                    <img class="page-image" src="img/019.jpg" />
+                    <div class="page-footer">20</div>
+                </div>
+            </div>
+            <div class="page" id="page-20">
+                <div class="page-content">
+                    <img class="page-image" src="img/020.jpg" />
+                    <div class="page-footer">21</div>
+                </div>
+            </div>
+            <div class="page" id="page-21">
+                <div class="page-content">
+                    <img class="page-image" src="img/021.jpg" />
+                    <div class="page-footer">22</div>
+                </div>
+            </div>
+            <div class="page" id="page-22">
+                <div class="page-content">
+                    <img class="page-image" src="img/022.jpg" />
+                    <div class="page-footer">23</div>
+                </div>
+            </div>
+            <div class="page" id="page-23">
+                <div class="page-content">
+                    <img class="page-image" src="img/023.jpg" />
+                    <div class="page-footer">24</div>
+                </div>
+            </div>
+            <div class="page" id="page-24">
+                <div class="page-content">
+                    <img class="page-image" src="img/025.jpg" />
+                    <div class="page-footer">25</div>
+                </div>
+            </div>
+            <div class="page" id="page-25">
+                <div class="page-content">
+                    <img class="page-image" src="img/026.jpg" />
+                    <div class="page-footer">26</div>
+                </div>
+            </div>
+            <div class="page" id="page-26">
+                <div class="page-content">
+                    <img class="page-image" src="img/027.jpg" />
+                    <div class="page-footer">27</div>
+                </div>
+            </div>
+            <div class="page" id="page-27">
+                <div class="page-content">
+                    <img class="page-image" src="img/028.jpg" />
+                    <div class="page-footer">28</div>
+                </div>
+            </div>
+            <div class="page" id="page-28">
+                <div class="page-content">
+                    <img class="page-image" src="img/029.jpg" />
+                    <div class="page-footer">29</div>
+                </div>
+            </div>
+            <div class="page" id="page-29">
+                <div class="page-content">
+                    <img class="page-image" src="img/030.jpg" />
+                    <div class="page-footer">30</div>
+                </div>
+            </div>
+            <div class="page" id="page-30">
+                <div class="page-content">
+                    <img class="page-image" src="img/031.jpg" />
+                    <div class="page-footer">31</div>
+                </div>
+            </div>
+            <div class="page" id="page-31">
+                <div class="page-content">
+                    <img class="page-image" src="img/032.jpg" />
+                    <div class="page-footer">32</div>
+                </div>
+            </div>
+            <div class="page" id="page-32">
+                <div class="page-content">
+                    <img class="page-image" src="img/033.jpg" />
+                    <div class="page-footer">33</div>
+                </div>
+            </div>
+            <div class="page" id="page-33">
+                <div class="page-content">
+                    <img class="page-image" src="img/034.jpg" />
+                    <div class="page-footer">34</div>
+                </div>
+            </div>
+            <div class="page" id="page-34">
+                <div class="page-content">
+                    <img class="page-image" src="img/035.jpg" />
+                    <div class="page-footer">35</div>
+                </div>
+            </div>
+            <div class="page" id="page-35">
+                <div class="page-content">
+                    <img class="page-image" src="img/036.jpg" />
+                    <div class="page-footer">36</div>
+                </div>
+            </div>
+            <div class="page" id="page-36">
+                <div class="page-content">
+                    <img class="page-image" src="img/037.jpg" />
+                    <div class="page-footer">37</div>
+                </div>
+            </div>
+            <div class="page" id="page-37">
+                <div class="page-content">
+                    <img class="page-image" src="img/038.jpg" />
+                    <div class="page-footer">38</div>
+                </div>
+            </div>
+            <div class="page" id="page-38">
+                <div class="page-content">
+                    <img class="page-image" src="img/039.jpg" />
+                    <div class="page-footer">39</div>
+                </div>
+            </div>
+            <div class="page" id="page-39">
+                <div class="page-content">
+                    <img class="page-image" src="img/040.jpg" />
+                    <div class="page-footer">40</div>
+                </div>
+            </div>
+            <div class="page" id="page-40">
+                <div class="page-content">
+                    <img class="page-image" src="img/041.jpg" />
+                    <div class="page-footer">41</div>
+                </div>
+            </div>
+            <div class="page" id="page-41">
+                <div class="page-content">
+                    <img class="page-image" src="img/042.jpg" />
+                    <div class="page-footer">42</div>
+                </div>
+            </div>
+            <div class="page" id="page-42">
+                <div class="page-content">
+                    <img class="page-image" src="img/043.jpg" />
+                    <div class="page-footer">43</div>
+                </div>
+            </div>
+            <div class="page" id="page-43">
+                <div class="page-content">
+                    <img class="page-image" src="img/044.jpg" />
+                    <div class="page-footer">44</div>
+                </div>
+            </div>
+            <div class="page" id="page-44">
+                <div class="page-content">
+                    <img class="page-image" src="img/045.jpg" />
+                    <div class="page-footer">45</div>
+                </div>
+            </div>
+            <div class="page" id="page-45">
+                <div class="page-content">
+                    <img class="page-image" src="img/046.jpg" />
+                    <div class="page-footer">46</div>
+                </div>
+            </div>
+            <div class="page" id="page-46">
+                <div class="page-content">
+                    <img class="page-image" src="img/047.jpg" />
+                    <div class="page-footer">47</div>
+                </div>
+            </div>
+            <div class="page" id="page-47">
+                <div class="page-content">
+                    <img class="page-image" src="img/048.jpg" />
+                    <div class="page-footer">48</div>
+                </div>
+            </div>
+            <div class="page" id="page-48">
+                <div class="page-content">
+                    <img class="page-image" src="img/049.jpg" />
+                    <div class="page-footer">49</div>
+                </div>
+            </div>
+            <div class="page" id="page-49">
+                <div class="page-content">
+                    <img class="page-image" src="img/050.jpg" />
+                    <div class="page-footer">50</div>
+                </div>
+            </div>
+            <div class="page" id="page-50">
+                <div class="page-content">
+                    <img class="page-image" src="img/051.jpg" />
+                    <div class="page-footer">51</div>
+                </div>
+            </div>
+            <div class="page" id="page-51">
+                <div class="page-content">
+                    <img class="page-image" src="img/052.jpg" />
+                    <div class="page-footer">52</div>
+                </div>
+            </div>
+            <div class="page" id="page-52">
+                <div class="page-content">
+                    <img class="page-image" src="img/053.jpg" />
+                    <div class="page-footer">53</div>
+                </div>
+            </div>
+            <div class="page" id="page-53">
+                <div class="page-content">
+                    <img class="page-image" src="img/054.jpg" />
+                    <div class="page-footer">54</div>
+                </div>
+            </div>
+            <div class="page" id="page-54">
+                <div class="page-content">
+                    <img class="page-image" src="img/055.jpg" />
+                    <div class="page-footer">55</div>
+                </div>
+            </div>
+            <div class="page" id="page-55">
+                <div class="page-content">
+                    <img class="page-image" src="img/056.jpg" />
+                    <div class="page-footer">56</div>
+                </div>
+            </div>
+            <div class="page" id="page-56">
+                <div class="page-content">
+                    <img class="page-image" src="img/057.jpg" />
+                    <div class="page-footer">57</div>
+                </div>
+            </div>
+            <div class="page" id="page-57">
+                <div class="page-content">
+                    <img class="page-image" src="img/058.jpg" />
+                    <div class="page-footer">58</div>
+                </div>
+            </div>
+            <div class="page" id="page-58">
+                <div class="page-content">
+                    <img class="page-image" src="img/059_2020.jpg" />
+                    <div class="page-footer">59</div>
+                </div>
+            </div>
+            <div class="page" id="page-59">
+                <div class="page-content">
+                    <img class="page-image" src="img/060.jpg" />
+                    <div class="page-footer">60</div>
+                </div>
+            </div>
+            <div class="page" id="page-60">
+                <div class="page-content">
+                    <img class="page-image" src="img/061.jpg" />
+                    <div class="page-footer">61</div>
+                </div>
+            </div>
+            <div class="page" id="page-61">
+                <div class="page-content">
+                    <img class="page-image" src="img/062.jpg" />
+                    <div class="page-footer">62</div>
+                </div>
+            </div>
+            <div class="page" id="page-62">
+                <div class="page-content">
+                    <img class="page-image" src="img/063.jpg" />
+                    <div class="page-footer">63</div>
+                </div>
+            </div>
+            <div class="page" id="page-63">
+                <div class="page-content">
+                    <img class="page-image" src="img/064.jpg" />
+                    <div class="page-footer">64</div>
+                </div>
+            </div>
+            <div class="page" id="page-64">
+                <div class="page-content">
+                    <img class="page-image" src="img/065.jpg" />
+                    <div class="page-footer">65</div>
+                </div>
+            </div>
+            <div class="page" id="page-65">
+                <div class="page-content">
+                    <img class="page-image" src="img/066.jpg" />
+                    <div class="page-footer">66</div>
+                </div>
+            </div>
+            <div class="page" id="page-66">
+                <div class="page-content">
+                    <img class="page-image" src="img/067.jpg" />
+                    <div class="page-footer">67</div>
+                </div>
+            </div>
+            <div class="page" id="page-67">
+                <div class="page-content">
+                    <img class="page-image" src="img/068.jpg" />
+                    <div class="page-footer">68</div>
+                </div>
+            </div>
+            <div class="page" id="page-68">
+                <div class="page-content">
+                    <img class="page-image" src="img/069.jpg" />
+                    <div class="page-footer">69</div>
+                </div>
+            </div>
+            <div class="page" id="page-69">
+                <div class="page-content">
+                    <img class="page-image" src="img/070.jpg" />
+                    <div class="page-footer">70</div>
+                </div>
+            </div>
+            <div class="page" id="page-70">
+                <div class="page-content">
+                    <img class="page-image" src="img/071.jpg" />
+                    <div class="page-footer">71</div>
+                </div>
+            </div>
+            <div class="page" id="page-71">
+                <div class="page-content">
+                    <img class="page-image" src="img/072.jpg" />
+                    <div class="page-footer">72</div>
+                </div>
+            </div>
+            <div class="page" id="page-72">
+                <div class="page-content">
+                    <img class="page-image" src="img/073.jpg" />
+                    <div class="page-footer">73</div>
+                </div>
+            </div>
+            <div class="page" id="page-73">
+                <div class="page-content">
+                    <img class="page-image" src="img/074.jpg" />
+                    <div class="page-footer">74</div>
+                </div>
+            </div>
+            <div class="page" id="page-74">
+                <div class="page-content">
+                    <img class="page-image" src="img/075.jpg" />
+                    <div class="page-footer">75</div>
+                </div>
+            </div>
+            <div class="page" id="page-75">
+                <div class="page-content">
+                    <img class="page-image" src="img/076.jpg" />
+                    <div class="page-footer">76</div>
+                </div>
+            </div>
+            <div class="page" id="page-76">
+                <div class="page-content">
+                    <img class="page-image" src="img/077.jpg" />
+                    <div class="page-footer">77</div>
+                </div>
+            </div>
+            <div class="page" id="page-77">
+                <div class="page-content">
+                    <img class="page-image" src="img/078.jpg" />
+                    <div class="page-footer">78</div>
+                </div>
+            </div>
+            <div class="page" id="page-78">
+                <div class="page-content">
+                    <img class="page-image" src="img/079.jpg" />
+                    <div class="page-footer">79</div>
+                </div>
+            </div>
+            <div class="page" id="page-79">
+                <div class="page-content">
+                    <img class="page-image" src="img/080.jpg" />
+                    <div class="page-footer">80</div>
+                </div>
+            </div>
+            <div class="page" id="page-80">
+                <div class="page-content">
+                    <img class="page-image" src="img/081.jpg" />
+                    <div class="page-footer">81</div>
+                </div>
+            </div>
+            <div class="page" id="page-81">
+                <div class="page-content">
+                    <img class="page-image" src="img/082.jpg" />
+                    <div class="page-footer">82</div>
+                </div>
+            </div>
+            <div class="page" id="page-82">
+                <div class="page-content">
+                    <img class="page-image" src="img/083.jpg" />
+                    <div class="page-footer">83</div>
+                </div>
+            </div>
+            <div class="page" id="page-83">
+                <div class="page-content">
+                    <img class="page-image" src="img/084.jpg" />
+                    <div class="page-footer">84</div>
+                </div>
+            </div>
+            <div class="page" id="page-84">
+                <div class="page-content">
+                    <img class="page-image" src="img/085.jpg" />
+                    <div class="page-footer">85</div>
+                </div>
+            </div>
+            <div class="page" id="page-85">
+                <div class="page-content">
+                    <img class="page-image" src="img/086.jpg" />
+                    <div class="page-footer">86</div>
+                </div>
+            </div>
+            <div class="page" id="page-86">
+                <div class="page-content">
+                    <img class="page-image" src="img/087.jpg" />
+                    <div class="page-footer">87</div>
+                </div>
+            </div>
+            <div class="page" id="page-87">
+                <div class="page-content">
+                    <img class="page-image" src="img/088.jpg" />
+                    <div class="page-footer">88</div>
+                </div>
+            </div>
+            <div class="page" id="page-88">
+                <div class="page-content">
+                    <img class="page-image" src="img/089.jpg" />
+                    <div class="page-footer">89</div>
+                </div>
+            </div>
+            <div class="page" id="page-89">
+                <div class="page-content">
+                    <img class="page-image" src="img/090.jpg" />
+                    <div class="page-footer">90</div>
+                </div>
+            </div>
+            <div class="page" id="page-90">
+                <div class="page-content">
+                    <img class="page-image" src="img/091.jpg" />
+                    <div class="page-footer">91</div>
+                </div>
+            </div>
+            <div class="page" id="page-91">
+                <div class="page-content">
+                    <img class="page-image" src="img/092.jpg" />
+                    <div class="page-footer">92</div>
+                </div>
+            </div>
+            <div class="page" id="page-92">
+                <div class="page-content">
+                    <img class="page-image" src="img/093.jpg" />
+                    <div class="page-footer">93</div>
+                </div>
+            </div>
+            <div class="page" id="page-93">
+                <div class="page-content">
+                    <img class="page-image" src="img/094.jpg" />
+                    <div class="page-footer">94</div>
+                </div>
+            </div>
+            <div class="page" id="page-94">
+                <div class="page-content">
+                    <img class="page-image" src="img/095.jpg" />
+                    <div class="page-footer">95</div>
+                </div>
+            </div>
+            <div class="page" id="page-95">
+                <div class="page-content">
+                    <img class="page-image" src="img/096.jpg" />
+                    <div class="page-footer">96</div>
+                </div>
+            </div>
+            <div class="page" id="page-96">
+                <div class="page-content">
+                    <img class="page-image" src="img/097.jpg" />
+                    <div class="page-footer">97</div>
+                </div>
+            </div>
+            <div class="page" id="page-97">
+                <div class="page-content">
+                    <img class="page-image" src="img/098.jpg" />
+                    <div class="page-footer">98</div>
+                </div>
+            </div>
+            <div class="page" id="page-98">
+                <div class="page-content">
+                    <img class="page-image" src="img/099.jpg" />
+                    <div class="page-footer">99</div>
+                </div>
+            </div>
+            <div class="page" id="page-99">
+                <div class="page-content">
+                    <img class="page-image" src="img/100.jpg" />
+                    <div class="page-footer">100</div>
+                </div>
+            </div>
+            <div class="page" id="page-100">
+                <div class="page-content">
+                    <img class="page-image" src="img/101.jpg" />
+                    <div class="page-footer">101</div>
+                </div>
+            </div>
+            <div class="page" id="page-101">
+                <div class="page-content">
+                    <img class="page-image" src="img/102.jpg" />
+                    <div class="page-footer">102</div>
+                </div>
+            </div>
+            <div class="page" id="page-102">
+                <div class="page-content">
+                    <img class="page-image" src="img/103.jpg" />
+                    <div class="page-footer">103</div>
+                </div>
+            </div>
+            <div class="page" id="page-103">
+                <div class="page-content">
+                    <img class="page-image" src="img/104.jpg" />
+                    <div class="page-footer">104</div>
+                </div>
+            </div>
+            <div class="page" id="page-104">
+                <div class="page-content">
+                    <img class="page-image" src="img/105.jpg" />
+                    <div class="page-footer">105</div>
+                </div>
+            </div>
+            <div class="page" id="page-105">
+                <div class="page-content">
+                    <img class="page-image" src="img/106.jpg" />
+                    <div class="page-footer">106</div>
+                </div>
+            </div>
+            <div class="page" id="page-106">
+                <div class="page-content">
+                    <img class="page-image" src="img/107_2021.jpg" />
+                    <div class="page-footer">107</div>
+                </div>
+            </div>
+            <div class="page" id="page-107">
+                <div class="page-content">
+                    <img class="page-image" src="img/108.jpg" />
+                    <div class="page-footer">108</div>
+                </div>
+            </div>
+            <div class="page" id="page-108">
+                <div class="page-content">
+                    <img class="page-image" src="img/109.jpg" />
+                    <div class="page-footer">109</div>
+                </div>
+            </div>
+            <div class="page" id="page-109">
+                <div class="page-content">
+                    <img class="page-image" src="img/110.jpg" />
+                    <div class="page-footer">110</div>
+                </div>
+            </div>
+            <div class="page" id="page-110">
+                <div class="page-content">
+                    <img class="page-image" src="img/111.jpg" />
+                    <div class="page-footer">111</div>
+                </div>
+            </div>
+            <div class="page" id="page-111">
+                <div class="page-content">
+                    <img class="page-image" src="img/112.jpg" />
+                    <div class="page-footer">112</div>
+                </div>
+            </div>
+            <div class="page" id="page-112">
+                <div class="page-content">
+                    <img class="page-image" src="img/113.jpg" />
+                    <div class="page-footer">113</div>
+                </div>
+            </div>
+            <div class="page" id="page-113">
+                <div class="page-content">
+                    <img class="page-image" src="img/114.jpg" />
+                    <div class="page-footer">114</div>
+                </div>
+            </div>
+            <div class="page" id="page-114">
+                <div class="page-content">
+                    <img class="page-image" src="img/115.jpg" />
+                    <div class="page-footer">115</div>
+                </div>
+            </div>
+            <div class="page" id="page-115">
+                <div class="page-content">
+                    <img class="page-image" src="img/116.jpg" />
+                    <div class="page-footer">116</div>
+                </div>
+            </div>
+            <div class="page" id="page-116">
+                <div class="page-content">
+                    <img class="page-image" src="img/117.jpg" />
+                    <div class="page-footer">117</div>
+                </div>
+            </div>
+            <div class="page" id="page-117">
+                <div class="page-content">
+                    <img class="page-image" src="img/118.jpg" />
+                    <div class="page-footer">118</div>
+                </div>
+            </div>
+            <div class="page" id="page-118">
+                <div class="page-content">
+                    <img class="page-image" src="img/119.jpg" />
+                    <div class="page-footer">119</div>
+                </div>
+            </div>
+            <div class="page" id="page-119">
+                <div class="page-content">
+                    <img class="page-image" src="img/120.jpg" />
+                    <div class="page-footer">120</div>
+                </div>
+            </div>
+            <div class="page" id="page-120">
+                <div class="page-content">
+                    <img class="page-image" src="img/121.jpg" />
+                    <div class="page-footer">121</div>
+                </div>
+            </div>
+            <div class="page" id="page-121">
+                <div class="page-content">
+                    <img class="page-image" src="img/122.jpg" />
+                    <div class="page-footer">122</div>
+                </div>
+            </div>
+            <div class="page" id="page-122">
+                <div class="page-content">
+                    <img class="page-image" src="img/123.jpg" />
+                    <div class="page-footer">123</div>
+                </div>
+            </div>
+            <div class="page" id="page-123">
+                <div class="page-content">
+                    <img class="page-image" src="img/124.jpg" />
+                    <div class="page-footer">124</div>
+                </div>
+            </div>
+            <div class="page" id="page-124">
+                <div class="page-content">
+                    <img class="page-image" src="img/125.jpg" />
+                    <div class="page-footer">125</div>
+                </div>
+            </div>
+            <div class="page" id="page-125">
+                <div class="page-content">
+                    <img class="page-image" src="img/126.jpg" />
+                    <div class="page-footer">126</div>
+                </div>
+            </div>
+            <div class="page" id="page-126">
+                <div class="page-content">
+                    <img class="page-image" src="img/127.jpg" />
+                    <div class="page-footer">127</div>
+                </div>
+            </div>
+            <div class="page" id="page-127">
+                <div class="page-content">
+                    <img class="page-image" src="img/128.jpg" />
+                    <div class="page-footer">128</div>
+                </div>
+            </div>
+            <div class="page" id="page-128">
+                <div class="page-content">
+                    <img class="page-image" src="img/129.jpg" />
+                    <div class="page-footer">129</div>
+                </div>
+            </div>
+            <div class="page" id="page-130">
+                <div class="page-content">
+                    <img class="page-image" src="img/130.jpg" />
+                    <div class="page-footer">130</div>
+                </div>
+            </div>
+            <div class="page" id="page-131">
+                <div class="page-content">
+                    <img class="page-image" src="img/131_2022.jpg" />
+                    <div class="page-footer">131</div>
+                </div>
+            </div>
+            <div class="page" id="page-132">
+                <div class="page-content">
+                    <img class="page-image" src="img/132.jpg" />
+                    <div class="page-footer">132</div>
+                </div>
+            </div>
+            <div class="page" id="page-133">
+                <div class="page-content">
+                    <img class="page-image" src="img/133.jpg" />
+                    <div class="page-footer">133</div>
+                </div>
+            </div>
+            <div class="page" id="page-134">
+                <div class="page-content">
+                    <img class="page-image" src="img/134.jpg" />
+                    <div class="page-footer">134</div>
+                </div>
+            </div>
+            <div class="page" id="page-135">
+                <div class="page-content">
+                    <img class="page-image" src="img/135.jpg" />
+                    <div class="page-footer">135</div>
+                </div>
+            </div>
+            <div class="page" id="page-136">
+                <div class="page-content">
+                    <img class="page-image" src="img/136.jpg" />
+                    <div class="page-footer">136</div>
+                </div>
+            </div>
+            <div class="page" id="page-137">
+                <div class="page-content">
+                    <img class="page-image" src="img/137.jpg" />
+                    <div class="page-footer">137</div>
+                </div>
+            </div>
+            <div class="page" id="page-138">
+                <div class="page-content">
+                    <img class="page-image" src="img/138.jpg" />
+                    <div class="page-footer">138</div>
+                </div>
+            </div>
+            <div class="page" id="page-139">
+                <div class="page-content">
+                    <img class="page-image" src="img/139.jpg" />
+                    <div class="page-footer">139</div>
+                </div>
+            </div>
+            <div class="page" id="page-140">
+                <div class="page-content">
+                    <img class="page-image" src="img/140.jpg" />
+                    <div class="page-footer">140</div>
+                </div>
+            </div>
+            <div class="page" id="page-141">
+                <div class="page-content">
+                    <img class="page-image" src="img/141.jpg" />
+                    <div class="page-footer">141</div>
+                </div>
+            </div>
+            <div class="page" id="page-142">
+                <div class="page-content">
+                    <img class="page-image" src="img/142.jpg" />
+                    <div class="page-footer">142</div>
+                </div>
+            </div>
+            <div class="page" id="page-143">
+                <div class="page-content">
+                    <img class="page-image" src="img/143.jpg" />
+                    <div class="page-footer">143</div>
+                </div>
+            </div>
+            <div class="page" id="page-144">
+                <div class="page-content">
+                    <img class="page-image" src="img/144.jpg" />
+                    <div class="page-footer">144</div>
+                </div>
+            </div>
+            <div class="page" id="page-145">
+                <div class="page-content">
+                    <img class="page-image" src="img/145.jpg" />
+                    <div class="page-footer">145</div>
+                </div>
+            </div>
+            <div class="page" id="page-146">
+                <div class="page-content">
+                    <img class="page-image" src="img/146.jpg" />
+                    <div class="page-footer">146</div>
+                </div>
+            </div>
+            <div class="page" id="page-147">
+                <div class="page-content">
+                    <img class="page-image" src="img/147.jpg" />
+                    <div class="page-footer">147</div>
+                </div>
+            </div>
+            <div class="page" id="page-148">
+                <div class="page-content">
+                    <img class="page-image" src="img/148.jpg" />
+                    <div class="page-footer">148</div>
+                </div>
+            </div>
+            <div class="page" id="page-149">
+                <div class="page-content">
+                    <img class="page-image" src="img/149.jpg" />
+                    <div class="page-footer">149</div>
+                </div>
+            </div>
+            <div class="page" id="page-150">
+                <div class="page-content">
+                    <img class="page-image" src="img/150.jpg" />
+                    <div class="page-footer">150</div>
+                </div>
+            </div>
+            <div class="page" id="page-151">
+                <div class="page-content">
+                    <img class="page-image" src="img/151.jpg" />
+                    <div class="page-footer">151</div>
+                </div>
+            </div>
+            <div class="page" id="page-152">
+                <div class="page-content">
+                    <img class="page-image" src="img/152.jpg" />
+                    <div class="page-footer">152</div>
+                </div>
+            </div>
+            <div class="page" id="page-153">
+                <div class="page-content">
+                    <img class="page-image" src="img/153.jpg" />
+                    <div class="page-footer">153</div>
+                </div>
+            </div>
+            <div class="page" id="page-154">
+                <div class="page-content">
+                    <img class="page-image" src="img/154.jpg" />
+                    <div class="page-footer">154</div>
+                </div>
+            </div>
+            <div class="page" id="page-155">
+                <div class="page-content">
+                    <img class="page-image" src="img/155.jpg" />
+                    <div class="page-footer">155</div>
+                </div>
+            </div>
+            <div class="page" id="page-156">
+                <div class="page-content">
+                    <img class="page-image" src="img/156.jpg" />
+                    <div class="page-footer">156</div>
+                </div>
+            </div>
+            <div class="page" id="page-157">
+                <div class="page-content">
+                    <img class="page-image" src="img/157.jpg" />
+                    <div class="page-footer">157</div>
+                </div>
+            </div>
+            <div class="page" id="page-158">
+                <div class="page-content">
+                    <img class="page-image" src="img/158.jpg" />
+                    <div class="page-footer">158</div>
+                </div>
+            </div>
+            <div class="page" id="page-159">
+                <div class="page-content">
+                    <img class="page-image" src="img/159.jpg" />
+                    <div class="page-footer">159</div>
+                </div>
+            </div>
+            <div class="page" id="page-160">
+                <div class="page-content">
+                    <img class="page-image" src="img/160.jpg" />
+                    <div class="page-footer">160</div>
+                </div>
+            </div>
+            <div class="page" id="page-161">
+                <div class="page-content">
+                    <img class="page-image" src="img/161.jpg" />
+                    <div class="page-footer">161</div>
+                </div>
+            </div>
+            <div class="page" id="page-162">
+                <div class="page-content">
+                    <img class="page-image" src="img/162.jpg" />
+                    <div class="page-footer">162</div>
+                </div>
+            </div>
+            <div class="page" id="page-163">
+                <div class="page-content">
+                    <img class="page-image" src="img/163.jpg" />
+                    <div class="page-footer">163</div>
+                </div>
+            </div>
+            <div class="page" id="page-164">
+                <div class="page-content">
+                    <img class="page-image" src="img/164.jpg" />
+                    <div class="page-footer">164</div>
+                </div>
+            </div>
+            <div class="page" id="page-165">
+                <div class="page-content">
+                    <img class="page-image" src="img/165.jpg" />
+                    <div class="page-footer">165</div>
+                </div>
+            </div>
+            <div class="page" id="page-166">
+                <div class="page-content">
+                    <img class="page-image" src="img/166.jpg" />
+                    <div class="page-footer">166</div>
+                </div>
+            </div>
+            <div class="page" id="page-167">
+                <div class="page-content">
+                    <img class="page-image" src="img/167.jpg" />
+                    <div class="page-footer">167</div>
+                </div>
+            </div>
+            <div class="page" id="page-168">
+                <div class="page-content">
+                    <img class="page-image" src="img/168.jpg" />
+                    <div class="page-footer">168</div>
+                </div>
+            </div>
+            <div class="page" id="page-169">
+                <div class="page-content">
+                    <img class="page-image" src="img/169_2023.jpg" />
+                    <div class="page-footer">169</div>
+                </div>
+            </div>
+            <div class="page" id="page-170">
+                <div class="page-content">
+                    <img class="page-image" src="img/170.jpg" />
+                    <div class="page-footer">170</div>
+                </div>
+            </div>
+            <div class="page" id="page-171">
+                <div class="page-content">
+                    <img class="page-image" src="img/171.jpg" />
+                    <div class="page-footer">171</div>
+                </div>
+            </div>
+            <div class="page" id="page-172">
+                <div class="page-content">
+                    <img class="page-image" src="img/172.jpg" />
+                    <div class="page-footer">172</div>
+                </div>
+            </div>
+            <div class="page" id="page-173">
+                <div class="page-content">
+                    <img class="page-image" src="img/173.jpg" />
+                    <div class="page-footer">173</div>
+                </div>
+            </div>
+            <div class="page" id="page-174">
+                <div class="page-content">
+                    <img class="page-image" src="img/174.jpg" />
+                    <div class="page-footer">174</div>
+                </div>
+            </div>
+            <div class="page" id="page-175">
+                <div class="page-content">
+                    <img class="page-image" src="img/175.jpg" />
+                    <div class="page-footer">175</div>
+                </div>
+            </div>
+            <div class="page" id="page-176">
+                <div class="page-content">
+                    <img class="page-image" src="img/176.jpg" />
+                    <div class="page-footer">176</div>
+                </div>
+            </div>
+            <div class="page" id="page-177">
+                <div class="page-content">
+                    <img class="page-image" src="img/177.jpg" />
+                    <div class="page-footer">177</div>
+                </div>
+            </div>
+            <div class="page" id="page-178">
+                <div class="page-content">
+                    <img class="page-image" src="img/178.jpg" />
+                    <div class="page-footer">178</div>
+                </div>
+            </div>
+            <div class="page" id="page-179">
+                <div class="page-content">
+                    <img class="page-image" src="img/179.jpg" />
+                    <div class="page-footer">179</div>
+                </div>
+            </div>
+            <div class="page" id="page-180">
+                <div class="page-content">
+                    <img class="page-image" src="img/180.jpg" />
+                    <div class="page-footer">180</div>
+                </div>
+            </div>
+            <div class="page" id="page-181">
+                <div class="page-content">
+                    <img class="page-image" src="img/181.jpg" />
+                    <div class="page-footer">181</div>
+                </div>
+            </div>
+            <div class="page" id="page-182">
+                <div class="page-content">
+                    <img class="page-image" src="img/182.jpg" />
+                    <div class="page-footer">182</div>
+                </div>
+            </div>
+            <div class="page" id="page-183">
+                <div class="page-content">
+                    <img class="page-image" src="img/183.jpg" />
+                    <div class="page-footer">183</div>
+                </div>
+            </div>
+            <div class="page" id="page-184">
+                <div class="page-content">
+                    <img class="page-image" src="img/184.jpg" />
+                    <div class="page-footer">184</div>
+                </div>
+            </div>
+            <div class="page" id="page-185">
+                <div class="page-content">
+                    <img class="page-image" src="img/185.jpg" />
+                    <div class="page-footer">185</div>
+                </div>
+            </div>
+            <div class="page" id="page-186">
+                <div class="page-content">
+                    <img class="page-image" src="img/186.jpg" />
+                    <div class="page-footer">186</div>
+                </div>
+            </div>
+            <div class="page" id="page-187">
+                <div class="page-content">
+                    <img class="page-image" src="img/187.jpg" />
+                    <div class="page-footer">187</div>
+                </div>
+            </div>
+            <div class="page" id="page-188">
+                <div class="page-content">
+                    <img class="page-image" src="img/188.jpg" />
+                    <div class="page-footer">188</div>
+                </div>
+            </div>
+            <div class="page" id="page-189">
+                <div class="page-content">
+                    <img class="page-image" src="img/189.jpg" />
+                    <div class="page-footer">189</div>
+                </div>
+            </div>
+            <div class="page" id="page-190">
+                <div class="page-content">
+                    <img class="page-image" src="img/190.jpg" />
+                    <div class="page-footer">190</div>
+                </div>
+            </div>
+            <div class="page" id="page-191">
+                <div class="page-content">
+                    <img class="page-image" src="img/191.jpg" />
+                    <div class="page-footer">191</div>
+                </div>
+            </div>
+            <div class="page" id="page-192">
+                <div class="page-content">
+                    <img class="page-image" src="img/192.jpg" />
+                    <div class="page-footer">192</div>
+                </div>
+            </div>
+            <div class="page" id="page-193">
+                <div class="page-content">
+                    <img class="page-image" src="img/193.jpg" />
+                    <div class="page-footer">193</div>
+                </div>
+            </div>
+            <div class="page" id="page-194">
+                <div class="page-content">
+                    <img class="page-image" src="img/194.jpg" />
+                    <div class="page-footer">194</div>
+                </div>
+            </div>
+            <div class="page" id="page-195">
+                <div class="page-content">
+                    <img class="page-image" src="img/195.jpg" />
+                    <div class="page-footer">195</div>
+                </div>
+            </div>
+            <div class="page" id="page-196">
+                <div class="page-content">
+                    <img class="page-image" src="img/196.jpg" />
+                    <div class="page-footer">196</div>
+                </div>
+            </div>
+            <div class="page" id="page-197">
+                <div class="page-content">
+                    <img class="page-image" src="img/197.jpg" />
+                    <div class="page-footer">197</div>
+                </div>
+            </div>
+            <div class="page" id="page-198">
+                <div class="page-content">
+                    <img class="page-image" src="img/198.jpg" />
+                    <div class="page-footer">198</div>
+                </div>
+            </div>
+            <div class="page" id="page-199">
+                <div class="page-content">
+                    <img class="page-image" src="img/199.jpg" />
+                    <div class="page-footer">199</div>
+                </div>
+            </div>
+            <div class="page" id="page-200">
+                <div class="page-content">
+                    <img class="page-image" src="img/200.jpg" />
+                    <div class="page-footer">200</div>
+                </div>
+            </div>
+            <div class="page" id="page-201">
+                <div class="page-content">
+                    <img class="page-image" src="img/201.jpg" />
+                    <div class="page-footer">201</div>
+                </div>
+            </div>
+            <div class="page" id="page-202">
+                <div class="page-content">
+                    <img class="page-image" src="img/202.jpg" />
+                    <div class="page-footer">202</div>
+                </div>
+            </div>
+            <div class="page" id="page-203">
+                <div class="page-content">
+                    <img class="page-image" src="img/203.jpg" />
+                    <div class="page-footer">203</div>
+                </div>
+            </div>
+            <div class="page" id="page-204">
+                <div class="page-content">
+                    <img class="page-image" src="img/204.jpg" />
+                    <div class="page-footer">204</div>
+                </div>
+            </div>
+            <div class="page" id="page-205">
+                <div class="page-content">
+                    <img class="page-image" src="img/205.jpg" />
+                    <div class="page-footer">205</div>
+                </div>
+            </div>
+            <div class="page" id="page-206">
+                <div class="page-content">
+                    <img class="page-image" src="img/206.jpg" />
+                    <div class="page-footer">206</div>
+                </div>
+            </div>
+            <div class="page" id="page-207">
+                <div class="page-content">
+                    <img class="page-image" src="img/207.jpg" />
+                    <div class="page-footer">207</div>
+                </div>
+            </div>
+            <div class="page" id="page-208">
+                <div class="page-content">
+                    <img class="page-image" src="img/208.jpg" />
+                    <div class="page-footer">208</div>
+                </div>
+            </div>
+            <div class="page" id="page-209">
+                <div class="page-content">
+                    <img class="page-image" src="img/209.jpg" />
+                    <div class="page-footer">219</div>
+                </div>
+            </div>
+            <div class="page" id="page-210">
+                <div class="page-content">
+                    <img class="page-image" src="img/210.jpg" />
+                    <div class="page-footer">210</div>
+                </div>
+            </div>
+            <div class="page" id="page-211">
+                <div class="page-content">
+                    <img class="page-image" src="img/211.jpg" />
+                    <div class="page-footer">211</div>
+                </div>
+            </div>
+            <div class="page" id="page-212">
+                <div class="page-content">
+                    <img class="page-image" src="img/212.jpg" />
+                    <div class="page-footer">212</div>
+                </div>
+            </div>
+            <div class="page" id="page-213">
+                <div class="page-content">
+                    <img class="page-image" src="img/213.jpg" />
+                    <div class="page-footer">213</div>
+                </div>
+            </div>
+            <div class="page" id="page-214">
+                <div class="page-content">
+                    <img class="page-image" src="img/214.jpg" />
+                    <div class="page-footer">214</div>
+                </div>
+            </div>
+            <div class="page" id="page-215">
+                <div class="page-content">
+                    <img class="page-image" src="img/215.jpg" />
+                    <div class="page-footer">215</div>
+                </div>
+            </div>
+            <div class="page" id="page-216">
+                <div class="page-content">
+                    <img class="page-image" src="img/216.jpg" />
+                    <div class="page-footer">216</div>
+                </div>
+            </div>
+            <div class="page" id="page-217">
+                <div class="page-content">
+                    <img class="page-image" src="img/217.jpg" />
+                    <div class="page-footer">217</div>
+                </div>
+            </div>
+            <div class="page" id="page-218">
+                <div class="page-content">
+                    <img class="page-image" src="img/218.jpg" />
+                    <div class="page-footer">218</div>
+                </div>
+            </div>
+            <div class="page" id="page-219">
+                <div class="page-content">
+                    <img class="page-image" src="img/219.jpg" />
+                    <div class="page-footer">219</div>
+                </div>
+            </div>
+            <div class="page" id="page-220">
+                <div class="page-content">
+                    <img class="page-image" src="img/220.jpg" />
+                    <div class="page-footer">220</div>
+                </div>
+            </div>
+            <div class="page" id="page-221">
+                <div class="page-content">
+                    <img class="page-image" src="img/221.jpg" />
+                    <div class="page-footer">221</div>
+                </div>
+            </div>
+            <div class="page" id="page-222">
+                <div class="page-content">
+                    <img class="page-image" src="img/222.jpg" />
+                    <div class="page-footer">222</div>
+                </div>
+            </div>
+            <div class="page" id="page-223">
+                <div class="page-content">
+                    <img class="page-image" src="img/223.jpg" />
+                    <div class="page-footer">223</div>
+                </div>
+            </div>
+            <div class="page" id="page-224">
+                <div class="page-content">
+                    <img class="page-image" src="img/224.jpg" />
+                    <div class="page-footer">224</div>
+                </div>
+            </div>
+            <div class="page" id="page-225">
+                <div class="page-content">
+                    <img class="page-image" src="img/225.jpg" />
+                    <div class="page-footer">225</div>
+                </div>
+            </div>
+            <div class="page" id="page-226">
+                <div class="page-content">
+                    <img class="page-image" src="img/226.jpg" />
+                    <div class="page-footer">226</div>
+                </div>
+            </div>
+            <div class="page" id="page-227">
+                <div class="page-content">
+                    <img class="page-image" src="img/227.jpg" />
+                    <div class="page-footer">227</div>
+                </div>
+            </div>
+            <div class="page" id="page-228">
+                <div class="page-content">
+                    <img class="page-image" src="img/228.jpg" />
+                    <div class="page-footer">228</div>
+                </div>
+            </div>
+            <div class="page" id="page-229">
+                <div class="page-content">
+                    <img class="page-image" src="img/229.jpg" />
+                    <div class="page-footer">229</div>
+                </div>
+            </div>
+            <div class="page" id="page-230">
+                <div class="page-content">
+                    <img class="page-image" src="img/230.jpg" />
+                    <div class="page-footer">230</div>
+                </div>
+            </div>
+            <div class="page" id="page-231">
+                <div class="page-content">
+                    <img class="page-image" src="img/231.jpg" />
+                    <div class="page-footer">231</div>
+                </div>
+            </div>
+            <div class="page" id="page-232">
+                <div class="page-content">
+                    <img class="page-image" src="img/232.jpg" />
+                    <div class="page-footer">232</div>
+                </div>
+            </div>
+            <div class="page" id="page-233">
+                <div class="page-content">
+                    <img class="page-image" src="img/233.jpg" />
+                    <div class="page-footer">233</div>
+                </div>
+            </div>
+            <div class="page" id="page-234">
+                <div class="page-content">
+                    <img class="page-image" src="img/234.jpg" />
+                    <div class="page-footer">234</div>
+                </div>
+            </div>
+            <div class="page" id="page-235">
+                <div class="page-content">
+                    <img class="page-image" src="img/235.jpg" />
+                    <div class="page-footer">235</div>
+                </div>
+            </div>
+            <div class="page" id="page-236">
+                <div class="page-content">
+                    <img class="page-image" src="img/236.jpg" />
+                    <div class="page-footer">236</div>
+                </div>
+            </div>
+            <div class="page" id="page-237">
+                <div class="page-content">
+                    <img class="page-image" src="img/237.jpg" />
+                    <div class="page-footer">237</div>
+                </div>
+            </div>
+            <div class="page" id="page-238">
+                <div class="page-content">
+                    <img class="page-image" src="img/238.jpg" />
+                    <div class="page-footer">238</div>
+                </div>
+            </div>
+            <div class="page" id="page-239">
+                <div class="page-content">
+                    <img class="page-image" src="img/239.jpg" />
+                    <div class="page-footer">239</div>
+                </div>
+            </div>
+            <div class="page" id="page-240">
+                <div class="page-content">
+                    <img class="page-image" src="img/240.jpg" />
+                    <div class="page-footer">240</div>
+                </div>
+            </div>
+            <div class="page" id="page-241">
+                <div class="page-content">
+                    <img class="page-image" src="img/241.jpg" />
+                    <div class="page-footer">241</div>
+                </div>
+            </div>
+            <div class="page" id="page-242">
+                <div class="page-content">
+                    <img class="page-image" src="img/242.jpg" />
+                    <div class="page-footer">242</div>
+                </div>
+            </div>
+            <div class="page" id="page-243">
+                <div class="page-content">
+                    <img class="page-image" src="img/243.jpg" />
+                    <div class="page-footer">243</div>
+                </div>
+            </div>
+            <div class="page" id="page-244">
+                <div class="page-content">
+                    <img class="page-image" src="img/244.jpg" />
+                    <div class="page-footer">244</div>
+                </div>
+            </div>
+            <div class="page" id="page-245">
+                <div class="page-content">
+                    <img class="page-image" src="img/245.jpg" />
+                    <div class="page-footer">245</div>
+                </div>
+            </div>
+            <div class="page" id="page-246">
+                <div class="page-content">
+                    <img class="page-image" src="img/246.jpg" />
+                    <div class="page-footer">246</div>
+                </div>
+            </div>
+            <div class="page" id="page-247">
+                <div class="page-content">
+                    <img class="page-image" src="img/247.jpg" />
+                    <div class="page-footer">247</div>
+                </div>
+            </div>
+            <div class="page" id="page-248">
+                <div class="page-content">
+                    <img class="page-image" src="img/248.jpg" />
+                    <div class="page-footer">248</div>
+                </div>
+            </div>
+            <div class="page" id="page-249">
+                <div class="page-content">
+                    <img class="page-image" src="img/249.jpg" />
+                    <div class="page-footer">249</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Левое полноэкранное окошко -->
-    <div class="sidebar-left" id="sidebarLeft" hidden>
-        <!-- Шапка с навигацией -->
-        <div class="catalog-header">
-            <button class="back-btn" id="backBtn" hidden>
-                <span class="back-arrow">←</span>
-                <span class="back-text">Назад</span>
-            </button>
-            <h2 class="catalog-title" id="catalogTitle">Каталог специальностей</h2>
-            <button class="close-btn" id="closeSidebar" aria-label="Закрыть каталог">×</button>
-        </div>
-        <!-- Поиск -->
-        <div class="search-container">
-            <input type="text" class="search-input" id="searchInput" placeholder="Поиск...">
-            <button class="search-clear-btn" id="searchClearBtn" hidden>×</button>
-        </div>
-        <!-- Сетка элементов текущего уровня -->
-        <div class="items-grid-full" id="catalogGrid"></div>
+    <div style="display: flex; justify-content: center; margin-top: 10px;">
+        <button type="button" id="toggleZoom" class="btn btn-secondary">Включить режим масштабирования</button>
+        <button type="button" id="zoomIn" class="btn btn-secondary">Увеличить</button>
+        <button type="button" id="zoomOut" class="btn btn-secondary">Уменьшить</button>
     </div>
+    <div class="container">
+        <div style="display: flex;justify-content: space-between">
+            <button type="button" class="btn btn-secondary btn-prev"><<</button>
+            <div>[<span class="page-current">1</span> of <span class="page-total">-</span>]</div>
+            <button type="button" class="btn btn-secondary btn-next">>></button>
+        </div>
 
-    <!-- Оверлей для затемнения фона -->
-    <div class="overlay" hidden></div>
-
-    <script src="js/script.js"></script>
-
+        <div style="display:none">
+            State: <i class="page-state">read</i>, orientation: <i class="page-orientation">landscape</i>
+        </div> <!---->
+    </div>
 </body>
 </html>
+<script src="js/StPageFlip.js"></script>
+<script src="js/searchPage.js"></script>
+<script src="js/Zoom.js"></script>
+<script src="js/Sidebar.js"></script>
+<script>
+    // Добавляем обработчик события для кнопки авторизации
+    document.getElementById('authButton').addEventListener('click', function() {
+        window.location.href = 'editor.html';
+    });
+</script>
