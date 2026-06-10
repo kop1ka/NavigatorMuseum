@@ -37,6 +37,6 @@ services:
 
     restart: unless-stopped
     
-    volumes:
-      app-data:
-        driver: local
+volumes:
+  app-data:
+    driver: local
