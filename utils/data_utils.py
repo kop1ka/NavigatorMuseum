@@ -65,8 +65,16 @@ def get_full_timestamp():
 
 def load_users(users_file, hash_password_func):
     """Загрузить пользователей из JSON файла"""
+    default_username = os.environ.get('DEFAULT_ADMIN_USERNAME', 'admin')
+    default_password = os.environ.get('DEFAULT_ADMIN_PASSWORD', 'admin123')
     return load_json_file(users_file, default={
-        "users": [{"id": 1, "username": "admin", "password_hash": hash_password_func("admin123"), "is_admin": True, "created_at": datetime.now().isoformat()}]
+        "users": [{
+            "id": 1,
+            "username": default_username,
+            "password_hash": hash_password_func(default_password),
+            "is_admin": True,
+            "created_at": datetime.now().isoformat(),
+        }]
     })
 
 

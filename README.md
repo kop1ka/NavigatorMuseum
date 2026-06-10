@@ -7,8 +7,12 @@
 ### Запуск приложения
 
 ```bash
-# Сборка и запуск через docker-compose
-docker compose up -d --build
+# Подготовьте переменные окружения
+cp .env.example .env
+# Затем задайте SECRET_KEY и DEFAULT_ADMIN_PASSWORD в .env
+
+# Запуск через Docker Compose
+docker compose up -d
 
 # Приложение будет доступно по адресу: http://localhost:5000
 ```
@@ -74,8 +78,8 @@ python app.py
 ```
 /workspace
 ├── app.py              # Основное Flask приложение
-├── Dockerfile          # Docker образ для production
-├── docker-compose.yml  # Конфигурация Docker Compose
+├── docker-compose.yml  # Конфигурация Docker Compose для Git stack
+├── .env.example        # Пример переменных окружения
 ├── requirements.txt    # Python зависимости
 ├── index.html          # Главная страница
 ├── data/
@@ -109,9 +113,7 @@ python app.py
 ## Использование админ-панели
 
 1. Откройте http://localhost:5000/admin
-2. Для входа используйте:
-   - Логин: `admin`
-   - Пароль: `admin123` (измените в production!)
+2. Для входа используйте значения `DEFAULT_ADMIN_USERNAME` и `DEFAULT_ADMIN_PASSWORD` из `.env`
 3. Для запуска парсера нажмите кнопку "🚀 Запустить парсер"
 4. Для редактирования элемента:
    - Выберите элемент в дереве каталога
@@ -150,19 +152,16 @@ python app.py
 
 Перед развёртыванием в production:
 
-1. Измените `SECRET_KEY` в `docker-compose.yml` или через переменную окружения
-2. Смените пароль пользователя admin по умолчанию
+1. Задайте случайный `SECRET_KEY` через `.env` или переменную окружения
+2. Задайте сильный `DEFAULT_ADMIN_PASSWORD` перед первым запуском
 3. Используйте HTTPS (SSL сертификат)
 4. Настройте firewall для ограничения доступа
 
 ## 📦 Docker команды
 
 ```bash
-# Сборка образа
-docker build -t my-flask-app .
-
-# Запуск контейнера
-docker run -p 5000:5000 -v $(pwd)/data:/app/data my-flask-app
+# Запуск контейнера через compose
+docker compose up -d
 
 # Остановка контейнера
 docker compose down
@@ -178,6 +177,7 @@ docker compose logs -f
 ```bash
 export FLASK_ENV=production
 export SECRET_KEY=ваш-секретный-ключ
+export DEFAULT_ADMIN_PASSWORD=ваш-пароль-администратора
 ```
 
 Или используйте `.env` файл с `docker compose`.
