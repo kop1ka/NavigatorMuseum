@@ -20,9 +20,6 @@ services:
     ports:
       - "${PORT:-5000}:5000"
       
-    volumes:
-      - app-data:/app/data 
-      
     environment:
       FLASK_ENV: production
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY must be set}
@@ -36,6 +33,3 @@ services:
       - .env
 
     restart: unless-stopped
-volumes:
-  app-data:
-    driver: local
