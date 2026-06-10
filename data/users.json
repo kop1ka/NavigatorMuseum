@@ -1,0 +1,18 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password_hash": "$2b$12$B/DDXO6FUzUPBMvNv1dPPeAJOp3wR5jpb4bzYm6FWvBSWkYLR7lSS",
+      "is_admin": true,
+      "created_at": "2026-05-11T09:22:19.918696"
+    },
+    {
+      "id": 999,
+      "username": "testadmin",
+      "password_hash": "$2b$12$xCrZZ8xU9ObNaHSXiB8q/OBqKEgGs0L71JaZ87CwRUdhouN/BmU3q",
+      "is_admin": true,
+      "created_at": "2024-01-01T00:00:00"
+    }
+  ]
+}
