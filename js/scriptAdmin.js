@@ -74,7 +74,7 @@ async function loadImages() {
 // ДЕРЕВО КАТАЛОГА И ЛОГИКА ВЫБОРА
 // ============================================================
 // Рекурсивно строит DOM-дерево из JSON-структуры каталога.
-// Теперь для каждого элемента генерируется визуальная иконка (папка или файл)
+// isRoot = true только при первом вызове, чтобы очистить контейнер
 function renderCatalogTree(items = catalogData?.children, parentPath = '', container = document.getElementById('catalogTree'), isRoot = true) {
   if (isRoot) container.innerHTML = '';
   if (!items) return;
@@ -83,32 +83,17 @@ function renderCatalogTree(items = catalogData?.children, parentPath = '', conta
     const curPath = parentPath ? `${parentPath}/${item.name}` : item.name;
     const isPerm = permanentItems.includes(curPath);
     const hasKids = item.children?.length > 0;
-
-    // --- ГЕНЕРАЦИЯ ИКОНКИ ---
-    let iconHtml;
-    if (hasKids) {
-      // Это папка – показываем иконку папки (эмодзи 📁)
-      iconHtml = '<span class="tree-icon folder-icon">📁</span>';
-    } else {
-      // Это файл – если есть валидная кастомная иконка, показываем её,
-      // иначе – стандартную иконку файла (📄). Обработка ошибки загрузки
-      if (item.icon && !isPlaceholderIcon(item.icon)) {
-        iconHtml = `<img class="tree-icon" src="${item.icon}" style="width:16px;height:16px;vertical-align:middle;" onerror="this.style.display='none'; this.parentElement.innerHTML='📄';">`;
-      } else {
-        iconHtml = '<span class="tree-icon file-icon">📄</span>';
-      }
-    }
-    // --- КОНЕЦ ГЕНЕРАЦИИ ИКОНКИ ---
-
+    // Если элемент не папка и имеет валидную иконку, помечаем как FILE, иначе DIR
+    const iconText = (!hasKids && item.icon && !isPlaceholderIcon(item.icon)) ? 'FILE' : 'DIR';
+    
     const div = document.createElement('div');
     div.className = `tree-item${isPerm ? ' permanent' : ''}`;
     div.dataset.path = curPath;
     div.innerHTML = `
       <span class="tree-toggle${hasKids ? ' expanded' : ''}" style="${hasKids ? '' : 'visibility:hidden'}"></span>
-      ${iconHtml}
+      <span>${iconText}</span>
       <span>${item.name.toUpperCase()}</span>
     `;
-
     // Делегирование клика: если нажато на стрелку - сворачиваем/разворачиваем, иначе - выбираем элемент
     div.onclick = (e) => e.target.classList.contains('tree-toggle') ? toggleTreeChildren(div, curPath) : selectTreeItem(div, curPath, item);
     
@@ -133,28 +118,11 @@ function toggleTreeChildren(el, path) {
   tog.classList.toggle('expanded', !isHidden);
 }
 
-// Обновляет иконку элемента в дереве при выборе/редактировании
+// Обновляет текстовую иконку элемента в дереве (DIR/FILE) на основе нового URL
 function updateTreeIcon(path, iconUrl) {
   const el = document.querySelector(`.tree-item[data-path="${path}"]`);
-  if (!el) return;
-
-  // Ищем элемент с классом tree-icon внутри строки
-  const iconContainer = el.querySelector('.tree-icon');
-  if (!iconContainer) return;
-
-  // Определяем, папка это или файл (по наличию дочернего контейнера .tree-children)
-  const isFolder = !!el.nextElementSibling?.classList.contains('tree-children');
-
-  if (isFolder) {
-    // Для папки просто оставляем иконку папки
-    iconContainer.outerHTML = '<span class="tree-icon folder-icon">📁</span>';
-  } else {
-    // Для файла: если есть валидная иконка — показываем изображение, иначе эмодзи файла
-    if (iconUrl && !isPlaceholderIcon(iconUrl)) {
-      iconContainer.outerHTML = `<img class="tree-icon" src="${iconUrl}" style="width:16px;height:16px;vertical-align:middle;" onerror="this.style.display='none'; this.parentElement.innerHTML='📄';">`;
-    } else {
-      iconContainer.outerHTML = '<span class="tree-icon file-icon">📄</span>';
-    }
+  if (el?.querySelector('span:nth-child(2)')) {
+    el.querySelector('span:nth-child(2)').textContent = (!isPlaceholderIcon(iconUrl) && iconUrl?.trim()) ? 'FILE' : 'DIR';
   }
 }
 
@@ -223,12 +191,11 @@ function highlightSelectedImage(icon, gridId) {
 // СПИСКИ РОДИТЕЛЬСКИХ ПАПОК И ПОИСК
 // ============================================================
 // Фабричная функция для создания элемента выбора родительской папки. 
-// Теперь показывает иконку папки вместо текста DIR
+// Вынесена отдельно, чтобы избежать дублирования кода для двух разных списков
 function createParentItem(path, label, container, onSelect) {
   const div = document.createElement('div');
   div.className = 'parent-item'; div.dataset.path = path;
-  // Используем иконку папки (📁) вместо текста DIR
-  div.innerHTML = `<span class="tree-icon folder-icon">📁</span><span>${label}</span>`;
+  div.innerHTML = `<span>DIR</span><span>${label}</span>`;
   div.onclick = () => onSelect(div, path);
   container.appendChild(div);
 }
