@@ -57,6 +57,8 @@ from utils.audit_utils import (
     audit_error, audit_upload_success, audit_web_resource, audit_filesystem_read,
     audit_catalog_item_open, load_audit_logs, clear_audit_logs, AuditEventType
 )
+from utils.proxy_utils import configure_proxy_support
+from utils.response_utils import add_static_response_headers
 
 # Инициализация Flask приложения
 # static_folder='.' указывает, что статические файлы находятся в корневой директории
@@ -68,67 +70,17 @@ app.secret_key = SECRET_KEY  # Использование секретного �
 app.config['JSON_AS_ASCII'] = False
 app.json.ensure_ascii = False
 
-# Настройка для работы за обратным прокси (nginx, Apache и т.д.)
-# Позволяет приложению работать в поддиректории (например, /navigator/)
-from werkzeug.middleware.proxy_fix import ProxyFix
-app.wsgi_app = ProxyFix(app.wsgi_app, x_prefix=1)
-
-# Middleware для обработки префикса пути (например, /navigator/)
-class PathPrefixMiddleware:
-    """
-    Middleware для удаления префикса пути перед обработкой запроса Flask.
-    Позволяет приложению работать в поддиректории без изменения маршрутов.
-    Работает только если префикс ещё не был установлен nginx (SCRIPT_NAME пустой).
-    
-    ВАЖНО: Этот middleware удаляет префикс /navigator из PATH_INFO, поэтому
-    маршруты в Flask должны быть объявлены БЕЗ префикса /navigator.
-    Например: @app.route('/login'), а НЕ @app.route('/navigator/login')
-    """
-    def __init__(self, app, prefix):
-        self.app = app
-        self.prefix = prefix.rstrip("/")
-
-    def __call__(self, environ, start_response):
-        path = environ.get("PATH_INFO", "")
-        script_name = environ.get("SCRIPT_NAME", "")
-
-        # Применяем префикс только если SCRIPT_NAME ещё не установлен nginx
-        # и путь начинается с нашего префикса
-        if not script_name and path.startswith(self.prefix):
-            # Удаляем префикс из PATH_INFO
-            environ["PATH_INFO"] = path[len(self.prefix):] or "/"
-            # Добавляем префикс к SCRIPT_NAME для правильной работы url_for
-            environ["SCRIPT_NAME"] = self.prefix
-
-        return self.app(environ, start_response)
-
-app.wsgi_app = PathPrefixMiddleware(app.wsgi_app, '/navigator')
-
 # Глобальная переменная для хранения префикса пути
 URL_PREFIX = '/navigator'
 
-# Настройка APPLICATION_ROOT для корректной работы url_for с префиксом
-app.config['APPLICATION_ROOT'] = '/navigator'
+# Настройка для работы за reverse proxy и внешним префиксом /navigator
+configure_proxy_support(app, URL_PREFIX)
 
 # Настройка CORS заголовков для всех ответов
 @app.after_request
 def add_cors_headers(response):
     """Добавляет CORS заголовки и MIME-типы для статических файлов"""
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-CSRFToken'
-    response.headers['Access-Control-Allow-Credentials'] = 'true'
-    
-    if response.headers.get('Content-Type', '').startswith('text/plain') or not response.headers.get('Content-Type'):
-        mime_map = {'.css': 'text/css; charset=utf-8', '.js': 'application/javascript; charset=utf-8',
-                    '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-                    '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.html': 'text/html; charset=utf-8'}
-        for ext, mime in mime_map.items():
-            if request.path.endswith(ext):
-                response.headers['Content-Type'] = mime
-                break
-    
-    return response
+    return add_static_response_headers(response, request.path)
 
 # Инициализация расширений Flask
 csrf = CSRFProtect(app)  # Защита от CSRF атак
