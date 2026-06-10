@@ -84,7 +84,7 @@ function renderCatalogTree(items = catalogData?.children, parentPath = '', conta
     const isPerm = permanentItems.includes(curPath);
     const hasKids = item.children?.length > 0;
     // Если элемент не папка и имеет валидную иконку, помечаем как FILE, иначе DIR
-    const iconText = (!hasKids && item.icon && !isPlaceholderIcon(item.icon)) ? '📄' : '📁';
+    const iconText = (!hasKids && item.icon && !isPlaceholderIcon(item.icon)) ? 'файл' : 'папка';
     
     const div = document.createElement('div');
     div.className = `tree-item${isPerm ? ' permanent' : ''}`;
