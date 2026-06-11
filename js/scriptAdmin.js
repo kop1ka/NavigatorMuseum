@@ -122,7 +122,7 @@ function toggleTreeChildren(el, path) {
 function updateTreeIcon(path, iconUrl) {
   const el = document.querySelector(`.tree-item[data-path="${path}"]`);
   if (el?.querySelector('span:nth-child(2)')) {
-    el.querySelector('span:nth-child(2)').textContent = (!isPlaceholderIcon(iconUrl) && iconUrl?.trim()) ? 'FILE' : 'DIR';
+    el.querySelector('span:nth-child(2)').textContent = (!isPlaceholderIcon(iconUrl) && iconUrl?.trim()) ? '📄' : '📁';
   }
 }
 
