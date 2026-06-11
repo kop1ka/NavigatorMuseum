@@ -329,9 +329,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (isVideoFile(url)) {
                 
-                const playerUrl = `/video-player?url=${encodeURIComponent(url)}&name=${encodeURIComponent(item.name)}`;
+                const playerUrl = `/navigator/video-player?url=${encodeURIComponent(url)}&name=${encodeURIComponent(item.name)}`;
                 logEvent('video_player_open', item.name, 'video_file', 
-                    `Открытие видео: ${item.name}`, { url, player_url: playerUrl });
+                `Открытие видео: ${item.name}`, { url, player_url: playerUrl });
                 window.location.href = playerUrl;
             } else {
                 
