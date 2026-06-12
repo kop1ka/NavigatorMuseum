@@ -819,7 +819,7 @@ def handle_audit_logs():
             return jsonify({'error': 'Требуется авторизация администратора'}), 403
         
         # Аудит: просмотр журнала аудита
-        audit_web_resource('view', 'audit_logs', description='Просмотр журнала аудита')
+        # audit_web_resource('view', 'audit_logs', description='Просмотр журнала аудита')
         
         try:
             date = request.args.get('date')
@@ -844,106 +844,6 @@ def handle_audit_logs():
                        description=f'Ошибка получения журнала аудита: {str(e)}',
                        exception=e)
             return jsonify({'error': f'Ошибка: {str(e)}'}), 500
-
-
-@app.route('/navigator/api/audit/clear', methods=['POST'])
-@login_required
-@admin_required_decorator
-@csrf.exempt
-def clear_audit_logs_route():
-    """
-    API endpoint для очистки журнала аудита
-    
-    Request Body:
-        date (str, optional): Дата для очистки. Если не указана, очищается текущий день.
-    
-    Returns:
-        Response: JSON объект со статусом операции
-    """
-    # Аудит: очистка журнала аудита
-    audit_web_resource('change', 'audit_logs', description='Очистка журнала аудита')
-    
-    try:
-        data = request.json or {}
-        date = data.get('date')
-        
-        success = clear_audit_logs(date=date)
-        
-        if success:
-            return jsonify({'status': 'success', 'message': 'Журнал аудита очищен'})
-        else:
-            return jsonify({'status': 'error', 'message': 'Ошибка при очистке журнала'}), 500
-    except Exception as e:
-        audit_error('audit_clear_error', 'audit_logs',
-                   description=f'Ошибка очистки журнала аудита: {str(e)}',
-                   exception=e)
-        return jsonify({'error': f'Ошибка: {str(e)}'}), 500
-
-
-@app.route('/api/import/json', methods=['POST'])
-@login_required
-@admin_required_decorator
-@csrf.exempt  # Освободить от CSRF защиты
-def import_json():
-    """
-    API endpoint для импорта JSON данных
-    
-    Принимает JSON файл или данные и добавляет их в каталог.
-    
-    Request Body:
-        json_data: JSON строка с данными для импорта
-        parent_path: Путь родительской папки (опционально)
-    
-    Returns:
-        Response: JSON объект со статусом операции
-    """
-    try:
-        data = request.json
-        json_data = data.get('json_data')
-        parent_path = data.get('parent_path', '')
-        
-        if not json_data:
-            return jsonify({'error': 'JSON данные не предоставлены'}), 400
-        
-        # Парсинг JSON данных
-        imported_items = json.loads(json_data)
-        
-        # Загрузка каталога
-        catalog = load_catalog(CATALOG_FILE)
-        
-        # Определение целевого списка для добавления
-        if not parent_path:
-            target_list = catalog['children']
-        else:
-            parent_item = find_item_by_path(catalog['children'], parent_path)
-            if parent_item and 'children' in parent_item:
-                target_list = parent_item['children']
-            else:
-                return jsonify({'error': 'Родительская папка не найдена'}), 404
-        
-        # Функция для рекурсивного добавления элементов
-        def add_imported_items(items, target):
-            if isinstance(items, list):
-                for item in items:
-                    if isinstance(item, dict):
-                        target.append(item)
-                    elif isinstance(item, list):
-                        add_imported_items(item, target)
-            elif isinstance(items, dict):
-                target.append(items)
-        
-        add_imported_items(imported_items, target_list)
-        save_catalog(CATALOG_FILE, catalog)
-        
-        # Аудит: добавление ресурса через импорт
-        audit_web_resource('add', 'import_json', description=f'Импорт JSON данных: {len(target_list)} элементов')
-        
-        return jsonify({'status': 'success', 'message': f'Импортировано элементов: {len(target_list)}'})
-    
-    except json.JSONDecodeError as e:
-        return jsonify({'error': f'Ошибка парсинга JSON: {str(e)}'}), 400
-    except Exception as e:
-        return jsonify({'error': f'Ошибка импорта: {str(e)}'}), 500
 
 
 @app.route('/api/permanent', methods=['GET', 'POST', 'DELETE'])
@@ -1119,7 +1019,7 @@ def serve_css(filename):
         Response: CSS файл
     """
     # Аудит: чтение файла из файловой системы
-    audit_filesystem_read(f'css/{filename}', description=f'Чтение CSS файла: {filename}')
+    # audit_filesystem_read(f'css/{filename}', description=f'Чтение CSS файла: {filename}')
     
     css_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'css')
     response = send_from_directory(css_dir, filename, max_age=86400)
@@ -1139,7 +1039,7 @@ def serve_js(filename):
         Response: JS файл
     """
     # Аудит: чтение файла из файловой системы
-    audit_filesystem_read(f'js/{filename}', description=f'Чтение JS файла: {filename}')
+    # audit_filesystem_read(f'js/{filename}', description=f'Чтение JS файла: {filename}')
     
     js_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'js')
     response = send_from_directory(js_dir, filename, max_age=86400)
