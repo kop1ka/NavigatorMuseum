@@ -42,7 +42,7 @@
           "name": "Сталинград в истории златоуста",
           "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/stalingrad%20v%20istorii%20zlatousta.jpg",
           "children": [],
-          "url": "video/Сталинград В Истории Златоуста.mp4",
+          "url": "https://vm-ftp.anosov.ru/vm/Военно-патриотическое/Сталинград%20в%20истории%20златоуста/Сталинград%20В%20Истории%20Златоуста.mp4",
           "modified": "2026-06-10 10:00",
           "isEmpty": true
         }
@@ -83,7 +83,7 @@
           "name": "ДИПЛОМЫ",
           "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/diplomi.jpg",
           "children": [],
-          "url": "/automation",
+          "url": "https://vm.anosov.ru/book/100000004/",
           "modified": "2026-06-10 10:00",
           "isEmpty": true
         },
@@ -108,7 +108,7 @@
           "name": "ВИДЕО РОЛИК О ЛВОЗ",
           "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/lovz.jpg",
           "children": [],
-          "url": "video/polnyi-videorolik-o-lovz_bY06hdeN.mp4",
+          "url": "https://vm-ftp.anosov.ru/vm/Студенты%20с%20ОВЗ/Видео%20ролик%20о%20ЛВОЗ/polnyi-videorolik-o-lovz_bY06hdeN.mp4",
           "modified": "2026-06-10 10:00",
           "isEmpty": true
         },
@@ -173,7 +173,7 @@
           "name": "ВСЕРОССИЙСКИЙ КОНКУРС\"ЭКОЛОГИЧЕСКИЙ МАРАФОН\"",
           "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/konkurs.jpg",
           "children": [],
-          "url": "video/ЗлатИК.mp4",
+          "url": "https://vm-ftp.anosov.ru/vm/Экология/Всероссийский%20конкурс%22Экологический%20марафон%22/ЗлатИК.mp4",
           "modified": "2026-06-10 10:00",
           "isEmpty": true
         },
@@ -198,7 +198,7 @@
           "name": "ФОРУМ \"ПРОКТОРИЯ\" Г.ЯРОСЛАВЛЬ 2021Г.",
           "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/proektoria.jpg",
           "children": [],
-          "url": "video/Дневник Форума19 - День 1 (23.11.2019).mp4",
+          "url": "https://vm-ftp.anosov.ru/vm/Ноу/Проектория%20%22Дневник%20формума%2019%20-%20день%201/Дневник%20Форума19%20-%20День%201%20(23.11.2019).mp4",
           "modified": "2026-06-10 10:00",
           "isEmpty": true
         },
@@ -214,7 +214,7 @@
           "name": "КНИГА \"АНОСОВЕЦ ОПЕРЕЖАЮЩИЙ ВРЕМЯ\" ТЕКСТОВЫЙ ФОРМАТ",
           "icon": "",
           "children": [],
-          "url": "./document/КНИГА_2.docx",
+          "url": "",
           "modified": "2026-06-10 10:00",
           "isEmpty": true
         },
@@ -222,7 +222,7 @@
           "name": "КНИГА \"НАШИ ПРОЕКТЫ\"",
           "icon": "",
           "children": [],
-          "url": "./knigechka/index.html",
+          "url": "https://vm.anosov.ru/navigate_old/knigechka/index.html",
           "modified": "2026-06-10 10:00",
           "isEmpty": true
         }
@@ -330,7 +330,7 @@
           "name": "ВИРТУАЛЬНЫЙ МУЗЕЙ (1907-2019гг.)",
           "icon": "",
           "children": [],
-          "url": "",
+          "url": "https://museum.anosov.ru/",
           "modified": "2026-06-10 10:00",
           "isEmpty": true
         },
@@ -367,7 +367,7 @@
               "name": "20 ЛЕТ СПЕЦИАЛЬНОСТИ \"ПРОГРАММИРОВАНИЕ В КОМПЬЮТЕРНЫХ СИСТЕМАХ\"",
               "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/20%20let.jpg",
               "children": [],
-              "url": "video/20 let.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Специальность%2009.02.07/20%20лет%20специальности%20%22Программирование%20в%20компьютерных%20системах%22/20%20let.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             },
@@ -375,7 +375,7 @@
               "name": "ИТОГ \"ЗЛАТИК\"",
               "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/itog%20zlatik.jpg",
               "children": [],
-              "url": "video/Итог Златик + Telefon.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Специальность%2009.02.07/Итог%20%22Златик%22/Итог%20Златик%20+%20Telefon.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             },
@@ -383,7 +383,7 @@
               "name": "РАЗРАБОТКА МИНИ-ПРАКТИК",
               "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/mini-praktiki.jpg",
               "children": [],
-              "url": "video/Разработка И Работа С Мини - Практиками.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Специальность%2009.02.07/Разработка%20мини-практик/Разработка%20И%20Работа%20С%20Мини%20-%20Практиками.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             },
@@ -391,7 +391,7 @@
               "name": "ЦИФРОВЫЕ ТЕХНОЛОГИИ В РЕВЕРСИВНОМ ИНЖИНЕРИНГЕ",
               "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/cifrovie%20technologii%20v%20reversivnom%20inginiringe.jpg",
               "children": [],
-              "url": "video/С Подписью Ролей В Конце.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Специальность%2009.02.07/Цифровые%20технологии%20в%20реверсивном%20инжинеринге/С%20Подписью%20Ролей%20В%20Конце.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             },
@@ -399,7 +399,7 @@
               "name": "ЗАЧЁТКА 2024",
               "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/%d0%97%d0%b0%d1%87%d1%91%d1%82%d0%ba%d0%b0%202024.png",
               "children": [],
-              "url": "video/ФИЛЬМ_2. Специальность Информационные технологии и программирование.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Специальность%2009.02.07/Зачётка%202024/ФИЛЬМ_2.%20Специальность%20Информационные%20технологии%20и%20программирование.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             },
@@ -407,7 +407,7 @@
               "name": "ЗАЧЁТКА 2026",
               "icon": "https://vm-ftp.anosov.ru/vm/%d1%84%d0%be%d1%82%d0%be/%d0%98%d0%a1.png",
               "children": [],
-              "url": "video/Зачётка2026.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Специальность%2009.02.07/Зачётка%202026/Зачётка2026.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             },
@@ -432,7 +432,7 @@
               "name": "ЗАЧЁТКА",
               "icon": "",
               "children": [],
-              "url": "video/ФИЛЬМ7. Логисты ЗЛАТИК - инновационная специальность.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Операционная%20деятельность%20в%20логистике/Зачётка/ФИЛЬМ7.%20Логисты%20ЗЛАТИК%20-%20инновационная%20специальность.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             }
@@ -449,7 +449,7 @@
               "name": "ЗАЧЁТКА",
               "icon": "",
               "children": [],
-              "url": "video/ФИЛЬМ 1_технология машиностроения .mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Технология%20машиностроения/Зачётка/ФИЛЬМ%201_технология%20машиностроения.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             }
@@ -466,7 +466,7 @@
               "name": "ЗАЧЁТКА",
               "icon": "",
               "children": [],
-              "url": "video/ФИЛЬМ 10. Аддитивные технологии - профессии будущего.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Аддитивные%20технологии/Зачётка/ФИЛЬМ%2010.%20Аддитивные%20технологии%20-%20профессии%20будущего.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             }
@@ -483,7 +483,7 @@
               "name": "ЗАЧЁТКА",
               "icon": "",
               "children": [],
-              "url": "video/автомеханики.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Техническое%20обслуживание%20и%20ремонт%20двигателей,%20систем%20и%20агрегатов%20автомобилей/Зачётка/автомеханики.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             }
@@ -500,7 +500,7 @@
               "name": "ЗАЧЁТКА",
               "icon": "",
               "children": [],
-              "url": "video/ФИЛЬМ7. Логисты ЗЛАТИК - инновационная специальность.mp4",
+              "url": "",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             }
@@ -517,7 +517,7 @@
               "name": "ЗАЧЁТКА",
               "icon": "",
               "children": [],
-              "url": "video/ФИЛЬМ 9. Юристы ЗЛАТИК+++.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Юриспруденция/Зачётка/ФИЛЬМ%209.%20Юристы%20ЗЛАТИК+++.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             }
@@ -534,7 +534,7 @@
               "name": "ЗАЧЁТКА",
               "icon": "",
               "children": [],
-              "url": "video/ФИЛЬМ 8. ЭЛЕКТРИКИ в ЗЛАТИК.mp4",
+              "url": "https://vm-ftp.anosov.ru/vm/Специальности/Эксплуатация%20и%20обслуживание%20электрического%20и%20электромеханического%20оборудования/Зачётка/ФИЛЬМ%208.%20ЭЛЕКТРИКИ%20в%20ЗЛАТИК.mp4",
               "modified": "2026-06-10 10:00",
               "isEmpty": true
             }
